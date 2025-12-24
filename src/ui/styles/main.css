@@ -66,6 +66,11 @@ body {
   color: #6b5c4f;
 }
 
+.sidebar-description a {
+  color: #3b5fa8;
+  text-decoration: underline;
+}
+
 .sidebar-links {
   display: flex;
   flex-direction: column;
@@ -826,6 +831,10 @@ button.ghost {
   .sidebar-description,
   .oss-list {
     color: #c4b6a6;
+  }
+
+  .sidebar-description a {
+    color: #8fa6cf;
   }
 
   .sidebar-links a {

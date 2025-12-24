@@ -344,6 +344,9 @@ export const App = () => {
                 <a href="#/terms">이용약관</a>
                 <a href="#/license">라이선스</a>
                 <a href="#/oss">오픈소스 목록</a>
+                <a href="https://github.com/deholic/textodon" target="_blank" rel="noreferrer">
+                  소스 코드
+                </a>
               </nav>
             </section>
           ) : null}
