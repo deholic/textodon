@@ -4,14 +4,14 @@ import { App } from "./App";
 import { MastodonHttpClient } from "./infra/MastodonHttpClient";
 import { MastodonStreamingClient } from "./infra/MastodonStreamingClient";
 import { MastodonOAuthClient } from "./infra/MastodonOAuthClient";
-import { LocalStorageAccountStore } from "./infra/LocalStorageAccountStore";
+import { SessionStorageAccountStore } from "./infra/SessionStorageAccountStore";
 import { AppProvider } from "./ui/state/AppContext";
 import "./ui/styles/main.css";
 
 const services = {
   api: new MastodonHttpClient(),
   streaming: new MastodonStreamingClient(),
-  accountStore: new LocalStorageAccountStore(),
+  accountStore: new SessionStorageAccountStore(),
   oauth: new MastodonOAuthClient()
 };
 

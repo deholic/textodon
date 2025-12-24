@@ -27,35 +27,46 @@ export class MastodonStreamingClient implements StreamingClient {
     let retryTimer: number | null = null;
     let retryCount = 0;
 
-    const open = () => {
+    const open = (useQueryToken: boolean) => {
       if (isClosed) {
         return;
       }
       const url = new URL(`${account.instanceUrl.replace(/\/$/, "")}/api/v1/streaming`);
-      url.searchParams.set("access_token", account.accessToken);
       url.searchParams.set("stream", "user");
+      if (useQueryToken) {
+        url.searchParams.set("access_token", account.accessToken);
+      }
 
-      socket = new WebSocket(url.toString().replace("http", "ws"));
+      const wsUrl = url.toString().replace("http", "ws");
+      socket = useQueryToken ? new WebSocket(wsUrl) : new WebSocket(wsUrl, account.accessToken);
+      let opened = false;
       socket.onmessage = (message) => {
         const event = mapEvent(message as MessageEvent<string>);
         if (event) {
           onEvent(event);
         }
       };
+      socket.onopen = () => {
+        opened = true;
+      };
       socket.onclose = () => {
         if (isClosed) {
           return;
         }
+        if (!opened && !useQueryToken) {
+          open(true);
+          return;
+        }
         retryCount += 1;
         const delay = Math.min(1000 * 2 ** retryCount, 15000);
-        retryTimer = window.setTimeout(open, delay);
+        retryTimer = window.setTimeout(() => open(useQueryToken), delay);
       };
       socket.onerror = () => {
         socket?.close();
       };
     };
 
-    open();
+    open(false);
 
     return () => {
       isClosed = true;

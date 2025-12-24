@@ -30,7 +30,7 @@ export const clearPendingOAuth = () => {
 
 const loadAppMap = (): Record<string, RegisteredApp> => {
   try {
-    const raw = localStorage.getItem(APPS_STORAGE_KEY);
+    const raw = sessionStorage.getItem(APPS_STORAGE_KEY);
     if (!raw) {
       return {};
     }
@@ -41,7 +41,7 @@ const loadAppMap = (): Record<string, RegisteredApp> => {
 };
 
 const saveAppMap = (map: Record<string, RegisteredApp>) => {
-  localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(map));
+  sessionStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(map));
 };
 
 export const loadRegisteredApp = (instanceUrl: string): RegisteredApp | null => {
