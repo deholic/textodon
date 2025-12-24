@@ -98,6 +98,9 @@ const OssPage = () => (
 );
 
 export const App = () => {
+  const [christmasMode, setChristmasMode] = useState(() => {
+    return localStorage.getItem("textodon.christmas") === "on";
+  });
   const { services, accountsState } = useAppContext();
   const activeAccount = useMemo(
     () => accountsState.accounts.find((account) => account.id === accountsState.activeAccountId) ?? null,
@@ -189,6 +192,13 @@ export const App = () => {
 
     void addAccountWithToken();
   }, [accountsState, services.api, services.oauth]);
+
+  useEffect(() => {
+    const value = christmasMode ? "christmas" : "";
+    document.documentElement.dataset.theme = value;
+    document.body.dataset.theme = value;
+    localStorage.setItem("textodon.christmas", christmasMode ? "on" : "off");
+  }, [christmasMode]);
 
   useEffect(() => {
     if (route !== "home") {
@@ -350,6 +360,20 @@ export const App = () => {
               </nav>
             </section>
           ) : null}
+          <section className="panel christmas-toggle">
+            <div>
+              <strong>크리스마스 모드</strong>
+              <p>레드/그린 테마로 전환합니다.</p>
+            </div>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={christmasMode}
+                onChange={(event) => setChristmasMode(event.target.checked)}
+              />
+              <span className="slider" aria-hidden="true" />
+            </label>
+          </section>
         </aside>
 
         <section className="main-column">

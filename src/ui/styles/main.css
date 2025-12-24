@@ -5,6 +5,11 @@
   color: #1f1b16;
 }
 
+:root[data-theme="christmas"] {
+  background: radial-gradient(circle at top left, #f6efe6, #fff5f0 55%, #ffffff);
+  color: #2d1a16;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -66,9 +71,17 @@ body {
   color: #6b5c4f;
 }
 
+:root[data-theme="christmas"] .sidebar-description {
+  color: #7b3f3f;
+}
+
 .sidebar-description a {
   color: #3b5fa8;
   text-decoration: underline;
+}
+
+:root[data-theme="christmas"] .sidebar-description a {
+  color: #b43b3b;
 }
 
 .sidebar-links {
@@ -81,6 +94,10 @@ body {
   color: #7c6152;
   font-size: 13px;
   text-decoration: none;
+}
+
+:root[data-theme="christmas"] .sidebar-links a {
+  color: #2e6b4f;
 }
 
 .info-panel h2 {
@@ -198,6 +215,11 @@ aside {
   box-shadow: 0 18px 40px rgba(67, 57, 45, 0.08);
 }
 
+:root[data-theme="christmas"] .panel {
+  border: 1px solid #e2cfc4;
+  box-shadow: 0 18px 40px rgba(134, 40, 40, 0.08);
+}
+
 .panel h2 {
   margin-top: 0;
   font-size: 18px;
@@ -228,6 +250,11 @@ aside {
   justify-content: center;
   gap: 6px;
   margin-bottom: 12px;
+}
+
+:root[data-theme="christmas"] .account-add-button {
+  background: #2e6b4f;
+  color: #f4fff7;
 }
 
 .account-list {
@@ -377,9 +404,19 @@ button {
   cursor: pointer;
 }
 
+:root[data-theme="christmas"] button {
+  background: #b43b3b;
+  color: #fff4f4;
+}
+
 button.is-active {
   background: #9db6e3;
   color: #1e2b45;
+}
+
+:root[data-theme="christmas"] button.is-active {
+  background: #e4b46b;
+  color: #3d2a12;
 }
 
 button:disabled {
@@ -390,6 +427,15 @@ button:disabled {
 button.ghost {
   background: none;
   color: #3b5fa8;
+}
+
+:root[data-theme="christmas"] button.ghost {
+  color: #8f2f2f;
+}
+
+:root[data-theme="christmas"] .account-list button {
+  background: none;
+  color: inherit;
 }
 
 .timeline-header {
@@ -412,6 +458,11 @@ button.ghost {
   background: #fffdfa;
 }
 
+:root[data-theme="christmas"] .status {
+  border: 1px solid #ead7cc;
+  background: #fff7f2;
+}
+
 .status header {
   display: flex;
   justify-content: space-between;
@@ -419,6 +470,19 @@ button.ghost {
   gap: 12px;
   font-size: 13px;
   color: #6b5c4f;
+}
+
+:root[data-theme="christmas"] .status header {
+  color: #7b3f3f;
+}
+
+:root[data-theme="christmas"] .status header strong {
+  color: #5b1f1f;
+}
+
+:root[data-theme="christmas"] .status header span,
+:root[data-theme="christmas"] .time-link {
+  color: #2e6b4f;
 }
 
 .status header div {
@@ -477,6 +541,11 @@ button.ghost {
   border-radius: 14px;
   overflow: hidden;
   background: #fffdfa;
+}
+
+:root[data-theme="christmas"] .link-preview {
+  border: 1px solid #ead7cc;
+  background: #fff7f2;
 }
 
 .link-preview.no-image {
@@ -576,6 +645,11 @@ button.ghost {
   font-size: 13px;
   display: inline-flex;
   align-items: center;
+}
+
+:root[data-theme="christmas"] .file-button {
+  background: #f3e4dc;
+  color: #7b3f3f;
 }
 
 .file-button input {
@@ -709,6 +783,10 @@ button.ghost {
   margin-bottom: 8px;
 }
 
+:root[data-theme="christmas"] .boosted-by {
+  color: #2e6b4f;
+}
+
 
 .boosted-by img {
   width: 18px;
@@ -722,6 +800,68 @@ button.ghost {
   font-size: 12px;
   color: #7c6152;
   margin-bottom: 8px;
+}
+
+:root[data-theme="christmas"] .reply-info {
+  color: #7b3f3f;
+}
+
+.christmas-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.christmas-toggle p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b5c4f;
+}
+
+:root[data-theme="christmas"] .christmas-toggle p {
+  color: #7b3f3f;
+}
+
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  display: inline-block;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #d8d1c7;
+  transition: background 0.2s ease;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s ease;
+}
+
+.switch input:checked + .slider {
+  background: #2e6b4f;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(20px);
 }
 
 .reply-info img {
@@ -762,10 +902,23 @@ button.ghost {
     color: #f0e7dc;
   }
 
+  :root[data-theme="christmas"],
+  body[data-theme="christmas"] {
+    background: radial-gradient(circle at top left, #2a1716, #1d1110 55%, #120b0a);
+    color: #f7e7df;
+  }
+
   .panel {
     background: #1b1916cc;
     border: 1px solid #3b342d;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  :root[data-theme="christmas"] .panel,
+  body[data-theme="christmas"] .panel {
+    background: #201412cc;
+    border: 1px solid #4a2f2c;
+    box-shadow: 0 18px 40px rgba(64, 20, 20, 0.45);
   }
 
   .app-header p,
@@ -781,6 +934,29 @@ button.ghost {
   .status {
     background: #171512;
     border: 1px solid #302822;
+  }
+
+  :root[data-theme="christmas"] .status,
+  body[data-theme="christmas"] .status {
+    background: #1a100f;
+    border: 1px solid #3b2624;
+  }
+
+  :root[data-theme="christmas"] .status header,
+  body[data-theme="christmas"] .status header {
+    color: #e4b9b9;
+  }
+
+  :root[data-theme="christmas"] .status header strong,
+  body[data-theme="christmas"] .status header strong {
+    color: #f4d7d7;
+  }
+
+  :root[data-theme="christmas"] .status header span,
+  body[data-theme="christmas"] .status header span,
+  :root[data-theme="christmas"] .time-link,
+  body[data-theme="christmas"] .time-link {
+    color: #9cc7ab;
   }
 
   .status p {
@@ -813,18 +989,41 @@ button.ghost {
     color: #edf3ff;
   }
 
+  :root[data-theme="christmas"] button,
+  body[data-theme="christmas"] button {
+    background: #8f2f2f;
+    color: #fff1f1;
+  }
+
   button.is-active {
     background: #8fa6cf;
     color: #1d2638;
+  }
+
+  :root[data-theme="christmas"] button.is-active,
+  body[data-theme="christmas"] button.is-active {
+    background: #b07a3b;
+    color: #2b1a10;
   }
 
   button.ghost {
     color: #8fa6cf;
   }
 
+  :root[data-theme="christmas"] button.ghost,
+  body[data-theme="christmas"] button.ghost {
+    color: #cf8c8c;
+  }
+
   .account-add-button {
     background: #4a6cb6;
     color: #edf3ff;
+  }
+
+  :root[data-theme="christmas"] .account-add-button,
+  body[data-theme="christmas"] .account-add-button {
+    background: #2e6b4f;
+    color: #f4fff7;
   }
 
 
@@ -841,6 +1040,11 @@ button.ghost {
     color: #d7cbbd;
   }
 
+  :root[data-theme="christmas"] .sidebar-links a,
+  body[data-theme="christmas"] .sidebar-links a {
+    color: #9cc7ab;
+  }
+
   .back-link {
     color: #d7cbbd;
   }
@@ -849,8 +1053,18 @@ button.ghost {
     color: #c4b6a6;
   }
 
+  :root[data-theme="christmas"] .boosted-by,
+  body[data-theme="christmas"] .boosted-by {
+    color: #9cc7ab;
+  }
+
   .reply-info {
     color: #c4b6a6;
+  }
+
+  :root[data-theme="christmas"] .reply-info,
+  body[data-theme="christmas"] .reply-info {
+    color: #cf8c8c;
   }
 
 
@@ -879,6 +1093,12 @@ button.ghost {
   .file-button {
     background: #2c3b59;
     color: #e1e7f4;
+  }
+
+  :root[data-theme="christmas"] .file-button,
+  body[data-theme="christmas"] .file-button {
+    background: #2a1b19;
+    color: #f7e7df;
   }
 
   .link-preview {
