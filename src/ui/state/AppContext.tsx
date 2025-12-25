@@ -6,6 +6,35 @@ import type { OAuthClient } from "../../services/OAuthClient";
 import type { StreamingClient } from "../../services/StreamingClient";
 import { formatHandle, parseAccountLabel } from "../utils/account";
 
+const ACTIVE_ACCOUNT_KEY = "textodon.accounts.activeId";
+
+const loadActiveAccountId = (accounts: Account[]): string | null => {
+  if (accounts.length === 0) {
+    return null;
+  }
+  try {
+    const stored = localStorage.getItem(ACTIVE_ACCOUNT_KEY);
+    if (stored && accounts.some((account) => account.id === stored)) {
+      return stored;
+    }
+  } catch {
+    return accounts[0]?.id ?? null;
+  }
+  return accounts[0]?.id ?? null;
+};
+
+const persistActiveAccountId = (accountId: string | null) => {
+  try {
+    if (accountId) {
+      localStorage.setItem(ACTIVE_ACCOUNT_KEY, accountId);
+    } else {
+      localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
+    }
+  } catch {
+    return;
+  }
+};
+
 export type AppServices = {
   api: MastodonApi;
   streaming: StreamingClient;
@@ -46,8 +75,12 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
     return normalized;
   });
   const [activeAccountId, setActiveAccountId] = useState<string | null>(
-    accounts[0]?.id ?? null
+    loadActiveAccountId(accounts)
   );
+
+  useEffect(() => {
+    persistActiveAccountId(activeAccountId);
+  }, [activeAccountId]);
 
   useEffect(() => {
     if (accounts.length > 0) {
