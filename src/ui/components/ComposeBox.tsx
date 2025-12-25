@@ -182,7 +182,6 @@ export const ComposeBox = ({
 
   return (
     <section className="panel">
-      <h2>글 작성</h2>
       {replyingTo ? (
         <div className="replying">
           <span>답글 대상: {replyingTo.summary}</span>

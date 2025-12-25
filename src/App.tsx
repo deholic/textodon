@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Account, Status } from "./domain/types";
-import { AccountManager } from "./ui/components/AccountManager";
+import { AccountAdd } from "./ui/components/AccountAdd";
+import { AccountSelector } from "./ui/components/AccountSelector";
 import { ComposeBox } from "./ui/components/ComposeBox";
 import { TimelineItem } from "./ui/components/TimelineItem";
 import { useTimeline } from "./ui/hooks/useTimeline";
@@ -304,36 +305,22 @@ export const App = () => {
             <p>텍스트 중심 마스토돈 클라이언트</p>
           </div>
         </div>
-        <div className="meta">
-          {activeAccount ? (
-            <span className="account-label meta-account">
-              <span className="account-text">
-                <span>{activeAccount.displayName || activeAccount.name}</span>
-                {activeHandle ? <span className="account-handle">@{activeHandle}</span> : null}
-              </span>
-              <span className="account-avatar" aria-hidden="true">
-                {activeAccount.avatarUrl ? (
-                  <img src={activeAccount.avatarUrl} alt="" loading="lazy" />
-                ) : (
-                  <span className="account-avatar-fallback" />
-                )}
-              </span>
-            </span>
-          ) : (
-            <span>계정을 추가하세요.</span>
-          )}
+        <div className="header-actions">
+          <div className="header-actions-group">
+            <AccountAdd
+              accounts={accountsState.accounts}
+              setActiveAccount={accountsState.setActiveAccount}
+              oauth={services.oauth}
+            />
+            <button type="button" onClick={timeline.refresh} disabled={!activeAccount || timeline.loading}>
+              {timeline.loading ? "새로고침 중" : "새로고침"}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="layout">
         <aside>
-          <AccountManager
-            accounts={accountsState.accounts}
-            activeAccountId={accountsState.activeAccountId}
-            setActiveAccount={accountsState.setActiveAccount}
-            removeAccount={accountsState.removeAccount}
-            oauth={services.oauth}
-          />
           {activeAccount ? (
             <ComposeBox
               onSubmit={handleSubmit}
@@ -379,39 +366,47 @@ export const App = () => {
         <section className="main-column">
           {oauthLoading ? <p className="empty">OAuth 인증 중...</p> : null}
           {actionError ? <p className="error">{actionError}</p> : null}
-          {route === "home" && activeAccount ? (
+          {route === "home" ? (
             <section className="panel">
               <div className="timeline-header">
-                <h2>타임라인</h2>
-                <button type="button" onClick={timeline.refresh} disabled={timeline.loading}>
-                  {timeline.loading ? "새로고침 중" : "새로고침"}
-                </button>
-              </div>
-              {timeline.error ? <p className="error">{timeline.error}</p> : null}
-              {timeline.items.length === 0 ? (
-                <p className="empty">표시할 글이 없습니다.</p>
-              ) : (
-                <div className="timeline">
-                  {timeline.items.map((status) => (
-                  <TimelineItem
-                    key={status.id}
-                    status={status}
-                    onReply={handleReply}
-                    onToggleFavourite={handleToggleFavourite}
-                    onToggleReblog={handleToggleReblog}
-                    onDelete={handleDeleteStatus}
-                    activeHandle={activeHandle}
+                <div className="timeline-header-actions">
+                  <AccountSelector
+                    accounts={accountsState.accounts}
+                    activeAccountId={accountsState.activeAccountId}
+                    setActiveAccount={accountsState.setActiveAccount}
+                    removeAccount={accountsState.removeAccount}
+                    variant="inline"
                   />
-                ))}
+                </div>
+              </div>
+              {activeAccount ? (
+                <>
+                  {timeline.error ? <p className="error">{timeline.error}</p> : null}
+                  {timeline.items.length === 0 ? (
+                    <p className="empty">표시할 글이 없습니다.</p>
+                  ) : (
+                    <div className="timeline">
+                      {timeline.items.map((status) => (
+                        <TimelineItem
+                          key={status.id}
+                          status={status}
+                          onReply={handleReply}
+                          onToggleFavourite={handleToggleFavourite}
+                          onToggleReblog={handleToggleReblog}
+                          onDelete={handleDeleteStatus}
+                          activeHandle={activeHandle}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {timeline.loadingMore ? <p className="empty">더 불러오는 중...</p> : null}
+                </>
+              ) : (
+                <div className="timeline-readme">
+                  <h3>안내</h3>
+                  <div className="readme-text" dangerouslySetInnerHTML={{ __html: readmeHtml }} />
                 </div>
               )}
-              {timeline.loadingMore ? <p className="empty">더 불러오는 중...</p> : null}
-            </section>
-          ) : null}
-          {route === "home" && !activeAccount ? (
-            <section className="panel readme-panel">
-              <h2>안내</h2>
-              <div className="readme-text" dangerouslySetInnerHTML={{ __html: readmeHtml }} />
             </section>
           ) : null}
           {route === "terms" ? <TermsPage /> : null}
