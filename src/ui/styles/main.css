@@ -1106,6 +1106,12 @@ button.ghost {
     background: #171512;
   }
 
+  :root[data-theme="christmas"] .link-preview,
+  body[data-theme="christmas"] .link-preview {
+    border: 1px solid #3b2624;
+    background: #1a100f;
+  }
+
   .link-preview-body {
     color: #c4b6a6;
   }
