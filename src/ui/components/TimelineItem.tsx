@@ -74,6 +74,10 @@ export const TimelineItem = ({
       return boostedBy.handle;
     }
   }, [boostedBy]);
+  const timestamp = useMemo(
+    () => new Date(displayStatus.createdAt).toLocaleString(),
+    [displayStatus.createdAt]
+  );
   const contentParts = useMemo(() => {
     const text = displayStatus.content;
     const regex = /(https?:\/\/[^\s)\]]+)/g;
@@ -199,17 +203,6 @@ export const TimelineItem = ({
             )}
           </span>
         </div>
-        {displayStatus.url ? (
-          <a href={displayStatus.url} target="_blank" rel="noreferrer" className="time-link">
-            <time dateTime={displayStatus.createdAt}>
-              {new Date(displayStatus.createdAt).toLocaleString()}
-            </time>
-          </a>
-        ) : (
-          <time dateTime={displayStatus.createdAt}>
-            {new Date(displayStatus.createdAt).toLocaleString()}
-          </time>
-        )}
       </header>
       <p className="status-text">{displayStatus.content ? contentParts : "(내용 없음)"}</p>
       {previewCard ? (
@@ -229,6 +222,15 @@ export const TimelineItem = ({
           </div>
         </a>
       ) : null}
+      <div className="status-time">
+        {displayStatus.url ? (
+          <a href={displayStatus.url} target="_blank" rel="noreferrer" className="time-link">
+            <time dateTime={displayStatus.createdAt}>{timestamp}</time>
+          </a>
+        ) : (
+          <time dateTime={displayStatus.createdAt}>{timestamp}</time>
+        )}
+      </div>
       <footer>
         <div className="status-actions">
           <button type="button" onClick={() => onReply(displayStatus)}>
@@ -283,9 +285,7 @@ export const TimelineItem = ({
                   <strong>{displayStatus.accountName || displayStatus.accountHandle}</strong>
                   <span>@{displayHandle}</span>
                 </div>
-                <time dateTime={displayStatus.createdAt}>
-                  {new Date(displayStatus.createdAt).toLocaleString()}
-                </time>
+                <time dateTime={displayStatus.createdAt}>{timestamp}</time>
               </header>
               <p className="status-text confirm-text">
                 {displayStatus.content || "(내용 없음)"}
