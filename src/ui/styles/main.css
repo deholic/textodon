@@ -3,6 +3,8 @@
   font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   background: radial-gradient(circle at top left, #f0efe9, #f9f7f2 60%, #ffffff);
   color: #1f1b16;
+  --scrollbar-thumb: #c8b9a5;
+  --scrollbar-thumb-dark: #3b342d;
 }
 
 :root[data-theme="christmas"] {
@@ -12,6 +14,24 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 body {
@@ -1153,6 +1173,7 @@ button.ghost {
   :root {
     background: radial-gradient(circle at top left, #1d1b18, #12110f 55%, #0d0c0b);
     color: #f0e7dc;
+    --scrollbar-thumb: var(--scrollbar-thumb-dark);
   }
 
   :root[data-theme="christmas"],
