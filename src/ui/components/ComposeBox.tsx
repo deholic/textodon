@@ -14,7 +14,8 @@ export const ComposeBox = ({
   onSubmit,
   replyingTo,
   onCancelReply,
-  mentionText
+  mentionText,
+  accountSelector
 }: {
   onSubmit: (params: {
     text: string;
@@ -25,6 +26,7 @@ export const ComposeBox = ({
   replyingTo: { id: string; summary: string } | null;
   onCancelReply: () => void;
   mentionText: string | null;
+  accountSelector?: React.ReactNode;
 }) => {
   const [text, setText] = useState("");
   const [visibility, setVisibility] = useState<Visibility>(() => {
@@ -182,6 +184,7 @@ export const ComposeBox = ({
 
   return (
     <section className="panel">
+      {accountSelector ? <div className="compose-account-select">{accountSelector}</div> : null}
       {replyingTo ? (
         <div className="replying">
           <span>답글 대상: {replyingTo.summary}</span>

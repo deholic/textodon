@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, Status } from "./domain/types";
 import { AccountAdd } from "./ui/components/AccountAdd";
 import { AccountSelector } from "./ui/components/AccountSelector";
@@ -6,6 +6,7 @@ import { ComposeBox } from "./ui/components/ComposeBox";
 import { TimelineItem } from "./ui/components/TimelineItem";
 import { useTimeline } from "./ui/hooks/useTimeline";
 import { useAppContext } from "./ui/state/AppContext";
+import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle } from "./ui/utils/account";
 import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
@@ -13,6 +14,9 @@ import readmeText from "../README.md?raw";
 import { renderMarkdown } from "./ui/utils/markdown";
 
 type Route = "home" | "terms" | "license" | "oss";
+type TimelineSectionConfig = { id: string; accountId: string | null };
+
+const SECTION_STORAGE_KEY = "textodon.sections";
 
 const parseRoute = (): Route => {
   const hash = window.location.hash.replace(/^#/, "");
@@ -98,20 +102,181 @@ const OssPage = () => (
   </section>
 );
 
+const TimelineSection = ({
+  section,
+  account,
+  services,
+  accountsState,
+  onAccountChange,
+  onReply,
+  onError,
+  registerTimelineListener,
+  unregisterTimelineListener
+}: {
+  section: TimelineSectionConfig;
+  account: Account | null;
+  services: AppServices;
+  accountsState: AccountsState;
+  onAccountChange: (sectionId: string, accountId: string | null) => void;
+  onReply: (status: Status, account: Account | null) => void;
+  onError: (message: string | null) => void;
+  registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
+  unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
+}) => {
+  const timeline = useTimeline({
+    account,
+    api: services.api,
+    streaming: services.streaming
+  });
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) {
+      return;
+    }
+    const onScroll = () => {
+      const threshold = el.scrollHeight - el.clientHeight - 200;
+      if (el.scrollTop >= threshold) {
+        timeline.loadMore();
+      }
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [timeline.loadMore]);
+
+  useEffect(() => {
+    if (!account) {
+      return;
+    }
+    registerTimelineListener(account.id, timeline.updateItem);
+    return () => {
+      unregisterTimelineListener(account.id, timeline.updateItem);
+    };
+  }, [account, registerTimelineListener, timeline.updateItem, unregisterTimelineListener]);
+
+  const handleToggleFavourite = async (status: Status) => {
+    if (!account) {
+      onError("계정을 선택해주세요.");
+      return;
+    }
+    onError(null);
+    try {
+      const updated = status.favourited
+        ? await services.api.unfavourite(account, status.id)
+        : await services.api.favourite(account, status.id);
+      timeline.updateItem(updated);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "좋아요 처리에 실패했습니다.");
+    }
+  };
+
+  const handleToggleReblog = async (status: Status) => {
+    if (!account) {
+      onError("계정을 선택해주세요.");
+      return;
+    }
+    onError(null);
+    try {
+      const updated = status.reblogged
+        ? await services.api.unreblog(account, status.id)
+        : await services.api.reblog(account, status.id);
+      timeline.updateItem(updated);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "부스트 처리에 실패했습니다.");
+    }
+  };
+
+  const handleDeleteStatus = async (status: Status) => {
+    if (!account) {
+      return;
+    }
+    onError(null);
+    try {
+      await services.api.deleteStatus(account, status.id);
+      timeline.removeItem(status.id);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "게시글 삭제에 실패했습니다.");
+    }
+  };
+
+  return (
+    <div className="timeline-column">
+      <div className="timeline-column-header">
+        <AccountSelector
+          accounts={accountsState.accounts}
+          activeAccountId={account?.id ?? null}
+          setActiveAccount={(id) => {
+            onAccountChange(section.id, id);
+            accountsState.setActiveAccount(id);
+          }}
+          removeAccount={accountsState.removeAccount}
+          variant="inline"
+        />
+        <div className="timeline-column-actions">
+          <button type="button" onClick={timeline.refresh} disabled={!account || timeline.loading}>
+            {timeline.loading ? "새로고침 중" : "새로고침"}
+          </button>
+        </div>
+      </div>
+      <div className="timeline-column-body" ref={scrollRef}>
+        {!account ? <p className="empty">계정을 선택하면 타임라인을 불러옵니다.</p> : null}
+        {account && timeline.error ? <p className="error">{timeline.error}</p> : null}
+        {account && timeline.items.length === 0 && !timeline.loading ? (
+          <p className="empty">표시할 글이 없습니다.</p>
+        ) : null}
+        {account && timeline.items.length > 0 ? (
+          <div className="timeline">
+            {timeline.items.map((status) => (
+              <TimelineItem
+                key={status.id}
+                status={status}
+                onReply={(item) => onReply(item, account)}
+                onToggleFavourite={handleToggleFavourite}
+                onToggleReblog={handleToggleReblog}
+                onDelete={handleDeleteStatus}
+                activeHandle={
+                  account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
+                }
+              />
+            ))}
+          </div>
+        ) : null}
+        {timeline.loadingMore ? <p className="empty">더 불러오는 중...</p> : null}
+      </div>
+    </div>
+  );
+};
+
 export const App = () => {
   const [christmasMode, setChristmasMode] = useState(() => {
     return localStorage.getItem("textodon.christmas") === "on";
   });
   const { services, accountsState } = useAppContext();
-  const activeAccount = useMemo(
-    () => accountsState.accounts.find((account) => account.id === accountsState.activeAccountId) ?? null,
-    [accountsState.accounts, accountsState.activeAccountId]
-  );
-  const timeline = useTimeline({
-    account: activeAccount,
-    api: services.api,
-    streaming: services.streaming
+  const [sections, setSections] = useState<TimelineSectionConfig[]>(() => {
+    try {
+      const raw = localStorage.getItem(SECTION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as TimelineSectionConfig[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((item) => ({
+            id: item.id || crypto.randomUUID(),
+            accountId: item.accountId ?? null
+          }));
+        }
+      }
+    } catch {
+      /* noop */
+    }
+    return [{ id: crypto.randomUUID(), accountId: accountsState.activeAccountId ?? null }];
   });
+  const [composeAccountId, setComposeAccountId] = useState<string | null>(accountsState.activeAccountId);
+  const composeAccount = useMemo(
+    () => accountsState.accounts.find((account) => account.id === composeAccountId) ?? null,
+    [accountsState.accounts, composeAccountId]
+  );
   const [replyTarget, setReplyTarget] = useState<Status | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -119,11 +284,44 @@ export const App = () => {
   const replySummary = replyTarget
     ? `@${replyTarget.accountHandle} · ${replyTarget.content.slice(0, 80)}`
     : null;
-  const activeHandle = activeAccount
-    ? formatHandle(activeAccount.handle, activeAccount.instanceUrl)
-    : "";
   const readmeHtml = useMemo(() => renderMarkdown(readmeText), [readmeText]);
   const [route, setRoute] = useState<Route>(() => parseRoute());
+  const timelineListeners = useRef<Map<string, Set<(status: Status) => void>>>(new Map());
+
+  const registerTimelineListener = useCallback((accountId: string, listener: (status: Status) => void) => {
+    const next = new Map(timelineListeners.current);
+    const existing = next.get(accountId) ?? new Set();
+    const updated = new Set(existing);
+    updated.add(listener);
+    next.set(accountId, updated);
+    timelineListeners.current = next;
+  }, []);
+
+  const unregisterTimelineListener = useCallback(
+    (accountId: string, listener: (status: Status) => void) => {
+      const next = new Map(timelineListeners.current);
+      const existing = next.get(accountId);
+      if (!existing) {
+        return;
+      }
+      existing.delete(listener);
+      if (existing.size === 0) {
+        next.delete(accountId);
+      } else {
+        next.set(accountId, new Set(existing));
+      }
+      timelineListeners.current = next;
+    },
+    []
+  );
+
+  const broadcastStatusUpdate = useCallback((accountId: string, status: Status) => {
+    const listeners = timelineListeners.current.get(accountId);
+    if (!listeners) {
+      return;
+    }
+    listeners.forEach((listener) => listener(status));
+  }, []);
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
@@ -202,19 +400,22 @@ export const App = () => {
   }, [christmasMode]);
 
   useEffect(() => {
-    if (route !== "home") {
-      return;
-    }
-    const onScroll = () => {
-      const scrollPosition = window.scrollY + window.innerHeight;
-      const threshold = document.body.offsetHeight - 200;
-      if (scrollPosition >= threshold) {
-        timeline.loadMore();
+    setSections((current) =>
+      current.map((section) =>
+        section.accountId && accountsState.accounts.some((account) => account.id === section.accountId)
+          ? section
+          : { ...section, accountId: null }
+      )
+    );
+    setComposeAccountId((current) => {
+      if (!current) {
+        return accountsState.accounts[0]?.id ?? null;
       }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [route, timeline.loadMore]);
+      return accountsState.accounts.some((account) => account.id === current)
+        ? current
+        : accountsState.accounts[0]?.id ?? null;
+    });
+  }, [accountsState.accounts]);
 
   const handleSubmit = async (params: {
     text: string;
@@ -222,22 +423,22 @@ export const App = () => {
     inReplyToId?: string;
     files: File[];
   }): Promise<boolean> => {
-    if (!activeAccount) {
+    if (!composeAccount) {
       return false;
     }
     setActionError(null);
     try {
       const mediaIds =
         params.files.length > 0
-          ? await Promise.all(params.files.map((file) => services.api.uploadMedia(activeAccount, file)))
+          ? await Promise.all(params.files.map((file) => services.api.uploadMedia(composeAccount, file)))
           : [];
-      const created = await services.api.createStatus(activeAccount, {
+      const created = await services.api.createStatus(composeAccount, {
         status: params.text,
         visibility: params.visibility,
         inReplyToId: params.inReplyToId,
         mediaIds
       });
-      timeline.updateItem(created);
+      broadcastStatusUpdate(composeAccount.id, created);
       setReplyTarget(null);
       setMentionSeed(null);
       return true;
@@ -247,53 +448,36 @@ export const App = () => {
     }
   };
 
-  const handleReply = (status: Status) => {
+  const handleReply = (status: Status, account: Account | null) => {
+    if (!account) {
+      return;
+    }
+    setComposeAccountId(account.id);
     setReplyTarget(status);
     setMentionSeed(`@${status.accountHandle}`);
   };
 
-  const handleToggleFavourite = async (status: Status) => {
-    if (!activeAccount) {
-      return;
-    }
-    setActionError(null);
-    try {
-      const updated = status.favourited
-        ? await services.api.unfavourite(activeAccount, status.id)
-        : await services.api.favourite(activeAccount, status.id);
-      timeline.updateItem(updated);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "좋아요 처리에 실패했습니다.");
+  const addSection = () => {
+    const defaultAccountId = composeAccountId ?? accountsState.accounts[0]?.id ?? null;
+    setSections((current) => [...current, { id: crypto.randomUUID(), accountId: defaultAccountId }]);
+    if (!composeAccountId && defaultAccountId) {
+      setComposeAccountId(defaultAccountId);
     }
   };
 
-  const handleToggleReblog = async (status: Status) => {
-    if (!activeAccount) {
-      return;
-    }
-    setActionError(null);
-    try {
-      const updated = status.reblogged
-        ? await services.api.unreblog(activeAccount, status.id)
-        : await services.api.reblog(activeAccount, status.id);
-      timeline.updateItem(updated);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "부스트 처리에 실패했습니다.");
-    }
+  const setSectionAccount = (sectionId: string, accountId: string | null) => {
+    setSections((current) =>
+      current.map((section) => (section.id === sectionId ? { ...section, accountId } : section))
+    );
   };
 
-  const handleDeleteStatus = async (status: Status) => {
-    if (!activeAccount) {
-      return;
-    }
-    setActionError(null);
+  useEffect(() => {
     try {
-      await services.api.deleteStatus(activeAccount, status.id);
-      timeline.removeItem(status.id);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "게시글 삭제에 실패했습니다.");
+      localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(sections));
+    } catch {
+      /* noop */
     }
-  };
+  }, [sections]);
 
   return (
     <div className="app">
@@ -312,17 +496,24 @@ export const App = () => {
               setActiveAccount={accountsState.setActiveAccount}
               oauth={services.oauth}
             />
-            <button type="button" onClick={timeline.refresh} disabled={!activeAccount || timeline.loading}>
-              {timeline.loading ? "새로고침 중" : "새로고침"}
-            </button>
+            <button type="button" onClick={addSection}>타임라인 섹션 추가</button>
           </div>
         </div>
       </header>
 
       <main className="layout">
         <aside>
-          {activeAccount ? (
+          {composeAccount ? (
             <ComposeBox
+              accountSelector={
+                <AccountSelector
+                  accounts={accountsState.accounts}
+                  activeAccountId={composeAccountId}
+                  setActiveAccount={setComposeAccountId}
+                  removeAccount={accountsState.removeAccount}
+                  variant="inline"
+                />
+              }
               onSubmit={handleSubmit}
               replyingTo={replyTarget ? { id: replyTarget.id, summary: replySummary ?? "" } : null}
               onCancelReply={() => {
@@ -368,45 +559,32 @@ export const App = () => {
           {actionError ? <p className="error">{actionError}</p> : null}
           {route === "home" ? (
             <section className="panel">
-              <div className="timeline-header">
-                <div className="timeline-header-actions">
-                  <AccountSelector
-                    accounts={accountsState.accounts}
-                    activeAccountId={accountsState.activeAccountId}
-                    setActiveAccount={accountsState.setActiveAccount}
-                    removeAccount={accountsState.removeAccount}
-                    variant="inline"
+              <div className="timeline-board">
+                {sections.map((section) => (
+                  <TimelineSection
+                    key={section.id}
+                    section={section}
+                    account={
+                      section.accountId
+                        ? accountsState.accounts.find((account) => account.id === section.accountId) ?? null
+                        : null
+                    }
+                    services={services}
+                    accountsState={accountsState}
+                    onAccountChange={setSectionAccount}
+                    onReply={handleReply}
+                    onError={(message) => setActionError(message || null)}
+                    registerTimelineListener={registerTimelineListener}
+                    unregisterTimelineListener={unregisterTimelineListener}
                   />
-                </div>
+                ))}
               </div>
-              {activeAccount ? (
-                <>
-                  {timeline.error ? <p className="error">{timeline.error}</p> : null}
-                  {timeline.items.length === 0 ? (
-                    <p className="empty">표시할 글이 없습니다.</p>
-                  ) : (
-                    <div className="timeline">
-                      {timeline.items.map((status) => (
-                        <TimelineItem
-                          key={status.id}
-                          status={status}
-                          onReply={handleReply}
-                          onToggleFavourite={handleToggleFavourite}
-                          onToggleReblog={handleToggleReblog}
-                          onDelete={handleDeleteStatus}
-                          activeHandle={activeHandle}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {timeline.loadingMore ? <p className="empty">더 불러오는 중...</p> : null}
-                </>
-              ) : (
+              {accountsState.accounts.length === 0 ? (
                 <div className="timeline-readme">
                   <h3>안내</h3>
                   <div className="readme-text" dangerouslySetInnerHTML={{ __html: readmeHtml }} />
                 </div>
-              )}
+              ) : null}
             </section>
           ) : null}
           {route === "terms" ? <TermsPage /> : null}
