@@ -26,6 +26,7 @@ export const TimelineItem = ({
   const displayStatus = status.reblog ?? status;
   const boostedBy = status.reblog ? status.boostedBy : null;
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+  const [showContent, setShowContent] = useState(() => displayStatus.spoilerText.length === 0);
   const [imageZoom, setImageZoom] = useState(1);
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
@@ -178,6 +179,10 @@ export const TimelineItem = ({
     !displayStatus.reblogged && (isOwnStatus || displayStatus.visibility === "private" || displayStatus.visibility === "direct");
 
   useEffect(() => {
+    setShowContent(displayStatus.spoilerText.length === 0);
+  }, [displayStatus.spoilerText]);
+
+  useEffect(() => {
     if (!activeImageUrl) {
       return;
     }
@@ -272,8 +277,18 @@ export const TimelineItem = ({
           </span>
         </div>
       </header>
-      <p className="status-text">{displayStatus.content ? contentParts : "(내용 없음)"}</p>
-      {previewCard ? (
+      {displayStatus.spoilerText ? (
+        <div className="status-warning">
+          <p className="status-warning-text">{displayStatus.spoilerText}</p>
+          <button type="button" className="text-link" onClick={() => setShowContent((prev) => !prev)}>
+            {showContent ? "가리기" : "더 보기"}
+          </button>
+        </div>
+      ) : null}
+      {showContent ? (
+        <>
+          <p className="status-text">{displayStatus.content ? contentParts : "(내용 없음)"}</p>
+          {previewCard ? (
         <a
           className={`link-preview${previewCard.image ? "" : " no-image"}`}
           href={previewCard.url}
@@ -289,6 +304,8 @@ export const TimelineItem = ({
             <span className="link-preview-url">{previewCard.url}</span>
           </div>
         </a>
+          ) : null}
+        </>
       ) : null}
       <div className="status-time">
         {visibilityIcon}
@@ -324,21 +341,23 @@ export const TimelineItem = ({
             {displayStatus.reblogged ? "부스트 취소" : "부스트"}
             {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}
           </button>
-          {attachments.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="attachment-thumb"
-              onClick={() => {
-                setImageZoom(1);
-                setImageOffset({ x: 0, y: 0 });
-                setActiveImageUrl(item.url);
-              }}
-              aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
-            >
-              <img src={item.url} alt={item.description ?? "첨부 이미지"} loading="lazy" />
-            </button>
-          ))}
+          {showContent
+            ? attachments.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="attachment-thumb"
+                  onClick={() => {
+                    setImageZoom(1);
+                    setImageOffset({ x: 0, y: 0 });
+                    setActiveImageUrl(item.url);
+                  }}
+                  aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
+                >
+                  <img src={item.url} alt={item.description ?? "첨부 이미지"} loading="lazy" />
+                </button>
+              ))
+            : null}
         </div>
         {canDelete ? (
           <button type="button" className="delete-button" onClick={() => setShowDeleteConfirm(true)}>

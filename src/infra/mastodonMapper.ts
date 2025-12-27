@@ -68,6 +68,8 @@ export const mapStatus = (raw: unknown): Status => {
   const accountName = String(account.display_name ?? account.username ?? "");
   const accountHandle = String(account.acct ?? "");
   const accountUrl = typeof account.url === "string" ? account.url : null;
+  const spoilerText = String(value.spoiler_text ?? "").trim();
+  const sensitive = Boolean(value.sensitive ?? false);
   const cardValue = value.card as Record<string, unknown> | null | undefined;
   const cardUrl = typeof cardValue?.url === "string" ? cardValue.url : null;
   const cardTitle = typeof cardValue?.title === "string" ? cardValue.title : "";
@@ -89,6 +91,8 @@ export const mapStatus = (raw: unknown): Status => {
           ? value.uri
           : null,
     visibility: (value.visibility as "public" | "unlisted" | "private" | "direct") ?? "public",
+    spoilerText,
+    sensitive,
     card: cardUrl && hasCardData
       ? {
           url: cardUrl,

@@ -40,6 +40,8 @@ export type Status = {
   content: string;
   url: string | null;
   visibility: Visibility;
+  spoilerText: string;
+  sensitive: boolean;
   card: LinkCard | null;
   repliesCount: number;
   reblogsCount: number;
