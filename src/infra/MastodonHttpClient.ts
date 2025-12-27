@@ -112,6 +112,18 @@ export class MastodonHttpClient implements MastodonApi {
       headers: buildHeaders(account)
     });
     if (!response.ok) {
+      const errorBody = await response.text();
+      if (errorBody) {
+        try {
+          const data = JSON.parse(errorBody) as { error?: string; message?: string };
+          const message = data.error || data.message;
+          if (message) {
+            throw new Error(message);
+          }
+        } catch {
+          throw new Error(errorBody);
+        }
+      }
       throw new Error("요청에 실패했습니다.");
     }
     const data = (await response.json()) as unknown;

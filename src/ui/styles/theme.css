@@ -107,6 +107,10 @@
   color: #2e6b4f;
 }
 
+:root[data-theme="christmas"] .status-time {
+  color: #2e6b4f;
+}
+
 :root[data-theme="christmas"] .link-preview {
   border: 1px solid #ead7cc;
   background: #fff7f2;
@@ -198,6 +202,11 @@
   body[data-theme="christmas"] .status header span,
   :root[data-theme="christmas"] .time-link,
   body[data-theme="christmas"] .time-link {
+    color: #9cc7ab;
+  }
+
+  :root[data-theme="christmas"] .status-time,
+  body[data-theme="christmas"] .status-time {
     color: #9cc7ab;
   }
 
