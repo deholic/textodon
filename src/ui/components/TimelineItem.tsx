@@ -10,7 +10,9 @@ export const TimelineItem = ({
   onToggleFavourite,
   onToggleReblog,
   onDelete,
-  activeHandle
+  activeHandle,
+  activeAccountHandle,
+  activeAccountUrl
 }: {
   status: Status;
   onReply: (status: Status) => void;
@@ -18,6 +20,8 @@ export const TimelineItem = ({
   onToggleReblog: (status: Status) => void;
   onDelete: (status: Status) => void;
   activeHandle: string;
+  activeAccountHandle: string;
+  activeAccountUrl: string | null;
 }) => {
   const displayStatus = status.reblog ?? status;
   const boostedBy = status.reblog ? status.boostedBy : null;
@@ -74,10 +78,49 @@ export const TimelineItem = ({
       return boostedBy.handle;
     }
   }, [boostedBy]);
+  const boostedLabel = useMemo(() => {
+    if (boostedBy) {
+      const label = boostedBy.name || boostedHandle || boostedBy.handle;
+      return `${label} 님이 부스트함 (@${boostedHandle ?? boostedBy.handle})`;
+    }
+    if (displayStatus.reblogged) {
+      return activeHandle ? `내가 부스트함 (@${activeHandle})` : "내가 부스트함";
+    }
+    return null;
+  }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
     [displayStatus.createdAt]
   );
+  const visibilityIcon = useMemo(() => {
+    switch (displayStatus.visibility) {
+      case "public":
+        return (
+          <svg className="visibility-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18" />
+            <path d="M12 3a14 14 0 0 0 0 18" />
+            <path d="M12 3a14 14 0 0 1 0 18" />
+          </svg>
+        );
+      case "private":
+        return (
+          <svg className="visibility-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2" />
+            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        );
+      case "direct":
+        return (
+          <svg className="visibility-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 7l9 6 9-6" />
+            <rect x="3" y="6" width="18" height="12" rx="2" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  }, [displayStatus.visibility]);
   const contentParts = useMemo(() => {
     const text = displayStatus.content;
     const regex = /(https?:\/\/[^\s)\]]+)/g;
@@ -104,7 +147,35 @@ export const TimelineItem = ({
     return parts;
   }, [displayStatus.content]);
 
+  const normalizeHandle = useCallback((handle: string, url: string | null) => {
+    if (!handle) {
+      return "";
+    }
+    if (handle.includes("@")) {
+      return handle;
+    }
+    if (!url) {
+      return handle;
+    }
+    try {
+      const host = new URL(url).hostname;
+      return `${handle}@${host}`;
+    } catch {
+      return handle;
+    }
+  }, []);
+  const normalizedActiveHandle = useMemo(
+    () => normalizeHandle(activeAccountHandle, activeAccountUrl),
+    [activeAccountHandle, activeAccountUrl, normalizeHandle]
+  );
+  const normalizedStatusHandle = useMemo(
+    () => normalizeHandle(displayStatus.accountHandle, displayStatus.accountUrl),
+    [displayStatus.accountHandle, displayStatus.accountUrl, normalizeHandle]
+  );
   const canDelete = Boolean(activeHandle) && displayHandle === activeHandle;
+  const isOwnStatus = Boolean(normalizedActiveHandle) && normalizedActiveHandle === normalizedStatusHandle;
+  const boostDisabled =
+    !displayStatus.reblogged && (isOwnStatus || displayStatus.visibility === "private" || displayStatus.visibility === "direct");
 
   useEffect(() => {
     if (!activeImageUrl) {
@@ -167,13 +238,10 @@ export const TimelineItem = ({
 
   return (
     <article className="status">
-      {boostedBy ? (
+      {boostedLabel ? (
         <div className="boosted-by">
           <img src={boostIconUrl} alt="" aria-hidden="true" />
-          <span>
-            {boostedBy.name || boostedHandle || boostedBy.handle} 님이 부스트함 (@
-            {boostedHandle ?? boostedBy.handle})
-          </span>
+          <span>{boostedLabel}</span>
         </div>
       ) : null}
       {mentionNames ? (
@@ -223,6 +291,8 @@ export const TimelineItem = ({
         </a>
       ) : null}
       <div className="status-time">
+        {visibilityIcon}
+        {visibilityIcon ? <span className="time-separator" aria-hidden="true">·</span> : null}
         {displayStatus.url ? (
           <a href={displayStatus.url} target="_blank" rel="noreferrer" className="time-link">
             <time dateTime={displayStatus.createdAt}>{timestamp}</time>
@@ -248,6 +318,8 @@ export const TimelineItem = ({
             type="button"
             className={displayStatus.reblogged ? "is-active" : undefined}
             onClick={() => onToggleReblog(displayStatus)}
+            disabled={boostDisabled}
+            title={boostDisabled ? "자신의 글은 부스트할 수 없습니다." : undefined}
           >
             {displayStatus.reblogged ? "부스트 취소" : "부스트"}
             {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}

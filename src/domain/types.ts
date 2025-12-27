@@ -39,6 +39,7 @@ export type Status = {
   accountUrl: string | null;
   content: string;
   url: string | null;
+  visibility: Visibility;
   card: LinkCard | null;
   repliesCount: number;
   reblogsCount: number;

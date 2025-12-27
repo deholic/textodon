@@ -88,6 +88,7 @@ export const mapStatus = (raw: unknown): Status => {
         : typeof value.uri === "string"
           ? value.uri
           : null,
+    visibility: (value.visibility as "public" | "unlisted" | "private" | "direct") ?? "public",
     card: cardUrl && hasCardData
       ? {
           url: cardUrl,

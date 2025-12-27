@@ -186,6 +186,13 @@ const TimelineSection = ({
       return;
     }
     onError(null);
+    const delta = status.reblogged ? -1 : 1;
+    const optimistic = {
+      ...status,
+      reblogged: !status.reblogged,
+      reblogsCount: Math.max(0, status.reblogsCount + delta)
+    };
+    timeline.updateItem(optimistic);
     try {
       const updated = status.reblogged
         ? await services.api.unreblog(account, status.id)
@@ -193,6 +200,7 @@ const TimelineSection = ({
       timeline.updateItem(updated);
     } catch (err) {
       onError(err instanceof Error ? err.message : "부스트 처리에 실패했습니다.");
+      timeline.updateItem(status);
     }
   };
 
@@ -293,17 +301,19 @@ const TimelineSection = ({
         {account && timeline.items.length > 0 ? (
           <div className="timeline">
             {timeline.items.map((status) => (
-              <TimelineItem
-                key={status.id}
-                status={status}
-                onReply={(item) => onReply(item, account)}
-                onToggleFavourite={handleToggleFavourite}
-                onToggleReblog={handleToggleReblog}
-                onDelete={handleDeleteStatus}
-                activeHandle={
-                  account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
-                }
-              />
+                      <TimelineItem
+                        key={status.id}
+                        status={status}
+                        onReply={(item) => onReply(item, account)}
+                        onToggleFavourite={handleToggleFavourite}
+                        onToggleReblog={handleToggleReblog}
+                        onDelete={handleDeleteStatus}
+                        activeHandle={
+                          account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
+                        }
+                        activeAccountHandle={account.handle ?? ""}
+                        activeAccountUrl={account.url ?? null}
+                      />
             ))}
           </div>
         ) : null}
