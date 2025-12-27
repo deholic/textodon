@@ -5,11 +5,28 @@
   color: #1f1b16;
   --scrollbar-thumb: #c8b9a5;
   --scrollbar-thumb-dark: #3b342d;
+  --timeline-column-width: 440px;
+  --timeline-column-max-width: 520px;
 }
 
 :root[data-theme="christmas"] {
   background: radial-gradient(circle at top left, #f6efe6, #fff5f0 55%, #ffffff);
   color: #2d1a16;
+}
+
+:root[data-section-size="small"] {
+  --timeline-column-width: 440px;
+  --timeline-column-max-width: 520px;
+}
+
+:root[data-section-size="medium"] {
+  --timeline-column-width: 550px;
+  --timeline-column-max-width: 650px;
+}
+
+:root[data-section-size="large"] {
+  --timeline-column-width: 660px;
+  --timeline-column-max-width: 780px;
 }
 
 * {

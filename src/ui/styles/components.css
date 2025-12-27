@@ -213,6 +213,15 @@
   color: #6b5c4f;
 }
 
+.settings-item select {
+  min-width: 120px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d8d1c7;
+  padding: 0 10px;
+  font-family: inherit;
+}
+
 .settings-item .account-add {
   flex-shrink: 0;
 }
@@ -532,8 +541,8 @@ button.ghost {
 }
 
 .timeline-column {
-  flex: 0 0 440px;
-  max-width: 520px;
+  flex: 0 0 var(--timeline-column-width);
+  max-width: var(--timeline-column-max-width);
   display: flex;
   flex-direction: column;
   gap: 12px;

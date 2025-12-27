@@ -327,6 +327,13 @@ export const App = () => {
   const [christmasMode, setChristmasMode] = useState(() => {
     return localStorage.getItem("textodon.christmas") === "on";
   });
+  const [sectionSize, setSectionSize] = useState<"small" | "medium" | "large">(() => {
+    const stored = localStorage.getItem("textodon.sectionSize");
+    if (stored === "medium" || stored === "large" || stored === "small") {
+      return stored;
+    }
+    return "small";
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { services, accountsState } = useAppContext();
   const [sections, setSections] = useState<TimelineSectionConfig[]>(() => {
@@ -481,6 +488,11 @@ export const App = () => {
     document.body.dataset.theme = value;
     localStorage.setItem("textodon.christmas", christmasMode ? "on" : "off");
   }, [christmasMode]);
+
+  useEffect(() => {
+    document.documentElement.dataset.sectionSize = sectionSize;
+    localStorage.setItem("textodon.sectionSize", sectionSize);
+  }, [sectionSize]);
 
   useEffect(() => {
     setSections((current) =>
@@ -742,6 +754,22 @@ export const App = () => {
                 />
                 <span className="slider" aria-hidden="true" />
               </label>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>섹션 폭</strong>
+                <p>타임라인 섹션의 가로 폭을 조절합니다.</p>
+              </div>
+              <select
+                value={sectionSize}
+                onChange={(event) =>
+                  setSectionSize(event.target.value as "small" | "medium" | "large")
+                }
+              >
+                <option value="small">소</option>
+                <option value="medium">중</option>
+                <option value="large">대</option>
+              </select>
             </div>
           </div>
         </div>

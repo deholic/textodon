@@ -224,7 +224,8 @@
 
   .account-form input,
   .compose-form textarea,
-  .compose-actions select {
+  .compose-actions select,
+  .settings-item select {
     background: #151310;
     border: 1px solid #3a312a;
     color: #f0e7dc;
