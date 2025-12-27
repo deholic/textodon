@@ -507,6 +507,16 @@ button.ghost {
   color: #3b5fa8;
 }
 
+.text-link {
+  background: none;
+  color: #3b5fa8;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .timeline-header {
   display: flex;
   justify-content: space-between;
@@ -657,7 +667,7 @@ button.ghost {
   text-decoration: none;
 }
 
-.status p {
+.status-text {
   margin: 10px 0 0;
   font-size: 15px;
   line-height: 1.5;
@@ -698,6 +708,29 @@ button.ghost {
   color: #7c6152;
   text-decoration: underline;
   word-break: break-word;
+}
+
+.status-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f5efe7;
+  margin-top: 10px;
+}
+
+.status-warning-text {
+  margin: 0;
+  font-size: 13px;
+  color: #6b5c4f;
+}
+
+.status-warning button {
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 .link-preview {

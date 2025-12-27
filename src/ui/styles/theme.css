@@ -72,6 +72,11 @@
   color: #8f2f2f;
 }
 
+:root[data-theme="christmas"] .text-link,
+body[data-theme="christmas"] .text-link {
+  background: none;
+}
+
 :root[data-theme="christmas"] .account-list button {
   background: none;
   color: inherit;
@@ -109,6 +114,16 @@
 
 :root[data-theme="christmas"] .status-time {
   color: #2e6b4f;
+}
+
+:root[data-theme="christmas"] .status-warning,
+body[data-theme="christmas"] .status-warning {
+  background: #f3e4dc;
+}
+
+:root[data-theme="christmas"] .status-warning-text,
+body[data-theme="christmas"] .status-warning-text {
+  color: #7b3f3f;
 }
 
 :root[data-theme="christmas"] .link-preview {
@@ -210,11 +225,29 @@
     color: #9cc7ab;
   }
 
+  :root[data-theme="christmas"] .status-warning,
+  body[data-theme="christmas"] .status-warning {
+    background: #2a1b19;
+  }
+
+  :root[data-theme="christmas"] .status-warning-text,
+  body[data-theme="christmas"] .status-warning-text {
+    color: #cf8c8c;
+  }
+
   .status p {
     color: #f0e7dc;
   }
 
   .status-time {
+    color: #c4b6a6;
+  }
+
+  .status-warning {
+    background: #2a241f;
+  }
+
+  .status-warning-text {
     color: #c4b6a6;
   }
 
@@ -269,6 +302,17 @@
   :root[data-theme="christmas"] button.ghost,
   body[data-theme="christmas"] button.ghost {
     color: #cf8c8c;
+  }
+
+  .text-link {
+    color: #8fa6cf;
+    background: none;
+  }
+
+  :root[data-theme="christmas"] .text-link,
+  body[data-theme="christmas"] .text-link {
+    color: #cf8c8c;
+    background: none;
   }
 
   .account-add-button {
