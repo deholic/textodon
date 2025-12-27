@@ -344,7 +344,15 @@ export const App = () => {
     } catch {
       /* noop */
     }
-    return [{ id: crypto.randomUUID(), accountId: accountsState.activeAccountId ?? null }];
+    if (accountsState.accounts.length === 0) {
+      return [];
+    }
+    return [
+      {
+        id: crypto.randomUUID(),
+        accountId: accountsState.activeAccountId ?? accountsState.accounts[0]?.id ?? null
+      }
+    ];
   });
   const [composeAccountId, setComposeAccountId] = useState<string | null>(accountsState.activeAccountId);
   const composeAccount = useMemo(
@@ -361,6 +369,7 @@ export const App = () => {
   const readmeHtml = useMemo(() => renderMarkdown(readmeText), [readmeText]);
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const timelineListeners = useRef<Map<string, Set<(status: Status) => void>>>(new Map());
+  const previousAccountIds = useRef<Set<string>>(new Set());
 
   const registerTimelineListener = useCallback((accountId: string, listener: (status: Status) => void) => {
     const next = new Map(timelineListeners.current);
@@ -491,6 +500,25 @@ export const App = () => {
     });
   }, [accountsState.accounts]);
 
+  useEffect(() => {
+    const currentIds = new Set(accountsState.accounts.map((account) => account.id));
+    const addedAccounts = accountsState.accounts.filter(
+      (account) => !previousAccountIds.current.has(account.id)
+    );
+    if (addedAccounts.length > 0) {
+      setSections((current) => {
+        const next = [...current];
+        addedAccounts.forEach((account) => {
+          if (!next.some((section) => section.accountId === account.id)) {
+            next.push({ id: crypto.randomUUID(), accountId: account.id });
+          }
+        });
+        return next;
+      });
+    }
+    previousAccountIds.current = currentIds;
+  }, [accountsState.accounts]);
+
   const handleSubmit = async (params: {
     text: string;
     visibility: "public" | "unlisted" | "private" | "direct";
@@ -552,6 +580,12 @@ export const App = () => {
     }
     addSectionAt(direction === "left" ? index : index + 1);
   };
+
+  useEffect(() => {
+    if (accountsState.accounts.length > 0 && sections.length === 0) {
+      addSectionAt(0);
+    }
+  }, [accountsState.accounts.length, sections.length]);
 
   const removeSection = (sectionId: string) => {
     setSections((current) => current.filter((section) => section.id !== sectionId));
@@ -617,6 +651,13 @@ export const App = () => {
               >
                 설정 열기
               </button>
+              <div className="sidebar-actions">
+                <AccountAdd
+                  accounts={accountsState.accounts}
+                  setActiveAccount={accountsState.setActiveAccount}
+                  oauth={services.oauth}
+                />
+              </div>
               <div className="sidebar-divider" role="presentation" />
               <nav className="sidebar-links">
                 <a href="#/terms">이용약관</a>
@@ -635,29 +676,31 @@ export const App = () => {
           {actionError ? <p className="error">{actionError}</p> : null}
           {route === "home" ? (
             <section className="panel">
-              <div className="timeline-board">
-                {sections.map((section) => (
-                  <TimelineSection
-                    key={section.id}
-                    section={section}
-                    account={
-                      section.accountId
-                        ? accountsState.accounts.find((account) => account.id === section.accountId) ?? null
-                        : null
-                    }
-                    services={services}
-                    accountsState={accountsState}
-                    onAccountChange={setSectionAccount}
-                    onAddSectionLeft={(id) => addSectionNear(id, "left")}
-                    onAddSectionRight={(id) => addSectionNear(id, "right")}
-                    onRemoveSection={removeSection}
-                    onReply={handleReply}
-                    onError={(message) => setActionError(message || null)}
-                    registerTimelineListener={registerTimelineListener}
-                    unregisterTimelineListener={unregisterTimelineListener}
-                  />
-                ))}
-              </div>
+              {sections.length > 0 ? (
+                <div className="timeline-board">
+                  {sections.map((section) => (
+                    <TimelineSection
+                      key={section.id}
+                      section={section}
+                      account={
+                        section.accountId
+                          ? accountsState.accounts.find((account) => account.id === section.accountId) ?? null
+                          : null
+                      }
+                      services={services}
+                      accountsState={accountsState}
+                      onAccountChange={setSectionAccount}
+                      onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                      onAddSectionRight={(id) => addSectionNear(id, "right")}
+                      onRemoveSection={removeSection}
+                      onReply={handleReply}
+                      onError={(message) => setActionError(message || null)}
+                      registerTimelineListener={registerTimelineListener}
+                      unregisterTimelineListener={unregisterTimelineListener}
+                    />
+                  ))}
+                </div>
+              ) : null}
               {accountsState.accounts.length === 0 ? (
                 <div className="timeline-readme">
                   <h3>안내</h3>
@@ -699,17 +742,6 @@ export const App = () => {
                 />
                 <span className="slider" aria-hidden="true" />
               </label>
-            </div>
-            <div className="settings-item">
-              <div>
-                <strong>서버 추가</strong>
-                <p>새 마스토돈 인스턴스를 등록합니다.</p>
-              </div>
-              <AccountAdd
-                accounts={accountsState.accounts}
-                setActiveAccount={accountsState.setActiveAccount}
-                oauth={services.oauth}
-              />
             </div>
           </div>
         </div>
