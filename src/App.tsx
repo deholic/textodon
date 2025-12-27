@@ -108,6 +108,9 @@ const TimelineSection = ({
   services,
   accountsState,
   onAccountChange,
+  onAddSectionLeft,
+  onAddSectionRight,
+  onRemoveSection,
   onReply,
   onError,
   registerTimelineListener,
@@ -118,6 +121,9 @@ const TimelineSection = ({
   services: AppServices;
   accountsState: AccountsState;
   onAccountChange: (sectionId: string, accountId: string | null) => void;
+  onAddSectionLeft: (sectionId: string) => void;
+  onAddSectionRight: (sectionId: string) => void;
+  onRemoveSection: (sectionId: string) => void;
   onReply: (status: Status, account: Account | null) => void;
   onError: (message: string | null) => void;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
@@ -129,6 +135,7 @@ const TimelineSection = ({
     streaming: services.streaming
   });
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -203,9 +210,9 @@ const TimelineSection = ({
   };
 
   return (
-    <div className="timeline-column">
-      <div className="timeline-column-header">
-        <AccountSelector
+      <div className="timeline-column">
+        <div className="timeline-column-header">
+          <AccountSelector
           accounts={accountsState.accounts}
           activeAccountId={account?.id ?? null}
           setActiveAccount={(id) => {
@@ -216,8 +223,64 @@ const TimelineSection = ({
           variant="inline"
         />
         <div className="timeline-column-actions">
-          <button type="button" onClick={timeline.refresh} disabled={!account || timeline.loading}>
-            {timeline.loading ? "새로고침 중" : "새로고침"}
+          <div className="section-menu">
+            <button
+              type="button"
+              className="icon-button menu-button"
+              aria-label="섹션 메뉴 열기"
+              onClick={() => setMenuOpen((current) => !current)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+              </svg>
+            </button>
+            {menuOpen ? (
+              <div className="section-menu-panel" role="menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddSectionLeft(section.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  왼쪽 섹션 추가
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddSectionRight(section.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  오른쪽 섹션 추가
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => {
+                    onRemoveSection(section.id);
+                    setMenuOpen(false);
+                  }}
+                >
+                  섹션 삭제
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={timeline.refresh}
+            disabled={!account || timeline.loading}
+            aria-label={timeline.loading ? "새로고침 중" : "새로고침"}
+            title={timeline.loading ? "새로고침 중" : "새로고침"}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+              <path d="M20 4v6h-6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -254,6 +317,7 @@ export const App = () => {
   const [christmasMode, setChristmasMode] = useState(() => {
     return localStorage.getItem("textodon.christmas") === "on";
   });
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { services, accountsState } = useAppContext();
   const [sections, setSections] = useState<TimelineSectionConfig[]>(() => {
     try {
@@ -457,12 +521,30 @@ export const App = () => {
     setMentionSeed(`@${status.accountHandle}`);
   };
 
-  const addSection = () => {
+  const addSectionAt = (index: number) => {
     const defaultAccountId = composeAccountId ?? accountsState.accounts[0]?.id ?? null;
-    setSections((current) => [...current, { id: crypto.randomUUID(), accountId: defaultAccountId }]);
+    setSections((current) => {
+      const next = [...current];
+      const insertIndex = Math.max(0, Math.min(index, next.length));
+      next.splice(insertIndex, 0, { id: crypto.randomUUID(), accountId: defaultAccountId });
+      return next;
+    });
     if (!composeAccountId && defaultAccountId) {
       setComposeAccountId(defaultAccountId);
     }
+  };
+
+  const addSectionNear = (sectionId: string, direction: "left" | "right") => {
+    const index = sections.findIndex((section) => section.id === sectionId);
+    if (index === -1) {
+      addSectionAt(sections.length);
+      return;
+    }
+    addSectionAt(direction === "left" ? index : index + 1);
+  };
+
+  const removeSection = (sectionId: string) => {
+    setSections((current) => current.filter((section) => section.id !== sectionId));
   };
 
   const setSectionAccount = (sectionId: string, accountId: string | null) => {
@@ -482,23 +564,6 @@ export const App = () => {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="brand">
-          <img src={logoUrl} alt="textodon logo" />
-          <div className="brand-text">
-            <h1>textodon</h1>
-            <p>텍스트 중심 마스토돈 클라이언트</p>
-          </div>
-        </div>
-        <div className="header-actions">
-          <div className="header-actions-group">
-            <AccountAdd
-              accounts={accountsState.accounts}
-              setActiveAccount={accountsState.setActiveAccount}
-              oauth={services.oauth}
-            />
-            <button type="button" onClick={addSection}>타임라인 섹션 추가</button>
-          </div>
-        </div>
       </header>
 
       <main className="layout">
@@ -525,9 +590,24 @@ export const App = () => {
           ) : null}
           {route === "home" ? (
             <section className="panel">
+              <div className="brand">
+                <img src={logoUrl} alt="textodon logo" />
+                <div className="brand-text">
+                  <h1>textodon</h1>
+                  <p>텍스트 중심 마스토돈 클라이언트</p>
+                </div>
+              </div>
               <p className="sidebar-description">
-                textodon은 텍스트 중심으로 마스토돈을 읽고 쓰기 위한 클라이언트입니다.
+                여러 계정을 전환하고 타임라인을 실시간으로 확인할 수 있습니다.
               </p>
+              <button
+                type="button"
+                className="settings-button"
+                onClick={() => setSettingsOpen(true)}
+              >
+                설정 열기
+              </button>
+              <div className="sidebar-divider" role="presentation" />
               <nav className="sidebar-links">
                 <a href="#/terms">이용약관</a>
                 <a href="#/license">라이선스</a>
@@ -538,20 +618,6 @@ export const App = () => {
               </nav>
             </section>
           ) : null}
-          <section className="panel christmas-toggle">
-            <div>
-              <strong>크리스마스 모드</strong>
-              <p>레드/그린 테마로 전환합니다.</p>
-            </div>
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={christmasMode}
-                onChange={(event) => setChristmasMode(event.target.checked)}
-              />
-              <span className="slider" aria-hidden="true" />
-            </label>
-          </section>
         </aside>
 
         <section className="main-column">
@@ -572,6 +638,9 @@ export const App = () => {
                     services={services}
                     accountsState={accountsState}
                     onAccountChange={setSectionAccount}
+                    onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                    onAddSectionRight={(id) => addSectionNear(id, "right")}
+                    onRemoveSection={removeSection}
                     onReply={handleReply}
                     onError={(message) => setActionError(message || null)}
                     registerTimelineListener={registerTimelineListener}
@@ -592,6 +661,49 @@ export const App = () => {
           {route === "oss" ? <OssPage /> : null}
         </section>
       </main>
+
+      {settingsOpen ? (
+        <div className="settings-modal">
+          <div className="settings-modal-backdrop" onClick={() => setSettingsOpen(false)} />
+          <div className="settings-modal-content panel">
+            <div className="settings-modal-header">
+              <h3>설정</h3>
+              <button
+                type="button"
+                className="settings-close"
+                onClick={() => setSettingsOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>크리스마스 모드</strong>
+                <p>레드/그린 테마로 전환합니다.</p>
+              </div>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={christmasMode}
+                  onChange={(event) => setChristmasMode(event.target.checked)}
+                />
+                <span className="slider" aria-hidden="true" />
+              </label>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>서버 추가</strong>
+                <p>새 마스토돈 인스턴스를 등록합니다.</p>
+              </div>
+              <AccountAdd
+                accounts={accountsState.accounts}
+                setActiveAccount={accountsState.setActiveAccount}
+                oauth={services.oauth}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
