@@ -57,6 +57,7 @@ export type Status = {
   mediaAttachments: MediaAttachment[];
   reblog: Status | null;
   boostedBy: { name: string; handle: string; url: string | null } | null;
+  myReaction: string | null;
 };
 
 export type TimelineItem = {

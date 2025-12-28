@@ -58,6 +58,27 @@ const mapMentions = (mentions: unknown): Mention[] => {
     .filter((item): item is Mention => item !== null);
 };
 
+const mapReplyMention = (reply: unknown): Mention | null => {
+  if (!reply || typeof reply !== "object") {
+    return null;
+  }
+  const replyRecord = reply as Record<string, unknown>;
+  if (!replyRecord.user || typeof replyRecord.user !== "object") {
+    return null;
+  }
+  const user = replyRecord.user as Record<string, unknown>;
+  const id = String(user.id ?? "");
+  const username = String(user.username ?? "");
+  const host = typeof user.host === "string" ? user.host : "";
+  const handle = host ? `${username}@${host}` : username;
+  const displayName = String(user.name ?? username ?? "");
+  const url = typeof user.url === "string" ? user.url : null;
+  if (!id || !handle) {
+    return null;
+  }
+  return { id, displayName, handle, url };
+};
+
 const sumReactions = (reactions: unknown): number => {
   if (!reactions || typeof reactions !== "object") {
     return 0;
@@ -97,7 +118,14 @@ export const mapMisskeyStatus = (raw: unknown): Status => {
   const reactionsCount =
     typeof value.reactionCount === "number" ? value.reactionCount : sumReactions(value.reactions);
   const reblogged = Boolean(value.myRenoteId);
-  const favourited = Boolean(value.isFavorited ?? value.myReaction);
+  const myReaction = typeof value.myReaction === "string" ? value.myReaction : null;
+  const favourited = Boolean(value.isFavorited ?? myReaction);
+  const baseMentions = mapMentions(value.mentions);
+  const replyMention = mapReplyMention(value.reply);
+  const mentions =
+    replyMention && !baseMentions.some((mention) => mention.id === replyMention.id)
+      ? [...baseMentions, replyMention]
+      : baseMentions;
   return {
     id: String(value.id ?? ""),
     createdAt: String(value.createdAt ?? ""),
@@ -117,9 +145,10 @@ export const mapMisskeyStatus = (raw: unknown): Status => {
     reblogged,
     favourited,
     inReplyToId: value.replyId ? String(value.replyId) : null,
-    mentions: mapMentions(value.mentions),
+    mentions,
     mediaAttachments,
     reblog: renote,
-    boostedBy: renote ? { name: accountName, handle: accountHandle, url: accountUrl } : null
+    boostedBy: renote ? { name: accountName, handle: accountHandle, url: accountUrl } : null,
+    myReaction
   };
 };

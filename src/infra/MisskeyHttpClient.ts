@@ -1,4 +1,4 @@
-import type { Account, Status } from "../domain/types";
+﻿import type { Account, Status } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 import { mapMisskeyStatus } from "./misskeyMapper";
 
@@ -21,6 +21,8 @@ const buildBody = (account: Account, payload: Record<string, unknown>) => ({
   ...payload,
   i: account.accessToken
 });
+
+const DEFAULT_REACTION = "👍";
 
 export class MisskeyHttpClient implements MastodonApi {
   async verifyAccount(
@@ -87,28 +89,32 @@ export class MisskeyHttpClient implements MastodonApi {
   }
 
   async createStatus(account: Account, input: CreateStatusInput): Promise<Status> {
+    const payload: Record<string, unknown> = {
+      text: input.status,
+      visibility: mapVisibility(input.visibility),
+      replyId: input.inReplyToId
+    };
+    if (input.mediaIds && input.mediaIds.length > 0) {
+      payload.fileIds = input.mediaIds;
+    }
     const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/notes/create`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(
-        buildBody(account, {
-          text: input.status,
-          visibility: mapVisibility(input.visibility),
-          replyId: input.inReplyToId,
-          fileIds: input.mediaIds
-        })
+        buildBody(account, payload)
       )
     });
     if (!response.ok) {
       throw new Error("글 작성에 실패했습니다.");
     }
-    const data = (await response.json()) as { createdNote?: unknown };
-    if (!data.createdNote) {
+    const data = (await response.json()) as { createdNote?: unknown; note?: unknown };
+    const created = data.createdNote ?? data.note;
+    if (!created) {
       throw new Error("생성된 노트를 찾을 수 없습니다.");
     }
-    return mapMisskeyStatus(data.createdNote);
+    return mapMisskeyStatus(created);
   }
 
   async deleteStatus(account: Account, statusId: string): Promise<void> {
@@ -125,12 +131,23 @@ export class MisskeyHttpClient implements MastodonApi {
   }
 
   async favourite(account: Account, statusId: string): Promise<Status> {
-    await this.postSimple(account, "/api/notes/favorites/create", { noteId: statusId });
+    try {
+      await this.postSimple(account, "/api/notes/reactions/create", {
+        noteId: statusId,
+        reaction: DEFAULT_REACTION
+      });
+    } catch {
+      await this.postSimple(account, "/api/notes/favorites/create", { noteId: statusId });
+    }
     return this.fetchNote(account, statusId);
   }
 
   async unfavourite(account: Account, statusId: string): Promise<Status> {
-    await this.postSimple(account, "/api/notes/favorites/delete", { noteId: statusId });
+    try {
+      await this.postSimple(account, "/api/notes/reactions/delete", { noteId: statusId });
+    } catch {
+      await this.postSimple(account, "/api/notes/favorites/delete", { noteId: statusId });
+    }
     return this.fetchNote(account, statusId);
   }
 

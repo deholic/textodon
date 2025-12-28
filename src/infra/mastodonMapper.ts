@@ -112,6 +112,7 @@ export const mapStatus = (raw: unknown): Status => {
     mentions: mapMentions(value.mentions),
     mediaAttachments: mapMediaAttachments(value.media_attachments),
     reblog,
-    boostedBy: reblog ? { name: accountName, handle: accountHandle, url: accountUrl } : null
+    boostedBy: reblog ? { name: accountName, handle: accountHandle, url: accountUrl } : null,
+    myReaction: null
   };
 };
