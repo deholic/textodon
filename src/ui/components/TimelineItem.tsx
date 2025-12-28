@@ -97,6 +97,37 @@ export const TimelineItem = ({
     () => new Date(displayStatus.createdAt).toLocaleString(),
     [displayStatus.createdAt]
   );
+  const handleHeaderClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (!displayStatus.accountUrl) {
+        return;
+      }
+      const target =
+        event.target instanceof Element
+          ? event.target
+          : event.target && "parentElement" in event.target
+            ? (event.target as Node).parentElement
+            : null;
+      if (target?.closest("a")) {
+        return;
+      }
+      window.open(displayStatus.accountUrl, "_blank", "noopener,noreferrer");
+    },
+    [displayStatus.accountUrl]
+  );
+  const handleHeaderKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (!displayStatus.accountUrl) {
+        return;
+      }
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      window.open(displayStatus.accountUrl, "_blank", "noopener,noreferrer");
+    },
+    [displayStatus.accountUrl]
+  );
   const visibilityIcon = useMemo(() => {
     switch (displayStatus.visibility) {
       case "public":
@@ -369,7 +400,19 @@ export const TimelineItem = ({
           <span>{mentionNames} 님께 보낸 댓글</span>
         </div>
       ) : null}
-      <header className="status-header-main">
+      <header
+        className="status-header-main"
+        onClick={handleHeaderClick}
+        onKeyDown={handleHeaderKeyDown}
+        role={displayStatus.accountUrl ? "link" : undefined}
+        tabIndex={displayStatus.accountUrl ? 0 : undefined}
+        aria-label={
+          displayStatus.accountUrl
+            ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
+            : undefined
+        }
+        data-interactive={displayStatus.accountUrl ? "true" : undefined}
+      >
         {showProfileImage ? (
           <span className="status-avatar">
             {displayStatus.accountAvatarUrl ? (

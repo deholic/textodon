@@ -1,6 +1,6 @@
 import type { Account } from "../domain/types";
 import type { StreamingClient, StreamingEvent } from "../services/StreamingClient";
-import { mapMisskeyStatus } from "./misskeyMapper";
+import { mapMisskeyStatusWithInstance } from "./misskeyMapper";
 
 const normalizeInstanceUrl = (instanceUrl: string): string => instanceUrl.replace(/\/$/, "");
 const PING_INTERVAL_MS = 30000;
@@ -16,7 +16,11 @@ type ChannelPayload = {
   body?: unknown;
 };
 
-const mapMisskeyEvent = (payload: MessageEvent<string>, channelId: string): StreamingEvent | null => {
+const mapMisskeyEvent = (
+  payload: MessageEvent<string>,
+  channelId: string,
+  instanceUrl: string
+): StreamingEvent | null => {
   try {
     const data = JSON.parse(payload.data) as MisskeyMessage;
     if (data.type === "channel" && data.body && typeof data.body === "object") {
@@ -25,7 +29,7 @@ const mapMisskeyEvent = (payload: MessageEvent<string>, channelId: string): Stre
         return null;
       }
       if (channelBody.type === "note" && channelBody.body) {
-        return { type: "update", status: mapMisskeyStatus(channelBody.body) };
+        return { type: "update", status: mapMisskeyStatusWithInstance(channelBody.body, instanceUrl) };
       }
       if (channelBody.type === "deleted") {
         const id =
@@ -38,7 +42,7 @@ const mapMisskeyEvent = (payload: MessageEvent<string>, channelId: string): Stre
       }
     }
     if (data.type === "note" && data.body) {
-      return { type: "update", status: mapMisskeyStatus(data.body) };
+      return { type: "update", status: mapMisskeyStatusWithInstance(data.body, instanceUrl) };
     }
     return null;
   } catch {
@@ -105,7 +109,7 @@ export class MisskeyStreamingClient implements StreamingClient {
         } catch {
           // ignore parsing errors
         }
-        const event = mapMisskeyEvent(raw, channelId);
+        const event = mapMisskeyEvent(raw, channelId, account.instanceUrl);
         if (event) {
           onEvent(event);
         }

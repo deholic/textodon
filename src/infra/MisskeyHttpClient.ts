@@ -1,6 +1,6 @@
 ﻿import type { Account, Status } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapMisskeyStatus } from "./misskeyMapper";
+import { mapMisskeyStatusWithInstance } from "./misskeyMapper";
 
 const normalizeInstanceUrl = (instanceUrl: string): string => instanceUrl.replace(/\/$/, "");
 
@@ -63,7 +63,7 @@ export class MisskeyHttpClient implements MastodonApi {
       throw new Error("타임라인을 불러오지 못했습니다.");
     }
     const data = (await response.json()) as unknown[];
-    return data.map(mapMisskeyStatus);
+    return data.map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl));
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {
@@ -114,7 +114,7 @@ export class MisskeyHttpClient implements MastodonApi {
     if (!created) {
       throw new Error("생성된 노트를 찾을 수 없습니다.");
     }
-    return mapMisskeyStatus(created);
+    return mapMisskeyStatusWithInstance(created, account.instanceUrl);
   }
 
   async deleteStatus(account: Account, statusId: string): Promise<void> {
@@ -182,7 +182,7 @@ export class MisskeyHttpClient implements MastodonApi {
 
   private async fetchNote(account: Account, noteId: string): Promise<Status> {
     const data = await this.fetchNoteRaw(account, noteId);
-    return mapMisskeyStatus(data);
+    return mapMisskeyStatusWithInstance(data, account.instanceUrl);
   }
 
   private async postSimple(account: Account, path: string, payload: Record<string, unknown>) {

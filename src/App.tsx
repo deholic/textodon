@@ -430,6 +430,9 @@ export const App = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
+  const timelineBoardRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
+  const [isBoardDragging, setIsBoardDragging] = useState(false);
   const replySummary = replyTarget
     ? `@${replyTarget.accountHandle} · ${replyTarget.content.slice(0, 80)}`
     : null;
@@ -576,6 +579,66 @@ export const App = () => {
   useEffect(() => {
     localStorage.setItem("textodon.customEmojis", showCustomEmojis ? "on" : "off");
   }, [showCustomEmojis]);
+
+  const isInteractiveTarget = useCallback((target: EventTarget | null) => {
+    const element =
+      target instanceof Element
+        ? target
+        : target && "parentElement" in target
+          ? (target as Node).parentElement
+          : null;
+    if (!element) {
+      return false;
+    }
+    return Boolean(
+      element.closest(
+        "button, a, input, textarea, select, label, [role='button'], [contenteditable='true'], [data-interactive='true']"
+      )
+    );
+  }, []);
+
+  const handleBoardPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0 || !timelineBoardRef.current) {
+        return;
+      }
+      if (isInteractiveTarget(event.target)) {
+        return;
+      }
+      dragStateRef.current = {
+        startX: event.clientX,
+        scrollLeft: timelineBoardRef.current.scrollLeft,
+        pointerId: event.pointerId
+      };
+      setIsBoardDragging(true);
+      timelineBoardRef.current.setPointerCapture(event.pointerId);
+    },
+    [isInteractiveTarget]
+  );
+
+  const handleBoardPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!timelineBoardRef.current || !dragStateRef.current) {
+      return;
+    }
+    if (event.pointerId !== dragStateRef.current.pointerId) {
+      return;
+    }
+    const delta = event.clientX - dragStateRef.current.startX;
+    timelineBoardRef.current.scrollLeft = dragStateRef.current.scrollLeft - delta;
+    event.preventDefault();
+  }, []);
+
+  const handleBoardPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!timelineBoardRef.current || !dragStateRef.current) {
+      return;
+    }
+    if (event.pointerId !== dragStateRef.current.pointerId) {
+      return;
+    }
+    timelineBoardRef.current.releasePointerCapture(event.pointerId);
+    dragStateRef.current = null;
+    setIsBoardDragging(false);
+  }, []);
 
   useEffect(() => {
     setSections((current) =>
@@ -788,7 +851,15 @@ export const App = () => {
           {route === "home" ? (
             <section className="panel">
               {sections.length > 0 ? (
-                <div className="timeline-board">
+                <div
+                  className={`timeline-board${isBoardDragging ? " is-dragging" : ""}`}
+                  ref={timelineBoardRef}
+                  onPointerDown={handleBoardPointerDown}
+                  onPointerMove={handleBoardPointerMove}
+                  onPointerUp={handleBoardPointerUp}
+                  onPointerLeave={handleBoardPointerUp}
+                  onPointerCancel={handleBoardPointerUp}
+                >
                   {sections.map((section, index) => (
                     <TimelineSection
                       key={section.id}

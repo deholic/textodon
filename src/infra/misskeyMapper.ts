@@ -121,14 +121,35 @@ const sumReactions = (reactions: unknown): number => {
   }, 0);
 };
 
-export const mapMisskeyStatus = (raw: unknown): Status => {
+const buildAccountUrl = (
+  user: Record<string, unknown>,
+  instanceUrl?: string
+): string | null => {
+  const url = typeof user.url === "string" ? user.url : null;
+  if (url) {
+    return url;
+  }
+  const uri = typeof user.uri === "string" ? user.uri : null;
+  if (uri) {
+    return uri;
+  }
+  const username = typeof user.username === "string" ? user.username : "";
+  if (!username || !instanceUrl) {
+    return null;
+  }
+  const host = typeof user.host === "string" ? user.host : "";
+  const base = host ? `https://${host}` : instanceUrl;
+  return `${base.replace(/\/$/, "")}/@${username}`;
+};
+
+export const mapMisskeyStatusWithInstance = (raw: unknown, instanceUrl?: string): Status => {
   const value = raw as Record<string, unknown>;
   const user = (value.user ?? {}) as Record<string, unknown>;
   const renoteValue = value.renote as Record<string, unknown> | null | undefined;
-  const renote = renoteValue ? mapMisskeyStatus(renoteValue) : null;
+  const renote = renoteValue ? mapMisskeyStatusWithInstance(renoteValue, instanceUrl) : null;
   const accountName = String(user.name ?? user.username ?? "");
   const accountHandle = String(user.username ?? "");
-  const accountUrl = typeof user.url === "string" ? user.url : null;
+  const accountUrl = buildAccountUrl(user, instanceUrl);
   const accountAvatarUrl = typeof user.avatarUrl === "string" ? user.avatarUrl : null;
   const text = String(value.text ?? "");
   const spoilerText = typeof value.cw === "string" ? value.cw : "";
@@ -185,4 +206,8 @@ export const mapMisskeyStatus = (raw: unknown): Status => {
     customEmojis,
     accountEmojis
   };
+};
+
+export const mapMisskeyStatus = (raw: unknown): Status => {
+  return mapMisskeyStatusWithInstance(raw);
 };
