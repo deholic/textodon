@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CustomEmoji, Status } from "../../domain/types";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
@@ -86,10 +86,10 @@ export const TimelineItem = ({
   const boostedLabel = useMemo(() => {
     if (boostedBy) {
       const label = boostedBy.name || boostedHandle || boostedBy.handle;
-      return `${label} 님이 부스트함 (@${boostedHandle ?? boostedBy.handle})`;
+      return `${label} 님이 부스트함(@${boostedHandle ?? boostedBy.handle})`;
     }
     if (displayStatus.reblogged) {
-      return activeHandle ? `내가 부스트함 (@${activeHandle})` : "내가 부스트함";
+      return activeHandle ? `내가 부스트함(@${activeHandle})` : "내가 부스트함";
     }
     return null;
   }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle]);
@@ -397,24 +397,24 @@ export const TimelineItem = ({
       {mentionNames ? (
         <div className="reply-info">
           <img src={replyIconUrl} alt="" aria-hidden="true" />
-          <span>{mentionNames} 님께 보낸 댓글</span>
+          <span>{mentionNames}에게 보낸 답글</span>
         </div>
       ) : null}
-      <header
-        className="status-header-main"
-        onClick={handleHeaderClick}
-        onKeyDown={handleHeaderKeyDown}
-        role={displayStatus.accountUrl ? "link" : undefined}
-        tabIndex={displayStatus.accountUrl ? 0 : undefined}
-        aria-label={
-          displayStatus.accountUrl
-            ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
-            : undefined
-        }
-        data-interactive={displayStatus.accountUrl ? "true" : undefined}
-      >
+      <header className="status-header-main">
         {showProfileImage ? (
-          <span className="status-avatar">
+          <span
+            className="status-avatar"
+            onClick={handleHeaderClick}
+            onKeyDown={handleHeaderKeyDown}
+            role={displayStatus.accountUrl ? "link" : undefined}
+            tabIndex={displayStatus.accountUrl ? 0 : undefined}
+            aria-label={
+              displayStatus.accountUrl
+                ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
+                : undefined
+            }
+            data-interactive={displayStatus.accountUrl ? "true" : undefined}
+          >
             {displayStatus.accountAvatarUrl ? (
               <img
                 src={displayStatus.accountAvatarUrl}
@@ -426,7 +426,19 @@ export const TimelineItem = ({
             )}
           </span>
         ) : null}
-        <div className="status-account">
+        <div
+          className="status-account"
+          onClick={handleHeaderClick}
+          onKeyDown={handleHeaderKeyDown}
+          role={displayStatus.accountUrl ? "link" : undefined}
+          tabIndex={displayStatus.accountUrl ? 0 : undefined}
+          aria-label={
+            displayStatus.accountUrl
+              ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
+              : undefined
+          }
+          data-interactive={displayStatus.accountUrl ? "true" : undefined}
+        >
           <strong>
             {displayStatus.accountUrl ? (
               <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
@@ -451,7 +463,7 @@ export const TimelineItem = ({
         <div className="status-warning">
           <p className="status-warning-text">{displayStatus.spoilerText}</p>
           <button type="button" className="text-link" onClick={() => setShowContent((prev) => !prev)}>
-            {showContent ? "가리기" : "더 보기"}
+            {showContent ? "가리기" : "내용보기"}
           </button>
         </div>
       ) : null}
@@ -491,7 +503,7 @@ export const TimelineItem = ({
       <footer>
         <div className="status-actions">
           <button type="button" onClick={() => onReply(displayStatus)}>
-            댓글
+            답글
           </button>
           <button
             type="button"
@@ -506,7 +518,7 @@ export const TimelineItem = ({
             className={displayStatus.reblogged ? "is-active" : undefined}
             onClick={() => onToggleReblog(displayStatus)}
             disabled={boostDisabled}
-            title={boostDisabled ? "자신의 글은 부스트할 수 없습니다." : undefined}
+            title={boostDisabled ? "내 글은 부스트할 수 없습니다." : undefined}
           >
             {displayStatus.reblogged ? "부스트 취소" : "부스트"}
             {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}
@@ -542,15 +554,26 @@ export const TimelineItem = ({
             <h3>게시글 삭제</h3>
             <div className="status confirm-status">
               <header className="status-header">
+                {displayStatus.accountAvatarUrl ? (
+                  <span className="status-avatar" aria-hidden="true">
+                    <img src={displayStatus.accountAvatarUrl} alt="" loading="lazy" />
+                  </span>
+                ) : (
+                  <span className="status-avatar" aria-hidden="true">
+                    <span className="status-avatar-fallback" />
+                  </span>
+                )}
                 <div>
                   <strong>{displayStatus.accountName || displayStatus.accountHandle}</strong>
                   <span>@{displayHandle}</span>
                 </div>
-                <time dateTime={displayStatus.createdAt}>{timestamp}</time>
               </header>
               <p className="status-text confirm-text">
                 {displayStatus.content || "(내용 없음)"}
               </p>
+              <time dateTime={displayStatus.createdAt} className="status-time">
+                {timestamp}
+              </time>
             </div>
             <div className="confirm-actions">
               <button
@@ -631,3 +654,10 @@ export const TimelineItem = ({
     </article>
   );
 };
+
+
+
+
+
+
+

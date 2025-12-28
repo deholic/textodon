@@ -17,6 +17,7 @@ type Route = "home" | "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null };
 
 const SECTION_STORAGE_KEY = "textodon.sections";
+const COMPOSE_ACCOUNT_KEY = "textodon.compose.accountId";
 
 const parseRoute = (): Route => {
   const hash = window.location.hash.replace(/^#/, "");
@@ -421,7 +422,17 @@ export const App = () => {
       }
     ];
   });
-  const [composeAccountId, setComposeAccountId] = useState<string | null>(accountsState.activeAccountId);
+  const [composeAccountId, setComposeAccountId] = useState<string | null>(() => {
+    try {
+      const stored = localStorage.getItem(COMPOSE_ACCOUNT_KEY);
+      if (stored) {
+        return stored;
+      }
+    } catch {
+      /* noop */
+    }
+    return accountsState.activeAccountId;
+  });
   const composeAccount = useMemo(
     () => accountsState.accounts.find((account) => account.id === composeAccountId) ?? null,
     [accountsState.accounts, composeAccountId]
@@ -573,6 +584,18 @@ export const App = () => {
   }, [sectionSize]);
 
   useEffect(() => {
+    try {
+      if (composeAccountId) {
+        localStorage.setItem(COMPOSE_ACCOUNT_KEY, composeAccountId);
+      } else {
+        localStorage.removeItem(COMPOSE_ACCOUNT_KEY);
+      }
+    } catch {
+      /* noop */
+    }
+  }, [composeAccountId]);
+
+  useEffect(() => {
     localStorage.setItem("textodon.profileImages", showProfileImages ? "on" : "off");
   }, [showProfileImages]);
 
@@ -592,7 +615,7 @@ export const App = () => {
     }
     return Boolean(
       element.closest(
-        "button, a, input, textarea, select, label, [role='button'], [contenteditable='true'], [data-interactive='true']"
+        "button, a, input, textarea, select, label, summary, details, [role='button'], [contenteditable='true'], [data-interactive='true']"
       )
     );
   }, []);

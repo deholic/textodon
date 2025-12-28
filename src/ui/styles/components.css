@@ -650,7 +650,8 @@ button.ghost {
   color: #6b5c4f;
 }
 
-.status-header-main {
+.status-avatar,
+.status-account {
   cursor: pointer;
 }
 
