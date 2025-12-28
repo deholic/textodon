@@ -117,6 +117,7 @@ const TimelineSection = ({
   onMoveSection,
   canMoveLeft,
   canMoveRight,
+  canRemoveSection,
   showProfileImage,
   showCustomEmojis,
   registerTimelineListener,
@@ -135,6 +136,7 @@ const TimelineSection = ({
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
+  canRemoveSection: boolean;
   showProfileImage: boolean;
   showCustomEmojis: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
@@ -341,6 +343,7 @@ const TimelineSection = ({
                 <button
                   type="button"
                   className="danger"
+                  disabled={!canRemoveSection}
                   onClick={() => {
                     onRemoveSection(section.id);
                     setMenuOpen(false);
@@ -976,6 +979,7 @@ export const App = () => {
                       onMoveSection={moveSection}
                       canMoveLeft={index > 0}
                       canMoveRight={index < sections.length - 1}
+                      canRemoveSection={sections.length > 1}
                       showProfileImage={showProfileImages}
                       showCustomEmojis={showCustomEmojis}
                       registerTimelineListener={registerTimelineListener}
