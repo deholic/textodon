@@ -113,6 +113,9 @@ const TimelineSection = ({
   onRemoveSection,
   onReply,
   onError,
+  onMoveSection,
+  canMoveLeft,
+  canMoveRight,
   showProfileImage,
   registerTimelineListener,
   unregisterTimelineListener
@@ -127,6 +130,9 @@ const TimelineSection = ({
   onRemoveSection: (sectionId: string) => void;
   onReply: (status: Status, account: Account | null) => void;
   onError: (message: string | null) => void;
+  onMoveSection: (sectionId: string, direction: "left" | "right") => void;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
   showProfileImage: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
   unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
@@ -265,6 +271,26 @@ const TimelineSection = ({
                   }}
                 >
                   왼쪽 섹션 추가
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMoveSection(section.id, "left");
+                    setMenuOpen(false);
+                  }}
+                  disabled={!canMoveLeft}
+                >
+                  왼쪽으로 이동
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMoveSection(section.id, "right");
+                    setMenuOpen(false);
+                  }}
+                  disabled={!canMoveRight}
+                >
+                  오른쪽으로 이동
                 </button>
                 <button
                   type="button"
@@ -640,6 +666,22 @@ export const App = () => {
     addSectionAt(direction === "left" ? index : index + 1);
   };
 
+  const moveSection = (sectionId: string, direction: "left" | "right") => {
+    setSections((current) => {
+      const index = current.findIndex((section) => section.id === sectionId);
+      if (index === -1) {
+        return current;
+      }
+      const targetIndex = direction === "left" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= current.length) {
+        return current;
+      }
+      const next = [...current];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (accountsState.accounts.length > 0 && sections.length === 0) {
       addSectionAt(0);
@@ -737,7 +779,7 @@ export const App = () => {
             <section className="panel">
               {sections.length > 0 ? (
                 <div className="timeline-board">
-                  {sections.map((section) => (
+                  {sections.map((section, index) => (
                     <TimelineSection
                       key={section.id}
                       section={section}
@@ -754,6 +796,9 @@ export const App = () => {
                       onRemoveSection={removeSection}
                       onReply={handleReply}
                       onError={(message) => setActionError(message || null)}
+                      onMoveSection={moveSection}
+                      canMoveLeft={index > 0}
+                      canMoveRight={index < sections.length - 1}
                       showProfileImage={showProfileImages}
                       registerTimelineListener={registerTimelineListener}
                       unregisterTimelineListener={unregisterTimelineListener}
