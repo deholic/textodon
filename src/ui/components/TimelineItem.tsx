@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Status } from "../../domain/types";
+import type { CustomEmoji, Status } from "../../domain/types";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
@@ -13,7 +13,8 @@ export const TimelineItem = ({
   activeHandle,
   activeAccountHandle,
   activeAccountUrl,
-  showProfileImage
+  showProfileImage,
+  showCustomEmojis
 }: {
   status: Status;
   onReply: (status: Status) => void;
@@ -24,6 +25,7 @@ export const TimelineItem = ({
   activeAccountHandle: string;
   activeAccountUrl: string | null;
   showProfileImage: boolean;
+  showCustomEmojis: boolean;
 }) => {
   const displayStatus = status.reblog ?? status;
   const boostedBy = status.reblog ? status.boostedBy : null;
@@ -124,8 +126,35 @@ export const TimelineItem = ({
         return null;
     }
   }, [displayStatus.visibility]);
-  const contentParts = useMemo(() => {
-    const text = displayStatus.content;
+  const buildEmojiMap = useCallback((emojis: CustomEmoji[]) => {
+    return new Map(emojis.map((emoji) => [emoji.shortcode, emoji.url]));
+  }, []);
+
+  const tokenizeWithEmojis = useCallback((text: string, emojiMap: Map<string, string>) => {
+    const regex = /:([a-zA-Z0-9_+-]+):/g;
+    const tokens: Array<{ type: "text"; value: string } | { type: "emoji"; name: string; url: string }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      const shortcode = match[1];
+      const url = emojiMap.get(shortcode);
+      if (match.index > lastIndex) {
+        tokens.push({ type: "text", value: text.slice(lastIndex, match.index) });
+      }
+      if (url) {
+        tokens.push({ type: "emoji", name: shortcode, url });
+      } else {
+        tokens.push({ type: "text", value: match[0] });
+      }
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < text.length) {
+      tokens.push({ type: "text", value: text.slice(lastIndex) });
+    }
+    return tokens;
+  }, []);
+
+  const renderTextWithLinks = useCallback((text: string, keyPrefix: string) => {
     const regex = /(https?:\/\/[^\s)\]]+)/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -137,7 +166,7 @@ export const TimelineItem = ({
       }
       const url = match[0];
       parts.push(
-        <a key={`link-${key}`} href={url} target="_blank" rel="noreferrer">
+        <a key={`${keyPrefix}-link-${key}`} href={url} target="_blank" rel="noreferrer">
           {url}
         </a>
       );
@@ -148,7 +177,69 @@ export const TimelineItem = ({
       parts.push(text.slice(lastIndex));
     }
     return parts;
-  }, [displayStatus.content]);
+  }, []);
+
+  const contentParts = useMemo(() => {
+    const text = displayStatus.content;
+    if (!showCustomEmojis || displayStatus.customEmojis.length === 0) {
+      return renderTextWithLinks(text, "content");
+    }
+    const emojiMap = buildEmojiMap(displayStatus.customEmojis);
+    const tokens = tokenizeWithEmojis(text, emojiMap);
+    const parts: React.ReactNode[] = [];
+    tokens.forEach((token, index) => {
+      if (token.type === "text") {
+        parts.push(...renderTextWithLinks(token.value, `content-${index}`));
+      } else {
+        parts.push(
+          <img
+            key={`content-emoji-${index}`}
+            src={token.url}
+            alt={`:${token.name}:`}
+            className="custom-emoji"
+            loading="lazy"
+          />
+        );
+      }
+    });
+    return parts;
+  }, [
+    buildEmojiMap,
+    displayStatus.content,
+    displayStatus.customEmojis,
+    renderTextWithLinks,
+    showCustomEmojis,
+    tokenizeWithEmojis
+  ]);
+
+  const accountLabel = displayStatus.accountName || displayStatus.accountHandle;
+  const accountNameNode = useMemo(() => {
+    if (!showCustomEmojis || displayStatus.accountEmojis.length === 0) {
+      return accountLabel;
+    }
+    const emojiMap = buildEmojiMap(displayStatus.accountEmojis);
+    const tokens = tokenizeWithEmojis(accountLabel, emojiMap);
+    return tokens.map((token, index) => {
+      if (token.type === "text") {
+        return token.value;
+      }
+      return (
+        <img
+          key={`account-emoji-${index}`}
+          src={token.url}
+          alt={`:${token.name}:`}
+          className="custom-emoji"
+          loading="lazy"
+        />
+      );
+    });
+  }, [
+    accountLabel,
+    buildEmojiMap,
+    displayStatus.accountEmojis,
+    showCustomEmojis,
+    tokenizeWithEmojis
+  ]);
 
   const normalizeHandle = useCallback((handle: string, url: string | null) => {
     if (!handle) {
@@ -296,10 +387,10 @@ export const TimelineItem = ({
           <strong>
             {displayStatus.accountUrl ? (
               <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
-                {displayStatus.accountName || displayStatus.accountHandle}
+                {accountNameNode}
               </a>
             ) : (
-              displayStatus.accountName || displayStatus.accountHandle
+              accountNameNode
             )}
           </strong>
           <span>

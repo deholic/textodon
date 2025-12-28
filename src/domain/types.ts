@@ -27,6 +27,11 @@ export type Mention = {
   url: string | null;
 };
 
+export type CustomEmoji = {
+  shortcode: string;
+  url: string;
+};
+
 export type LinkCard = {
   url: string;
   title: string;
@@ -58,6 +63,8 @@ export type Status = {
   reblog: Status | null;
   boostedBy: { name: string; handle: string; url: string | null } | null;
   myReaction: string | null;
+  customEmojis: CustomEmoji[];
+  accountEmojis: CustomEmoji[];
 };
 
 export type TimelineItem = {

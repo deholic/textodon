@@ -117,6 +117,7 @@ const TimelineSection = ({
   canMoveLeft,
   canMoveRight,
   showProfileImage,
+  showCustomEmojis,
   registerTimelineListener,
   unregisterTimelineListener
 }: {
@@ -134,6 +135,7 @@ const TimelineSection = ({
   canMoveLeft: boolean;
   canMoveRight: boolean;
   showProfileImage: boolean;
+  showCustomEmojis: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
   unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
 }) => {
@@ -364,6 +366,7 @@ const TimelineSection = ({
                         activeAccountHandle={account.handle ?? ""}
                         activeAccountUrl={account.url ?? null}
                         showProfileImage={showProfileImage}
+                        showCustomEmojis={showCustomEmojis}
                       />
             ))}
           </div>
@@ -387,6 +390,9 @@ export const App = () => {
   });
   const [showProfileImages, setShowProfileImages] = useState(() => {
     return localStorage.getItem("textodon.profileImages") !== "off";
+  });
+  const [showCustomEmojis, setShowCustomEmojis] = useState(() => {
+    return localStorage.getItem("textodon.customEmojis") !== "off";
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { services, accountsState } = useAppContext();
@@ -566,6 +572,10 @@ export const App = () => {
   useEffect(() => {
     localStorage.setItem("textodon.profileImages", showProfileImages ? "on" : "off");
   }, [showProfileImages]);
+
+  useEffect(() => {
+    localStorage.setItem("textodon.customEmojis", showCustomEmojis ? "on" : "off");
+  }, [showCustomEmojis]);
 
   useEffect(() => {
     setSections((current) =>
@@ -800,6 +810,7 @@ export const App = () => {
                       canMoveLeft={index > 0}
                       canMoveRight={index < sections.length - 1}
                       showProfileImage={showProfileImages}
+                      showCustomEmojis={showCustomEmojis}
                       registerTimelineListener={registerTimelineListener}
                       unregisterTimelineListener={unregisterTimelineListener}
                     />
@@ -858,6 +869,20 @@ export const App = () => {
                   type="checkbox"
                   checked={showProfileImages}
                   onChange={(event) => setShowProfileImages(event.target.checked)}
+                />
+                <span className="slider" aria-hidden="true" />
+              </label>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>커스텀 이모지 표시</strong>
+                <p>사용자 이름과 본문에 커스텀 이모지를 표시합니다.</p>
+              </div>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={showCustomEmojis}
+                  onChange={(event) => setShowCustomEmojis(event.target.checked)}
                 />
                 <span className="slider" aria-hidden="true" />
               </label>
