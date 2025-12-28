@@ -145,6 +145,7 @@ const TimelineSection = ({
     api: services.api,
     streaming: services.streaming
   });
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);
@@ -177,6 +178,24 @@ const TimelineSection = ({
       unregisterTimelineListener(account.id, timeline.updateItem);
     };
   }, [account, registerTimelineListener, timeline.updateItem, unregisterTimelineListener]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const handleClick = (event: MouseEvent) => {
+      if (!menuRef.current || !(event.target instanceof Node)) {
+        return;
+      }
+      if (!menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [menuOpen]);
 
   const handleToggleFavourite = async (status: Status) => {
     if (!account) {
@@ -250,8 +269,8 @@ const TimelineSection = ({
           removeAccount={accountsState.removeAccount}
           variant="inline"
         />
-        <div className="timeline-column-actions">
-          <div className="section-menu">
+        <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
+          <div className="section-menu" ref={menuRef}>
             <button
               type="button"
               className="icon-button menu-button"
@@ -266,6 +285,21 @@ const TimelineSection = ({
             </button>
             {menuOpen ? (
               <div className="section-menu-panel" role="menu">
+                <div className="section-menu-mobile">
+                  <button type="button" onClick={scrollToTop}>
+                    최상단으로
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      timeline.refresh();
+                      setMenuOpen(false);
+                    }}
+                    disabled={!account || timeline.loading}
+                  >
+                    새로고침
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -396,6 +430,8 @@ export const App = () => {
     return localStorage.getItem("textodon.customEmojis") !== "off";
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileComposeOpen, setMobileComposeOpen] = useState(false);
   const { services, accountsState } = useAppContext();
   const [sections, setSections] = useState<TimelineSectionConfig[]>(() => {
     try {
@@ -603,6 +639,11 @@ export const App = () => {
     localStorage.setItem("textodon.customEmojis", showCustomEmojis ? "on" : "off");
   }, [showCustomEmojis]);
 
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    setMobileComposeOpen(false);
+  }, []);
+
   const isInteractiveTarget = useCallback((target: EventTarget | null) => {
     const element =
       target instanceof Element
@@ -740,6 +781,16 @@ export const App = () => {
     setMentionSeed(`@${status.accountHandle}`);
   };
 
+  const composeAccountSelector = (
+    <AccountSelector
+      accounts={accountsState.accounts}
+      activeAccountId={composeAccountId}
+      setActiveAccount={setComposeAccountId}
+      removeAccount={accountsState.removeAccount}
+      variant="inline"
+    />
+  );
+
   const addSectionAt = (index: number) => {
     const defaultAccountId = composeAccountId ?? accountsState.accounts[0]?.id ?? null;
     setSections((current) => {
@@ -805,32 +856,54 @@ export const App = () => {
   return (
     <div className="app">
       <header className="app-header">
+        <a href="#/" className="app-logo" aria-label="textodon 홈">
+          <img src={logoUrl} alt="textodon logo" />
+        </a>
+        <div className="app-header-actions">
+          <button
+            type="button"
+            className="icon-button mobile-compose-button"
+            aria-label="글쓰기 열기"
+            onClick={() => setMobileComposeOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 20h4l10-10-4-4L4 16v4z" />
+              <path d="M14 6l4 4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="icon-button mobile-menu-button"
+            aria-label="메뉴 열기"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16" />
+              <path d="M4 12h16" />
+              <path d="M4 17h16" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <main className="layout">
         <aside>
-          {composeAccount ? (
-            <ComposeBox
-              accountSelector={
-                <AccountSelector
-                  accounts={accountsState.accounts}
-                  activeAccountId={composeAccountId}
-                  setActiveAccount={setComposeAccountId}
-                  removeAccount={accountsState.removeAccount}
-                  variant="inline"
-                />
-              }
-              onSubmit={handleSubmit}
-              replyingTo={replyTarget ? { id: replyTarget.id, summary: replySummary ?? "" } : null}
-              onCancelReply={() => {
-                setReplyTarget(null);
-                setMentionSeed(null);
-              }}
-              mentionText={mentionSeed}
-            />
-          ) : null}
+          <div className="compose-panel">
+            {composeAccount ? (
+              <ComposeBox
+                accountSelector={composeAccountSelector}
+                onSubmit={handleSubmit}
+                replyingTo={replyTarget ? { id: replyTarget.id, summary: replySummary ?? "" } : null}
+                onCancelReply={() => {
+                  setReplyTarget(null);
+                  setMentionSeed(null);
+                }}
+                mentionText={mentionSeed}
+              />
+            ) : null}
+          </div>
           {route === "home" ? (
-            <section className="panel">
+            <section className="panel sidebar-panel">
               <div className="brand">
                 <img src={logoUrl} alt="textodon logo" />
                 <div className="brand-text">
@@ -924,6 +997,69 @@ export const App = () => {
           {route === "oss" ? <OssPage /> : null}
         </section>
       </main>
+
+      {mobileComposeOpen ? (
+        <div className="mobile-menu">
+          <div className="mobile-menu-backdrop" onClick={() => setMobileComposeOpen(false)} />
+          <div className="mobile-menu-panel panel">
+            <div className="mobile-menu-header">
+              <h3>글쓰기</h3>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setMobileComposeOpen(false)}
+                aria-label="글쓰기 닫기"
+              >
+                닫기
+              </button>
+            </div>
+            {composeAccount ? (
+              <ComposeBox
+                accountSelector={composeAccountSelector}
+                onSubmit={handleSubmit}
+                replyingTo={replyTarget ? { id: replyTarget.id, summary: replySummary ?? "" } : null}
+                onCancelReply={() => {
+                  setReplyTarget(null);
+                  setMentionSeed(null);
+                }}
+                mentionText={mentionSeed}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {mobileMenuOpen ? (
+        <div className="mobile-menu">
+          <div className="mobile-menu-backdrop" onClick={closeMobileMenu} />
+          <div className="mobile-menu-panel panel">
+            <div className="mobile-menu-header">
+              <h3>메뉴</h3>
+              <button type="button" className="ghost" onClick={closeMobileMenu} aria-label="메뉴 닫기">
+                닫기
+              </button>
+            </div>
+            <div className="mobile-menu-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setSettingsOpen(true);
+                  closeMobileMenu();
+                }}
+              >
+                설정 열기
+              </button>
+            </div>
+            <div className="mobile-menu-section">
+              <AccountAdd
+                accounts={accountsState.accounts}
+                setActiveAccount={accountsState.setActiveAccount}
+                oauth={services.oauth}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {settingsOpen ? (
         <div className="settings-modal">

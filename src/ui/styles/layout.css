@@ -4,11 +4,24 @@
 }
 
 .app-header {
-  display: flex;
-  justify-content: space-between;
+  display: none;
+}
+
+.app-logo {
+  display: inline-flex;
   align-items: center;
-  gap: 24px;
-  margin-bottom: 16px;
+}
+
+.app-logo img {
+  width: 36px;
+  height: auto;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .brand {
@@ -106,12 +119,25 @@ aside {
   }
 
   .layout {
+    min-height: auto;
+  }
+
+  .layout {
+    gap: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .layout {
     grid-template-columns: 1fr;
   }
 
   .app-header {
-    flex-direction: column;
-    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
   }
 
   .brand {
@@ -127,10 +153,6 @@ aside {
     color: #c4b6a6;
   }
 
-  .timeline-board {
-    flex-direction: column;
-  }
-
   .timeline-column {
     flex: 1;
     max-width: none;
@@ -138,5 +160,26 @@ aside {
 
   .timeline-column-body {
     max-height: none;
+  }
+
+  .sidebar-panel,
+  .compose-panel {
+    display: none;
+  }
+
+  aside {
+    display: none;
+  }
+
+  .main-column {
+    gap: 12px;
+  }
+
+  .panel,
+  section.panel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
   }
 }
