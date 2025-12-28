@@ -60,6 +60,26 @@ const mapMentions = (
     );
 };
 
+const mapCustomEmojis = (emojis: unknown): { shortcode: string; url: string }[] => {
+  if (!Array.isArray(emojis)) {
+    return [];
+  }
+  return emojis
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const typed = item as Record<string, unknown>;
+      const shortcode = typeof typed.shortcode === "string" ? typed.shortcode : "";
+      const url = typeof typed.url === "string" ? typed.url : "";
+      if (!shortcode || !url) {
+        return null;
+      }
+      return { shortcode, url };
+    })
+    .filter((item): item is { shortcode: string; url: string } => item !== null);
+};
+
 export const mapStatus = (raw: unknown): Status => {
   const value = raw as Record<string, unknown>;
   const account = (value.account ?? {}) as Record<string, unknown>;
@@ -78,6 +98,8 @@ export const mapStatus = (raw: unknown): Status => {
     typeof cardValue?.description === "string" ? cardValue.description : null;
   const cardImage = typeof cardValue?.image === "string" ? cardValue.image : null;
   const hasCardData = Boolean(cardTitle && cardTitle !== cardUrl) || Boolean(cardDescription || cardImage);
+  const customEmojis = mapCustomEmojis(value.emojis);
+  const accountEmojis = mapCustomEmojis(account.emojis);
   return {
     id: String(value.id ?? ""),
     createdAt: String(value.created_at ?? ""),
@@ -113,6 +135,8 @@ export const mapStatus = (raw: unknown): Status => {
     mediaAttachments: mapMediaAttachments(value.media_attachments),
     reblog,
     boostedBy: reblog ? { name: accountName, handle: accountHandle, url: accountUrl } : null,
-    myReaction: null
+    myReaction: null,
+    customEmojis,
+    accountEmojis
   };
 };

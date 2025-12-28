@@ -58,6 +58,36 @@ const mapMentions = (mentions: unknown): Mention[] => {
     .filter((item): item is Mention => item !== null);
 };
 
+const mapCustomEmojis = (emojis: unknown): { shortcode: string; url: string }[] => {
+  if (Array.isArray(emojis)) {
+    return emojis
+      .map((emoji) => {
+        if (!emoji || typeof emoji !== "object") {
+          return null;
+        }
+        const typed = emoji as Record<string, unknown>;
+        const shortcode = typeof typed.name === "string" ? typed.name : "";
+        const url = typeof typed.url === "string" ? typed.url : "";
+        if (!shortcode || !url) {
+          return null;
+        }
+        return { shortcode, url };
+      })
+      .filter((item): item is { shortcode: string; url: string } => item !== null);
+  }
+  if (emojis && typeof emojis === "object") {
+    return Object.entries(emojis as Record<string, unknown>)
+      .map(([shortcode, url]) => {
+        if (typeof url !== "string") {
+          return null;
+        }
+        return { shortcode, url };
+      })
+      .filter((item): item is { shortcode: string; url: string } => item !== null);
+  }
+  return [];
+};
+
 const mapReplyMention = (reply: unknown): Mention | null => {
   if (!reply || typeof reply !== "object") {
     return null;
@@ -120,6 +150,8 @@ export const mapMisskeyStatus = (raw: unknown): Status => {
   const reblogged = Boolean(value.myRenoteId);
   const myReaction = typeof value.myReaction === "string" ? value.myReaction : null;
   const favourited = Boolean(value.isFavorited ?? myReaction);
+  const customEmojis = mapCustomEmojis(value.emojis);
+  const accountEmojis = mapCustomEmojis(user.emojis);
   const baseMentions = mapMentions(value.mentions);
   const replyMention = mapReplyMention(value.reply);
   const mentions =
@@ -149,6 +181,8 @@ export const mapMisskeyStatus = (raw: unknown): Status => {
     mediaAttachments,
     reblog: renote,
     boostedBy: renote ? { name: accountName, handle: accountHandle, url: accountUrl } : null,
-    myReaction
+    myReaction,
+    customEmojis,
+    accountEmojis
   };
 };

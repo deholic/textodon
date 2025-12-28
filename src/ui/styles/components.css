@@ -649,6 +649,13 @@ button.ghost {
   gap: 4px;
 }
 
+.custom-emoji {
+  width: 18px;
+  height: 18px;
+  vertical-align: -0.2em;
+  display: inline-block;
+}
+
 .status-avatar {
   width: 36px;
   height: 36px;
