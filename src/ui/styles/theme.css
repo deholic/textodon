@@ -153,6 +153,18 @@ body[data-theme="christmas"] .status-warning-text {
   background: #fff7f2;
 }
 
+:root[data-theme="christmas"] .link-preview-body {
+  color: #7b3f3f;
+}
+
+:root[data-theme="christmas"] .link-preview-body strong {
+  color: #5b1f1f;
+}
+
+:root[data-theme="christmas"] .link-preview-url {
+  color: #2e6b4f;
+}
+
 :root[data-theme="christmas"] .file-button {
   background: #f3e4dc;
   color: #7b3f3f;
@@ -340,6 +352,18 @@ body[data-theme="monochrome"] .status-warning-text {
 :root[data-theme="monochrome"] .link-preview {
   border: 1px solid #1d1d1d;
   background: #ffffff;
+}
+
+:root[data-theme="monochrome"] .link-preview-body {
+  color: #2a2a2a;
+}
+
+:root[data-theme="monochrome"] .link-preview-body strong {
+  color: #111111;
+}
+
+:root[data-theme="monochrome"] .link-preview-url {
+  color: #2a2a2a;
 }
 
 :root[data-theme="monochrome"] .file-button {
@@ -1083,16 +1107,52 @@ body[data-theme="monochrome"] .compose-icon-button {
     background: #1a100f;
   }
 
+  :root[data-theme="monochrome"] .link-preview,
+  body[data-theme="monochrome"] .link-preview {
+    border: 1px solid #3a3a3a;
+    background: #101010;
+  }
+
   .link-preview-body {
     color: #c4b6a6;
+  }
+
+  :root[data-theme="christmas"] .link-preview-body,
+  body[data-theme="christmas"] .link-preview-body {
+    color: #e4b9b9;
+  }
+
+  :root[data-theme="monochrome"] .link-preview-body,
+  body[data-theme="monochrome"] .link-preview-body {
+    color: #d6d6d6;
   }
 
   .link-preview-body strong {
     color: #f0e7dc;
   }
 
+  :root[data-theme="christmas"] .link-preview-body strong,
+  body[data-theme="christmas"] .link-preview-body strong {
+    color: #f4d7d7;
+  }
+
+  :root[data-theme="monochrome"] .link-preview-body strong,
+  body[data-theme="monochrome"] .link-preview-body strong {
+    color: #f5f5f5;
+  }
+
   .link-preview-url {
     color: #d7cbbd;
+  }
+
+  :root[data-theme="christmas"] .link-preview-url,
+  body[data-theme="christmas"] .link-preview-url {
+    color: #9cc7ab;
+  }
+
+  :root[data-theme="monochrome"] .link-preview-url,
+  body[data-theme="monochrome"] .link-preview-url {
+    color: #bdbdbd;
   }
 
   .readme-text {
