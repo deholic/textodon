@@ -191,6 +191,13 @@ const TimelineSection = ({
       if (!menuRef.current || !(event.target instanceof Node)) {
         return;
       }
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".overlay-backdrop")
+      ) {
+        setMenuOpen(false);
+        return;
+      }
       if (!menuRef.current.contains(event.target)) {
         setMenuOpen(false);
       }
@@ -288,72 +295,79 @@ const TimelineSection = ({
               </svg>
             </button>
             {menuOpen ? (
-              <div className="section-menu-panel" role="menu">
-                <div className="section-menu-mobile">
-                  <button type="button" onClick={scrollToTop}>
-                    최상단으로
+              <>
+                <div
+                  className="overlay-backdrop"
+                  onClick={() => setMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                <div className="section-menu-panel" role="menu">
+                  <div className="section-menu-mobile">
+                    <button type="button" onClick={scrollToTop}>
+                      최상단으로
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        timeline.refresh();
+                        setMenuOpen(false);
+                      }}
+                      disabled={!account || timeline.loading}
+                    >
+                      새로고침
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onAddSectionLeft(section.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    왼쪽 섹션 추가
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      timeline.refresh();
+                      onMoveSection(section.id, "left");
                       setMenuOpen(false);
                     }}
-                    disabled={!account || timeline.loading}
+                    disabled={!canMoveLeft}
                   >
-                    새로고침
+                    왼쪽으로 이동
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onMoveSection(section.id, "right");
+                      setMenuOpen(false);
+                    }}
+                    disabled={!canMoveRight}
+                  >
+                    오른쪽으로 이동
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onAddSectionRight(section.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    오른쪽 섹션 추가
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={!canRemoveSection}
+                    onClick={() => {
+                      onRemoveSection(section.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    섹션 삭제
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onAddSectionLeft(section.id);
-                    setMenuOpen(false);
-                  }}
-                >
-                  왼쪽 섹션 추가
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onMoveSection(section.id, "left");
-                    setMenuOpen(false);
-                  }}
-                  disabled={!canMoveLeft}
-                >
-                  왼쪽으로 이동
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onMoveSection(section.id, "right");
-                    setMenuOpen(false);
-                  }}
-                  disabled={!canMoveRight}
-                >
-                  오른쪽으로 이동
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onAddSectionRight(section.id);
-                    setMenuOpen(false);
-                  }}
-                >
-                  오른쪽 섹션 추가
-                </button>
-                <button
-                  type="button"
-                  className="danger"
-                  disabled={!canRemoveSection}
-                  onClick={() => {
-                    onRemoveSection(section.id);
-                    setMenuOpen(false);
-                  }}
-                >
-                  섹션 삭제
-                </button>
-              </div>
+              </>
             ) : null}
           </div>
           <button

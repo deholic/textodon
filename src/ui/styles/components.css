@@ -155,6 +155,13 @@
   z-index: 30;
 }
 
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 13, 11, 0.12);
+  z-index: 15;
+}
+
 .settings-modal {
   position: fixed;
   inset: 0;

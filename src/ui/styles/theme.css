@@ -18,6 +18,11 @@
   background: rgba(32, 16, 15, 0.65);
 }
 
+:root[data-theme="christmas"] .overlay-backdrop,
+body[data-theme="christmas"] .overlay-backdrop {
+  background: rgba(91, 31, 31, 0.12);
+}
+
 :root[data-theme="christmas"] .settings-item {
   border-top: 1px solid #ead7cc;
 }
@@ -37,7 +42,8 @@
 }
 
 :root[data-theme="christmas"] .account-add-popover {
-  background: #fff7f2;
+  background: rgba(255, 247, 242, 0.92);
+  color: #5b1f1f;
   border: 1px solid #ead7cc;
   box-shadow: 0 18px 40px rgba(134, 40, 40, 0.12);
 }
@@ -167,6 +173,20 @@ body[data-theme="christmas"] .compose-icon-button {
   color: #7b3f3f;
 }
 
+:root[data-theme="christmas"] .account-form input,
+:root[data-theme="christmas"] .compose-form textarea,
+:root[data-theme="christmas"] .compose-actions select,
+:root[data-theme="christmas"] .settings-item select {
+  background: #fff7f2;
+  border: 1px solid #ead7cc;
+  color: #5b1f1f;
+}
+
+:root[data-theme="christmas"] .account-form input::placeholder,
+:root[data-theme="christmas"] .compose-form textarea::placeholder {
+  color: #a36a6a;
+}
+
 :root[data-theme="monochrome"] .sidebar-description {
   color: #2a2a2a;
 }
@@ -185,6 +205,11 @@ body[data-theme="christmas"] .compose-icon-button {
 
 :root[data-theme="monochrome"] .settings-modal-backdrop {
   background: rgba(10, 10, 10, 0.65);
+}
+
+:root[data-theme="monochrome"] .overlay-backdrop,
+body[data-theme="monochrome"] .overlay-backdrop {
+  background: rgba(17, 17, 17, 0.16);
 }
 
 :root[data-theme="monochrome"] .settings-item {
@@ -206,7 +231,8 @@ body[data-theme="christmas"] .compose-icon-button {
 }
 
 :root[data-theme="monochrome"] .account-add-popover {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111111;
   border: 1px solid #1d1d1d;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
 }
@@ -227,7 +253,7 @@ body[data-theme="christmas"] .compose-icon-button {
 
 :root[data-theme="monochrome"] .account-selector-dropdown {
   border: 1px solid #1d1d1d;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
 }
 
@@ -336,6 +362,20 @@ body[data-theme="monochrome"] .compose-icon-button {
   color: #2a2a2a;
 }
 
+:root[data-theme="monochrome"] .account-form input,
+:root[data-theme="monochrome"] .compose-form textarea,
+:root[data-theme="monochrome"] .compose-actions select,
+:root[data-theme="monochrome"] .settings-item select {
+  background: #ffffff;
+  border: 1px solid #1d1d1d;
+  color: #111111;
+}
+
+:root[data-theme="monochrome"] .account-form input::placeholder,
+:root[data-theme="monochrome"] .compose-form textarea::placeholder {
+  color: #6b6b6b;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     background: radial-gradient(circle at top left, #1d1b18, #12110f 55%, #0d0c0b);
@@ -354,6 +394,20 @@ body[data-theme="monochrome"] .compose-icon-button {
     background: radial-gradient(circle at top left, #0f0f0f, #080808 55%, #030303);
     color: #f5f5f5;
     --scrollbar-thumb: #616161;
+  }
+
+  .overlay-backdrop {
+    background: rgba(15, 13, 11, 0.4);
+  }
+
+  :root[data-theme="christmas"] .overlay-backdrop,
+  body[data-theme="christmas"] .overlay-backdrop {
+    background: rgba(32, 16, 15, 0.45);
+  }
+
+  :root[data-theme="monochrome"] .overlay-backdrop,
+  body[data-theme="monochrome"] .overlay-backdrop {
+    background: rgba(0, 0, 0, 0.5);
   }
 
   .panel {
@@ -530,6 +584,46 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #f0e7dc;
   }
 
+  :root[data-theme="christmas"] .account-form input,
+  body[data-theme="christmas"] .account-form input,
+  :root[data-theme="christmas"] .compose-form textarea,
+  body[data-theme="christmas"] .compose-form textarea,
+  :root[data-theme="christmas"] .compose-actions select,
+  body[data-theme="christmas"] .compose-actions select,
+  :root[data-theme="christmas"] .settings-item select,
+  body[data-theme="christmas"] .settings-item select {
+    background: #1a100f;
+    border: 1px solid #3b2624;
+    color: #f7e7df;
+  }
+
+  :root[data-theme="christmas"] .account-form input::placeholder,
+  body[data-theme="christmas"] .account-form input::placeholder,
+  :root[data-theme="christmas"] .compose-form textarea::placeholder,
+  body[data-theme="christmas"] .compose-form textarea::placeholder {
+    color: #c59a9a;
+  }
+
+  :root[data-theme="monochrome"] .account-form input,
+  body[data-theme="monochrome"] .account-form input,
+  :root[data-theme="monochrome"] .compose-form textarea,
+  body[data-theme="monochrome"] .compose-form textarea,
+  :root[data-theme="monochrome"] .compose-actions select,
+  body[data-theme="monochrome"] .compose-actions select,
+  :root[data-theme="monochrome"] .settings-item select,
+  body[data-theme="monochrome"] .settings-item select {
+    background: #101010;
+    border: 1px solid #3a3a3a;
+    color: #f0f0f0;
+  }
+
+  :root[data-theme="monochrome"] .account-form input::placeholder,
+  body[data-theme="monochrome"] .account-form input::placeholder,
+  :root[data-theme="monochrome"] .compose-form textarea::placeholder,
+  body[data-theme="monochrome"] .compose-form textarea::placeholder {
+    color: #8a8a8a;
+  }
+
   .account-form-divider {
     border-top: 1px dashed #3b342d;
   }
@@ -622,16 +716,26 @@ body[data-theme="monochrome"] .compose-icon-button {
   }
 
   .account-add-popover {
-    background: #171512;
+    background: rgba(23, 21, 18, 0.88);
+    color: #f0e7dc;
     border: 1px solid #3b342d;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   }
 
   :root[data-theme="christmas"] .account-add-popover,
   body[data-theme="christmas"] .account-add-popover {
-    background: #1a100f;
+    background: rgba(26, 16, 15, 0.88);
+    color: #f7e7df;
     border: 1px solid #3b2624;
     box-shadow: 0 18px 40px rgba(64, 20, 20, 0.45);
+  }
+
+  :root[data-theme="monochrome"] .account-add-popover,
+  body[data-theme="monochrome"] .account-add-popover {
+    background: rgba(16, 16, 16, 0.88);
+    color: #f0f0f0;
+    border: 1px solid #3a3a3a;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   }
 
   .section-menu-panel {
@@ -686,7 +790,7 @@ body[data-theme="monochrome"] .compose-icon-button {
   }
 
   .account-selector-dropdown {
-    background: #171512;
+    background: rgba(23, 21, 18, 0.88);
     border: 1px solid #3b342d;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   }
@@ -704,7 +808,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root[data-theme="christmas"] .account-selector-dropdown,
   body[data-theme="christmas"] .account-selector-dropdown {
-    background: #1a100f;
+    background: rgba(26, 16, 15, 0.88);
     border: 1px solid #3b2624;
     box-shadow: 0 18px 40px rgba(64, 20, 20, 0.45);
   }
@@ -717,7 +821,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root[data-theme="monochrome"] .account-selector-dropdown,
   body[data-theme="monochrome"] .account-selector-dropdown {
-    background: #101010;
+    background: rgba(16, 16, 16, 0.88);
     border: 1px solid #3a3a3a;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   }
