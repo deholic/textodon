@@ -707,7 +707,7 @@ button.ghost {
 
 .section-menu-panel button {
   background: none;
-  color: inherit;
+  color: #1f1b16;
   padding: 6px 8px;
   text-align: left;
   font-size: 12px;
@@ -716,6 +716,7 @@ button.ghost {
 
 .section-menu-panel .danger {
   color: #9a2e1f;
+  font-weight: 600;
 }
 
 .timeline-column-body {
