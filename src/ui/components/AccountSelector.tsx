@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Account } from "../../domain/types";
 import { formatHandle } from "../utils/account";
 
@@ -16,6 +16,25 @@ export const AccountSelector = ({
   variant?: "panel" | "inline";
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDetailsElement | null>(null);
+
+  useEffect(() => {
+    if (!dropdownOpen) {
+      return;
+    }
+    const handleClick = (event: MouseEvent) => {
+      if (!dropdownRef.current || !(event.target instanceof Node)) {
+        return;
+      }
+      if (!dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [dropdownOpen]);
 
   const activeAccount = useMemo(
     () => accounts.find((account) => account.id === activeAccountId) ?? null,
@@ -30,6 +49,7 @@ export const AccountSelector = ({
     <Wrapper className={wrapperClassName}>
       <div className="account-selector-header">
         <details
+          ref={dropdownRef}
           className="account-selector"
           open={dropdownOpen}
           onToggle={(event) => setDropdownOpen(event.currentTarget.open)}
@@ -60,6 +80,13 @@ export const AccountSelector = ({
               ▾
             </span>
           </summary>
+          {dropdownOpen ? (
+            <div
+              className="overlay-backdrop"
+              onClick={() => setDropdownOpen(false)}
+              aria-hidden="true"
+            />
+          ) : null}
           <div className="account-selector-dropdown">
             <ul className="account-list">
               {accounts.map((account) => (
