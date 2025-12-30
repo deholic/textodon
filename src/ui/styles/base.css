@@ -14,6 +14,12 @@
   color: #2d1a16;
 }
 
+:root[data-theme="sky-pink"] {
+  background: radial-gradient(circle at top left, #e9f6ff, #fceaf3 55%, #ffffff);
+  color: #1d2a3a;
+  --scrollbar-thumb: #b7cfe6;
+}
+
 :root[data-theme="monochrome"] {
   background: radial-gradient(circle at top left, #ffffff, #f7f7f7 55%, #f2f2f2);
   color: #111111;
