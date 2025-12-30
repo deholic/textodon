@@ -165,6 +165,17 @@ body[data-theme="christmas"] .status-warning-text {
   color: #2e6b4f;
 }
 
+:root[data-theme="christmas"] .status-reaction {
+  color: #5b1f1f;
+  border-color: #ead7cc;
+}
+
+:root[data-theme="christmas"] .status-reaction.is-active {
+  background: #7b3f3f;
+  border-color: #5b1f1f;
+  color: #fff1f1;
+}
+
 :root[data-theme="christmas"] .file-button {
   background: #f3e4dc;
   color: #7b3f3f;
@@ -175,6 +186,31 @@ body[data-theme="christmas"] .compose-icon-button {
   background: #f3e4dc;
   color: #7b3f3f;
   border-color: #ead7cc;
+}
+
+:root[data-theme="christmas"] .compose-emoji-panel {
+  background: #fff7f2;
+  border-color: #ead7cc;
+}
+
+:root[data-theme="christmas"] .compose-emoji-category-toggle {
+  background: #f3e4dc;
+  color: #7b3f3f;
+  border-color: #ead7cc;
+}
+
+:root[data-theme="christmas"] .compose-emoji-count {
+  background: #ead7cc;
+  color: #5b1f1f;
+}
+
+:root[data-theme="christmas"] .compose-emoji-button {
+  background: #f3e4dc;
+  border-color: #ead7cc;
+}
+
+:root[data-theme="christmas"] .compose-emoji-empty {
+  color: #a36a6a;
 }
 
 :root[data-theme="christmas"] .boosted-by {
@@ -366,6 +402,17 @@ body[data-theme="monochrome"] .status-warning-text {
   color: #2a2a2a;
 }
 
+:root[data-theme="monochrome"] .status-reaction {
+  color: #2a2a2a;
+  border-color: #1d1d1d;
+}
+
+:root[data-theme="monochrome"] .status-reaction.is-active {
+  background: #2a2a2a;
+  border-color: #111111;
+  color: #f5f5f5;
+}
+
 :root[data-theme="monochrome"] .file-button {
   background: #f1f1f1;
   color: #2a2a2a;
@@ -376,6 +423,44 @@ body[data-theme="monochrome"] .compose-icon-button {
   background: #f1f1f1;
   color: #2a2a2a;
   border-color: #1d1d1d;
+}
+
+:root[data-theme="monochrome"] .delete-button {
+  background: #c62828;
+}
+
+:root[data-theme="monochrome"] .confirm-actions .delete-button {
+  color: #fff5f5;
+}
+
+:root[data-theme="monochrome"] .image-modal-delete {
+  background: #c62828;
+  color: #fff5f5;
+}
+
+:root[data-theme="monochrome"] .compose-emoji-panel {
+  background: #ffffff;
+  border-color: #1d1d1d;
+}
+
+:root[data-theme="monochrome"] .compose-emoji-category-toggle {
+  background: #f1f1f1;
+  color: #2a2a2a;
+  border-color: #1d1d1d;
+}
+
+:root[data-theme="monochrome"] .compose-emoji-count {
+  background: #e5e5e5;
+  color: #111111;
+}
+
+:root[data-theme="monochrome"] .compose-emoji-button {
+  background: #f1f1f1;
+  border-color: #1d1d1d;
+}
+
+:root[data-theme="monochrome"] .compose-emoji-empty {
+  color: #6b6b6b;
 }
 
 :root[data-theme="monochrome"] .boosted-by {
@@ -971,10 +1056,36 @@ body[data-theme="monochrome"] .compose-icon-button {
     border-color: #5a4f45;
   }
 
+  :root[data-theme="christmas"] .status-reaction,
+  body[data-theme="christmas"] .status-reaction {
+    color: #f7e7df;
+    border-color: #3b2624;
+  }
+
+  :root[data-theme="monochrome"] .status-reaction,
+  body[data-theme="monochrome"] .status-reaction {
+    color: #d6d6d6;
+    border-color: #3a3a3a;
+  }
+
   .status-reaction.is-active {
     background: #2c2722;
     border-color: #6f5c47;
     color: #fff7ec;
+  }
+
+  :root[data-theme="christmas"] .status-reaction.is-active,
+  body[data-theme="christmas"] .status-reaction.is-active {
+    background: #2a1b19;
+    border-color: #3b2624;
+    color: #fff1f1;
+  }
+
+  :root[data-theme="monochrome"] .status-reaction.is-active,
+  body[data-theme="monochrome"] .status-reaction.is-active {
+    background: #1a1a1a;
+    border-color: #4a4a4a;
+    color: #f5f5f5;
   }
 
   .status-header {
@@ -1057,6 +1168,12 @@ body[data-theme="monochrome"] .compose-icon-button {
     border-color: #3b2624;
   }
 
+  :root[data-theme="monochrome"] .compose-emoji-panel,
+  body[data-theme="monochrome"] .compose-emoji-panel {
+    background: #101010;
+    border-color: #3a3a3a;
+  }
+
   .compose-emoji-category-toggle {
     background: #2a2622;
     color: #f0e7dc;
@@ -1070,6 +1187,13 @@ body[data-theme="monochrome"] .compose-icon-button {
     border-color: #3b2624;
   }
 
+  :root[data-theme="monochrome"] .compose-emoji-category-toggle,
+  body[data-theme="monochrome"] .compose-emoji-category-toggle {
+    background: #1a1a1a;
+    color: #f5f5f5;
+    border-color: #3a3a3a;
+  }
+
   .compose-emoji-count {
     background: #2c3b59;
     color: #e1e7f4;
@@ -1079,6 +1203,12 @@ body[data-theme="monochrome"] .compose-icon-button {
   body[data-theme="christmas"] .compose-emoji-count {
     background: #3b2624;
     color: #f7e7df;
+  }
+
+  :root[data-theme="monochrome"] .compose-emoji-count,
+  body[data-theme="monochrome"] .compose-emoji-count {
+    background: #2a2a2a;
+    color: #f0f0f0;
   }
 
   .compose-emoji-button {
@@ -1092,8 +1222,24 @@ body[data-theme="monochrome"] .compose-icon-button {
     border-color: #3b2624;
   }
 
+  :root[data-theme="monochrome"] .compose-emoji-button,
+  body[data-theme="monochrome"] .compose-emoji-button {
+    background: #1a1a1a;
+    border-color: #3a3a3a;
+  }
+
   .compose-emoji-empty {
     color: #c4b6a6;
+  }
+
+  :root[data-theme="christmas"] .compose-emoji-empty,
+  body[data-theme="christmas"] .compose-emoji-empty {
+    color: #cf8c8c;
+  }
+
+  :root[data-theme="monochrome"] .compose-emoji-empty,
+  body[data-theme="monochrome"] .compose-emoji-empty {
+    color: #bdbdbd;
   }
 
   .link-preview {
@@ -1190,6 +1336,11 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #fffaf2;
   }
 
+  :root[data-theme="monochrome"] .confirm-actions .delete-button,
+  body[data-theme="monochrome"] .confirm-actions .delete-button {
+    color: #fff5f5;
+  }
+
   .confirm-status {
     background: #171512;
     border: 1px solid #302822;
@@ -1200,8 +1351,19 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #f5efe7;
   }
 
+  :root[data-theme="monochrome"] .image-modal-delete,
+  body[data-theme="monochrome"] .image-modal-delete {
+    background: #c62828;
+    color: #fff5f5;
+  }
+
   .delete-button {
     background: #7a3a2a;
+  }
+
+  :root[data-theme="monochrome"] .delete-button,
+  body[data-theme="monochrome"] .delete-button {
+    background: #c62828;
   }
 
   .license {
