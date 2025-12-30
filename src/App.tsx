@@ -424,8 +424,22 @@ const getStoredTheme = (): ThemeMode => {
   return localStorage.getItem("textodon.christmas") === "on" ? "christmas" : "default";
 };
 
+type ColorScheme = "system" | "light" | "dark";
+
+const isColorScheme = (value: string): value is ColorScheme =>
+  value === "system" || value === "light" || value === "dark";
+
+const getStoredColorScheme = (): ColorScheme => {
+  const storedScheme = localStorage.getItem("textodon.colorScheme");
+  if (storedScheme && isColorScheme(storedScheme)) {
+    return storedScheme;
+  }
+  return "system";
+};
+
 export const App = () => {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getStoredTheme());
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(() => getStoredColorScheme());
   const [sectionSize, setSectionSize] = useState<"small" | "medium" | "large">(() => {
     const stored = localStorage.getItem("textodon.sectionSize");
     if (stored === "medium" || stored === "large" || stored === "small") {
@@ -632,6 +646,17 @@ export const App = () => {
     localStorage.setItem("textodon.theme", themeMode);
     localStorage.setItem("textodon.christmas", themeMode === "christmas" ? "on" : "off");
   }, [themeMode]);
+
+  useEffect(() => {
+    if (colorScheme === "system") {
+      delete document.documentElement.dataset.colorScheme;
+      delete document.body.dataset.colorScheme;
+    } else {
+      document.documentElement.dataset.colorScheme = colorScheme;
+      document.body.dataset.colorScheme = colorScheme;
+    }
+    localStorage.setItem("textodon.colorScheme", colorScheme);
+  }, [colorScheme]);
 
   useEffect(() => {
     document.documentElement.dataset.sectionSize = sectionSize;
@@ -1152,6 +1177,26 @@ export const App = () => {
                 <option value="christmas">크리스마스</option>
                 <option value="sky-pink">하늘핑크</option>
                 <option value="monochrome">모노톤</option>
+              </select>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>색상 모드</strong>
+                <p>시스템 설정을 따르거나 라이트/다크 모드를 고정합니다.</p>
+              </div>
+              <select
+                value={colorScheme}
+                onChange={(event) => {
+                  const nextScheme = event.target.value;
+                  if (isColorScheme(nextScheme)) {
+                    setColorScheme(nextScheme);
+                  }
+                }}
+                aria-label="색상 모드 선택"
+              >
+                <option value="system">시스템</option>
+                <option value="light">라이트</option>
+                <option value="dark">다크</option>
               </select>
             </div>
             <div className="settings-item">
