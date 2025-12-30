@@ -667,6 +667,21 @@ export const App = () => {
     setMobileComposeOpen(false);
   }, []);
 
+  const handleClearLocalStorage = useCallback(() => {
+    const confirmed = window.confirm(
+      "로컬 저장소의 모든 데이터를 삭제할까요? 계정과 설정 정보가 모두 초기화됩니다."
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      localStorage.clear();
+    } catch {
+      /* noop */
+    }
+    window.location.reload();
+  }, []);
+
   const isInteractiveTarget = useCallback((target: EventTarget | null) => {
     const element =
       target instanceof Element
@@ -851,12 +866,6 @@ export const App = () => {
       return next;
     });
   };
-
-  useEffect(() => {
-    if (accountsState.accounts.length > 0 && sections.length === 0) {
-      addSectionAt(0);
-    }
-  }, [accountsState.accounts.length, sections.length]);
 
   const removeSection = (sectionId: string) => {
     setSections((current) => current.filter((section) => section.id !== sectionId));
@@ -1202,6 +1211,20 @@ export const App = () => {
                 <option value="medium">중</option>
                 <option value="large">대</option>
               </select>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>로컬 저장소 초기화</strong>
+                <p>계정과 설정을 포함한 모든 로컬 데이터를 삭제합니다.</p>
+              </div>
+              <button
+                type="button"
+                className="settings-danger-button"
+                onClick={handleClearLocalStorage}
+                aria-label="로컬 저장소 초기화"
+              >
+                모두 삭제
+              </button>
             </div>
           </div>
         </div>

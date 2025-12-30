@@ -227,6 +227,11 @@
   font-family: inherit;
 }
 
+.settings-danger-button {
+  background: #9a2e1f;
+  color: #fff6f0;
+}
+
 .settings-item .account-add-wrapper {
   flex-shrink: 0;
 }

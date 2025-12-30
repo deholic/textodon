@@ -78,6 +78,11 @@ body[data-theme="christmas"] .overlay-backdrop {
   color: #fff4f4;
 }
 
+:root[data-theme="christmas"] .settings-danger-button {
+  background: #8f2f2f;
+  color: #fff1f1;
+}
+
 :root[data-theme="christmas"] button.is-active {
   background: #e4b46b;
   color: #3d2a12;
@@ -315,6 +320,11 @@ body[data-theme="sky-pink"] .overlay-backdrop {
   color: #3d2130;
 }
 
+:root[data-theme="sky-pink"] .settings-danger-button {
+  background: #c24b5d;
+  color: #fff4f6;
+}
+
 :root[data-theme="sky-pink"] button.is-active {
   background: #4a8bd8;
   color: #f6fbff;
@@ -550,6 +560,11 @@ body[data-theme="monochrome"] .overlay-backdrop {
 :root[data-theme="monochrome"] button {
   background: #111111;
   color: #ffffff;
+}
+
+:root[data-theme="monochrome"] .settings-danger-button {
+  background: #c62828;
+  color: #fff5f5;
 }
 
 :root[data-theme="monochrome"] button.is-active {
@@ -1068,9 +1083,20 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #edf3ff;
   }
 
+  .settings-danger-button {
+    background: #b5463b;
+    color: #fff6f0;
+  }
+
   :root[data-theme="christmas"] button,
   body[data-theme="christmas"] button {
     background: #8f2f2f;
+    color: #fff1f1;
+  }
+
+  :root[data-theme="christmas"] .settings-danger-button,
+  body[data-theme="christmas"] .settings-danger-button {
+    background: #a54343;
     color: #fff1f1;
   }
 
@@ -1080,10 +1106,22 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #0f1c2a;
   }
 
+  :root[data-theme="sky-pink"] .settings-danger-button,
+  body[data-theme="sky-pink"] .settings-danger-button {
+    background: #d97183;
+    color: #fff4f6;
+  }
+
   :root[data-theme="monochrome"] button,
   body[data-theme="monochrome"] button {
     background: #e6e6e6;
     color: #111111;
+  }
+
+  :root[data-theme="monochrome"] .settings-danger-button,
+  body[data-theme="monochrome"] .settings-danger-button {
+    background: #d32f2f;
+    color: #fff5f5;
   }
 
   button.is-active {
