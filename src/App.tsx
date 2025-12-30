@@ -432,10 +432,10 @@ const TimelineSection = ({
   );
 };
 
-type ThemeMode = "default" | "christmas" | "monochrome";
+type ThemeMode = "default" | "christmas" | "sky-pink" | "monochrome";
 
 const isThemeMode = (value: string): value is ThemeMode =>
-  value === "default" || value === "christmas" || value === "monochrome";
+  value === "default" || value === "christmas" || value === "sky-pink" || value === "monochrome";
 
 const getStoredTheme = (): ThemeMode => {
   const storedTheme = localStorage.getItem("textodon.theme");
@@ -1148,7 +1148,7 @@ export const App = () => {
             <div className="settings-item">
               <div>
                 <strong>테마</strong>
-                <p>기본, 크리스마스, 모노톤 테마를 선택합니다.</p>
+                <p>기본, 크리스마스, 하늘핑크, 모노톤 테마를 선택합니다.</p>
               </div>
               <select
                 value={themeMode}
@@ -1162,6 +1162,7 @@ export const App = () => {
               >
                 <option value="default">기본</option>
                 <option value="christmas">크리스마스</option>
+                <option value="sky-pink">하늘핑크</option>
                 <option value="monochrome">모노톤</option>
               </select>
             </div>
