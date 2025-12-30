@@ -424,8 +424,22 @@ const getStoredTheme = (): ThemeMode => {
   return localStorage.getItem("textodon.christmas") === "on" ? "christmas" : "default";
 };
 
+type ColorScheme = "system" | "light" | "dark";
+
+const isColorScheme = (value: string): value is ColorScheme =>
+  value === "system" || value === "light" || value === "dark";
+
+const getStoredColorScheme = (): ColorScheme => {
+  const storedScheme = localStorage.getItem("textodon.colorScheme");
+  if (storedScheme && isColorScheme(storedScheme)) {
+    return storedScheme;
+  }
+  return "system";
+};
+
 export const App = () => {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getStoredTheme());
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(() => getStoredColorScheme());
   const [sectionSize, setSectionSize] = useState<"small" | "medium" | "large">(() => {
     const stored = localStorage.getItem("textodon.sectionSize");
     if (stored === "medium" || stored === "large" || stored === "small") {
@@ -634,6 +648,17 @@ export const App = () => {
   }, [themeMode]);
 
   useEffect(() => {
+    if (colorScheme === "system") {
+      delete document.documentElement.dataset.colorScheme;
+      delete document.body.dataset.colorScheme;
+    } else {
+      document.documentElement.dataset.colorScheme = colorScheme;
+      document.body.dataset.colorScheme = colorScheme;
+    }
+    localStorage.setItem("textodon.colorScheme", colorScheme);
+  }, [colorScheme]);
+
+  useEffect(() => {
     document.documentElement.dataset.sectionSize = sectionSize;
     localStorage.setItem("textodon.sectionSize", sectionSize);
   }, [sectionSize]);
@@ -665,6 +690,21 @@ export const App = () => {
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
     setMobileComposeOpen(false);
+  }, []);
+
+  const handleClearLocalStorage = useCallback(() => {
+    const confirmed = window.confirm(
+      "로컬 저장소의 모든 데이터를 삭제할까요? 계정과 설정 정보가 모두 초기화됩니다."
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      localStorage.clear();
+    } catch {
+      /* noop */
+    }
+    window.location.reload();
   }, []);
 
   const isInteractiveTarget = useCallback((target: EventTarget | null) => {
@@ -851,12 +891,6 @@ export const App = () => {
       return next;
     });
   };
-
-  useEffect(() => {
-    if (accountsState.accounts.length > 0 && sections.length === 0) {
-      addSectionAt(0);
-    }
-  }, [accountsState.accounts.length, sections.length]);
 
   const removeSection = (sectionId: string) => {
     setSections((current) => current.filter((section) => section.id !== sectionId));
@@ -1147,6 +1181,26 @@ export const App = () => {
             </div>
             <div className="settings-item">
               <div>
+                <strong>색상 모드</strong>
+                <p>시스템 설정을 따르거나 라이트/다크 모드를 고정합니다.</p>
+              </div>
+              <select
+                value={colorScheme}
+                onChange={(event) => {
+                  const nextScheme = event.target.value;
+                  if (isColorScheme(nextScheme)) {
+                    setColorScheme(nextScheme);
+                  }
+                }}
+                aria-label="색상 모드 선택"
+              >
+                <option value="system">시스템</option>
+                <option value="light">라이트</option>
+                <option value="dark">다크</option>
+              </select>
+            </div>
+            <div className="settings-item">
+              <div>
                 <strong>프로필 이미지 표시</strong>
                 <p>피드에서 사용자 프로필 이미지를 보여줍니다.</p>
               </div>
@@ -1202,6 +1256,20 @@ export const App = () => {
                 <option value="medium">중</option>
                 <option value="large">대</option>
               </select>
+            </div>
+            <div className="settings-item">
+              <div>
+                <strong>로컬 저장소 초기화</strong>
+                <p>계정과 설정을 포함한 모든 로컬 데이터를 삭제합니다.</p>
+              </div>
+              <button
+                type="button"
+                className="settings-danger-button"
+                onClick={handleClearLocalStorage}
+                aria-label="로컬 저장소 초기화"
+              >
+                모두 삭제
+              </button>
             </div>
           </div>
         </div>
