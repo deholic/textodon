@@ -9,6 +9,14 @@
   --timeline-column-max-width: 520px;
 }
 
+:root[data-color-scheme="light"] {
+  color-scheme: light;
+}
+
+:root[data-color-scheme="dark"] {
+  color-scheme: dark;
+}
+
 :root[data-theme="christmas"] {
   background: radial-gradient(circle at top left, #f6efe6, #fff5f0 55%, #ffffff);
   color: #2d1a16;
