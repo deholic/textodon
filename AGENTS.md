@@ -14,8 +14,8 @@
 - 배포 용어: Cloudflare Pages 배포는 production, GitHub Pages 배포는 beta로 칭한다.
 
 ## 작업 플로우
-- 작업 시작 전: `main` 최신화 → 새 feature 브랜치 생성.
-- 새로운 작업은 항상 `main` 최신화 후 `feature/{기능-이름}` 브랜치에서 시작한다.
+- 작업 시작 전: `develop` 최신화 → 새 feature 브랜치 생성.
+- 새로운 작업은 항상 `develop` 최신화 후 `feature/{기능-이름}` 브랜치에서 시작한다.
 - 브랜치 이름은 작업 내용에 맞게 스스로 정한다.
 - 작업 종료(릴리즈 준비 요청): 커밋 → 푸시 → PR 생성까지 진행한다.
 
