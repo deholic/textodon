@@ -102,11 +102,22 @@ export const AccountManager = ({
 
       <button
         type="button"
-        className="account-add-button"
+        className="account-add-button button-with-icon"
         onClick={() => setShowForm((prev) => !prev)}
         aria-label={showForm ? "서버 추가 닫기" : "서버 추가"}
       >
-        {showForm ? "–" : "+"} 서버 추가
+        {showForm ? (
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12" />
+            <path d="M18 6l-12 12" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+        )}
+        {showForm ? "서버 추가 닫기" : "서버 추가"}
       </button>
 
       {showForm ? (

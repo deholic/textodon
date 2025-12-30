@@ -17,19 +17,30 @@
 
 .settings-button {
   width: 100%;
-  margin: 6px 0 0;
+  margin: 0;
 }
 
 .sidebar-actions {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 8px;
 }
 
-.sidebar-actions .account-add,
+.sidebar-actions .settings-button {
+  height: 40px;
+}
+
+.sidebar-actions .account-add-wrapper {
+  display: contents;
+}
+
 .sidebar-actions .account-add-button.header {
   width: 100%;
+}
+
+.sidebar-actions .account-add-panel {
+  grid-column: 1 / -1;
 }
 
 .sidebar-divider {
@@ -130,10 +141,6 @@
   margin-bottom: 12px;
 }
 
-.account-add {
-  position: relative;
-}
-
 .account-add-button.header {
   width: auto;
   height: 40px;
@@ -142,24 +149,15 @@
   font-size: 13px;
 }
 
-.account-add-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: min(320px, 80vw);
+.account-add-panel {
+  width: 100%;
+  max-width: 100%;
   background: #fffdfa;
   border: 1px solid #e2ddd5;
   border-radius: 12px;
   padding: 12px;
   box-shadow: 0 18px 40px rgba(67, 57, 45, 0.12);
-  z-index: 30;
-}
-
-.overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 13, 11, 0.12);
-  z-index: 15;
+  margin-top: 8px;
 }
 
 .settings-modal {
@@ -229,7 +227,7 @@
   font-family: inherit;
 }
 
-.settings-item .account-add {
+.settings-item .account-add-wrapper {
   flex-shrink: 0;
 }
 
@@ -564,6 +562,23 @@ button {
   border-radius: 10px;
   padding: 8px 12px;
   cursor: pointer;
+}
+
+.button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.button-with-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .icon-button {

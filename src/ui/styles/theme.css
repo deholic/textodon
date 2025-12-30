@@ -41,7 +41,7 @@ body[data-theme="christmas"] .overlay-backdrop {
   color: #f4fff7;
 }
 
-:root[data-theme="christmas"] .account-add-popover {
+:root[data-theme="christmas"] .account-add-panel {
   background: rgba(255, 247, 242, 0.92);
   color: #5b1f1f;
   border: 1px solid #ead7cc;
@@ -278,7 +278,7 @@ body[data-theme="monochrome"] .overlay-backdrop {
   color: #ffffff;
 }
 
-:root[data-theme="monochrome"] .account-add-popover {
+:root[data-theme="monochrome"] .account-add-panel {
   background: rgba(255, 255, 255, 0.92);
   color: #111111;
   border: 1px solid #1d1d1d;
@@ -824,23 +824,23 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #111111;
   }
 
-  .account-add-popover {
+  .account-add-panel {
     background: rgba(23, 21, 18, 0.88);
     color: #f0e7dc;
     border: 1px solid #3b342d;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   }
 
-  :root[data-theme="christmas"] .account-add-popover,
-  body[data-theme="christmas"] .account-add-popover {
+  :root[data-theme="christmas"] .account-add-panel,
+  body[data-theme="christmas"] .account-add-panel {
     background: rgba(26, 16, 15, 0.88);
     color: #f7e7df;
     border: 1px solid #3b2624;
     box-shadow: 0 18px 40px rgba(64, 20, 20, 0.45);
   }
 
-  :root[data-theme="monochrome"] .account-add-popover,
-  body[data-theme="monochrome"] .account-add-popover {
+  :root[data-theme="monochrome"] .account-add-panel,
+  body[data-theme="monochrome"] .account-add-panel {
     background: rgba(16, 16, 16, 0.88);
     color: #f0f0f0;
     border: 1px solid #3a3a3a;

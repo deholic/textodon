@@ -960,14 +960,22 @@ export const App = () => {
               <p className="sidebar-description">
                 여러 계정을 전환하고 타임라인을 실시간으로 확인할 수 있습니다.
               </p>
-              <button
-                type="button"
-                className="settings-button"
-                onClick={() => setSettingsOpen(true)}
-              >
-                설정 열기
-              </button>
               <div className="sidebar-actions">
+                <button
+                  type="button"
+                  className="settings-button button-with-icon"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16" />
+                    <circle cx="9" cy="6" r="2" />
+                    <path d="M4 12h16" />
+                    <circle cx="15" cy="12" r="2" />
+                    <path d="M4 18h16" />
+                    <circle cx="8" cy="18" r="2" />
+                  </svg>
+                  설정 열기
+                </button>
                 <AccountAdd
                   accounts={accountsState.accounts}
                   setActiveAccount={accountsState.setActiveAccount}
@@ -1095,11 +1103,20 @@ export const App = () => {
             <div className="mobile-menu-actions">
               <button
                 type="button"
+                className="button-with-icon"
                 onClick={() => {
                   setSettingsOpen(true);
                   closeMobileMenu();
                 }}
               >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6h16" />
+                  <circle cx="9" cy="6" r="2" />
+                  <path d="M4 12h16" />
+                  <circle cx="15" cy="12" r="2" />
+                  <path d="M4 18h16" />
+                  <circle cx="8" cy="18" r="2" />
+                </svg>
                 설정 열기
               </button>
             </div>

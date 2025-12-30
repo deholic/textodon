@@ -439,7 +439,16 @@ export const ComposeBox = ({
               </svg>
               <input type="file" accept="image/*" multiple onChange={handleFilesSelected} />
             </label>
-            <button type="submit">게시</button>
+            <button
+              type="submit"
+              className="icon-button compose-icon-button"
+              aria-label="게시"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 2L11 13" />
+                <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+              </svg>
+            </button>
           </div>
         </div>
         {emojiPanelOpen ? (
