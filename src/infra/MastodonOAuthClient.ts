@@ -13,7 +13,7 @@ export class MastodonOAuthClient implements OAuthClient {
   async registerApp(instanceUrl: string, redirectUri: string): Promise<MastodonRegisteredApp> {
     const normalized = normalizeInstanceUrl(instanceUrl);
     const body = new URLSearchParams({
-      client_name: "textodon",
+      client_name: "Deck",
       redirect_uris: redirectUri,
       scopes: OAUTH_SCOPE
     });

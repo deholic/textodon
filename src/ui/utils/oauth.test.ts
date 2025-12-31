@@ -61,7 +61,7 @@ describe("oauth utils", () => {
       redirectUri: "https://app.example/callback",
       scope: "read",
       sessionId: "session",
-      appName: "Textodon"
+      appName: "Deck"
     };
 
     saveRegisteredApp(app);

@@ -5,7 +5,7 @@ import type {
   RegisteredApp
 } from "../services/OAuthClient";
 
-const APP_NAME = "textodon";
+const APP_NAME = "Deck";
 const MIAUTH_PERMISSIONS = [
   "read:account",
   "read:notifications",

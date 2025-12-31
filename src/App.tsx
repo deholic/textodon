@@ -48,7 +48,7 @@ const TermsPage = () => (
   <section className="panel info-panel">
     <PageHeader title="이용약관" />
     <p>
-      textodon은 개인 또는 팀이 운영하는 마스토돈 인스턴스에 접속하는 클라이언트입니다. 본
+      Deck은 개인 또는 팀이 운영하는 마스토돈 인스턴스에 접속하는 클라이언트입니다. 본
       서비스는 사용자의 계정 정보 및 게시물을 저장하지 않으며, 모든 요청은 사용자가 설정한
       인스턴스로 직접 전송됩니다.
     </p>
@@ -69,7 +69,7 @@ const LicensePage = () => (
 const OssPage = () => (
   <section className="panel info-panel">
     <PageHeader title="오픈소스 목록" />
-    <p>textodon은 다음 오픈소스를 사용합니다.</p>
+    <p>Deck은 다음 오픈소스를 사용합니다.</p>
     <ul className="oss-list">
       <li>react</li>
       <li>react-dom</li>
@@ -913,8 +913,8 @@ export const App = () => {
   return (
     <div className="app">
       <header className="app-header">
-        <a href="#/" className="app-logo" aria-label="textodon 홈">
-          <img src={logoUrl} alt="textodon logo" />
+        <a href="#/" className="app-logo" aria-label="Deck 홈">
+          <img src={logoUrl} alt="Deck logo" />
         </a>
         <div className="app-header-actions">
           <button
@@ -964,10 +964,10 @@ export const App = () => {
           {route === "home" ? (
             <section className="panel sidebar-panel">
               <div className="brand">
-                <img src={logoUrl} alt="textodon logo" />
+                <img src={logoUrl} alt="Deck logo" />
                 <div className="brand-text">
-                  <h1>textodon</h1>
-                  <p>텍스트 중심 마스토돈 클라이언트</p>
+                  <h1>Deck</h1>
+                  <p>오픈소스 페디버스 웹 클라이언트</p>
                 </div>
               </div>
               <p className="sidebar-description">
