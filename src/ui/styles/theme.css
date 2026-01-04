@@ -1318,6 +1318,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root:not([data-color-scheme="light"]) .section-menu-panel button,
   body:not([data-color-scheme="light"]) .section-menu-panel button {
+    background: none;
     color: #f0e7dc;
   }
 
@@ -1368,6 +1369,16 @@ body[data-theme="monochrome"] .compose-icon-button {
   :root:not([data-color-scheme="light"])[data-theme="monochrome"] .section-menu-panel button,
   body:not([data-color-scheme="light"])[data-theme="monochrome"] .section-menu-panel button {
     color: #f0f0f0;
+  }
+
+  :root:not([data-color-scheme="light"]) .account-list button,
+  body:not([data-color-scheme="light"]) .account-list button {
+    background: none;
+  }
+
+  :root:not([data-color-scheme="light"]) .account-list button:not(.ghost),
+  body:not([data-color-scheme="light"]) .account-list button:not(.ghost) {
+    color: inherit;
   }
 
   :root:not([data-color-scheme="light"]) .account-selector-summary,
@@ -2642,6 +2653,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root[data-color-scheme="dark"] .section-menu-panel button,
   body[data-color-scheme="dark"] .section-menu-panel button {
+    background: none;
     color: #f0e7dc;
   }
 
@@ -2693,6 +2705,16 @@ body[data-theme="monochrome"] .compose-icon-button {
   :root[data-color-scheme="dark"][data-theme="monochrome"] .section-menu-panel button,
   body[data-color-scheme="dark"][data-theme="monochrome"] .section-menu-panel button {
     color: #f0f0f0;
+  }
+
+  :root[data-color-scheme="dark"] .account-list button,
+  body[data-color-scheme="dark"] .account-list button {
+    background: none;
+  }
+
+  :root[data-color-scheme="dark"] .account-list button:not(.ghost),
+  body[data-color-scheme="dark"] .account-list button:not(.ghost) {
+    color: inherit;
   }
 
   :root[data-color-scheme="dark"] .account-selector-summary,
