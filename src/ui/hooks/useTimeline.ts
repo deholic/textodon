@@ -50,6 +50,7 @@ export const useTimeline = (params: {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const disconnectRef = useRef<null | (() => void)>(null);
+  const notificationDisconnectRef = useRef<null | (() => void)>(null);
   const notificationRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -108,17 +109,19 @@ export const useTimeline = (params: {
   useEffect(() => {
     disconnectRef.current?.();
     disconnectRef.current = null;
+    notificationDisconnectRef.current?.();
+    notificationDisconnectRef.current = null;
     if (!account || !enableStreaming) {
       return;
     }
 
-    disconnectRef.current = streaming.connect(account, (event) => {
+    disconnectRef.current = streaming.connect(account, timelineType, (event) => {
       if (event.type === "update") {
-        if (timelineType === "home") {
+        if (timelineType !== "notifications") {
           setItems((current) => mergeStatus(current, event.status));
         }
       } else if (event.type === "delete") {
-        if (timelineType === "home") {
+        if (timelineType !== "notifications") {
           setItems((current) => current.filter((item) => item.id !== event.id));
         }
       } else if (event.type === "notification") {
@@ -126,11 +129,21 @@ export const useTimeline = (params: {
       }
     });
 
+    if (onNotification && timelineType !== "home" && timelineType !== "notifications") {
+      notificationDisconnectRef.current = streaming.connect(account, "notifications", (event) => {
+        if (event.type === "notification") {
+          notificationRef.current?.();
+        }
+      });
+    }
+
     return () => {
       disconnectRef.current?.();
       disconnectRef.current = null;
+      notificationDisconnectRef.current?.();
+      notificationDisconnectRef.current = null;
     };
-  }, [account, enableStreaming, streaming, timelineType]);
+  }, [account, enableStreaming, onNotification, streaming, timelineType]);
 
   const updateItem = useCallback((status: Status) => {
     setItems((current) => replaceStatus(current, status));

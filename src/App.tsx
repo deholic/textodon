@@ -9,7 +9,7 @@ import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle } from "./ui/utils/account";
 import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
-import { normalizeTimelineType } from "./ui/utils/timeline";
+import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import readmeText from "../README.md?raw";
 import licenseText from "../LICENSE?raw";
@@ -44,6 +44,62 @@ const PageHeader = ({ title }: { title: string }) => (
     <h2>{title}</h2>
   </div>
 );
+
+const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
+  switch (timeline) {
+    case "home":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 11l9-7 9 7" />
+          <path d="M5 10v10h14V10" />
+        </svg>
+      );
+    case "local":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z" />
+          <path d="M12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+        </svg>
+      );
+    case "federated":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="12" r="3" />
+          <path d="M9 12h6" />
+          <path d="M12 6v3" />
+          <path d="M12 15v3" />
+        </svg>
+      );
+    case "social":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="8" cy="9" r="3" />
+          <circle cx="16" cy="9" r="3" />
+          <path d="M4 20c0-3 2.5-5 4-5h0" />
+          <path d="M20 20c0-3-2.5-5-4-5h0" />
+        </svg>
+      );
+    case "global":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18" />
+          <path d="M12 3a15 15 0 0 1 0 18" />
+          <path d="M12 3a15 15 0 0 0 0 18" />
+        </svg>
+      );
+    case "notifications":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
 
 const TermsPage = () => (
   <section className="panel info-panel">
@@ -144,13 +200,17 @@ const TimelineSection = ({
     loadMore: loadMoreNotifications
   } = notificationsTimeline;
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const timelineMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const notificationScrollRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [timelineMenuOpen, setTimelineMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isAtTop, setIsAtTop] = useState(true);
+  const timelineOptions = useMemo(() => getTimelineOptions(account?.platform, false), [account?.platform]);
+  const timelineButtonLabel = `타임라인 선택: ${getTimelineLabel(timelineType)}`;
   const hasNotificationBadge = notificationCount > 0;
   const notificationBadgeLabel = notificationsOpen
     ? "알림 닫기"
@@ -230,6 +290,31 @@ const TimelineSection = ({
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!timelineMenuOpen) {
+      return;
+    }
+    const handleClick = (event: MouseEvent) => {
+      if (!timelineMenuRef.current || !(event.target instanceof Node)) {
+        return;
+      }
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".overlay-backdrop")
+      ) {
+        setTimelineMenuOpen(false);
+        return;
+      }
+      if (!timelineMenuRef.current.contains(event.target)) {
+        setTimelineMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [timelineMenuOpen]);
+
+  useEffect(() => {
     if (!notificationsOpen) {
       return;
     }
@@ -278,6 +363,7 @@ const TimelineSection = ({
   useEffect(() => {
     if (!account) {
       setNotificationsOpen(false);
+      setTimelineMenuOpen(false);
     }
     setNotificationCount(0);
   }, [account?.id]);
@@ -359,100 +445,62 @@ const TimelineSection = ({
             onAccountChange(section.id, id);
             accountsState.setActiveAccount(id);
           }}
-          activeTimeline={timelineType}
-          setActiveTimeline={(next) => onTimelineChange(section.id, next)}
           removeAccount={accountsState.removeAccount}
           variant="inline"
         />
         <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
-          <div className="section-menu" ref={menuRef}>
+          <div className="timeline-selector" ref={timelineMenuRef}>
             <button
               type="button"
-              className="icon-button menu-button"
-              aria-label="섹션 메뉴 열기"
+              className="timeline-selector-button"
               onClick={() => {
-                setMenuOpen((current) => !current);
+                if (!account) {
+                  onError("계정을 선택해주세요.");
+                  return;
+                }
+                setTimelineMenuOpen((current) => !current);
+                setMenuOpen(false);
                 setNotificationsOpen(false);
               }}
+              disabled={!account}
+              aria-label={timelineButtonLabel}
+              aria-haspopup="menu"
+              aria-expanded={timelineMenuOpen}
+              title={timelineButtonLabel}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16" />
-                <path d="M4 12h16" />
-                <path d="M4 17h16" />
-              </svg>
+              <TimelineIcon timeline={timelineType} />
+              <span className="timeline-selector-label">{getTimelineLabel(timelineType)}</span>
             </button>
-            {menuOpen ? (
+            {timelineMenuOpen ? (
               <>
                 <div
                   className="overlay-backdrop"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => setTimelineMenuOpen(false)}
                   aria-hidden="true"
                 />
-                <div className="section-menu-panel" role="menu">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      timeline.refresh();
-                      setMenuOpen(false);
-                    }}
-                    disabled={!account || timeline.loading}
-                  >
-                    새로고침
-                  </button>
-                  <div className="section-menu-mobile">
-                    <button type="button" onClick={scrollToTop}>
-                      최상단으로
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onAddSectionLeft(section.id);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    왼쪽 섹션 추가
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onMoveSection(section.id, "left");
-                      setMenuOpen(false);
-                    }}
-                    disabled={!canMoveLeft}
-                  >
-                    왼쪽으로 이동
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onMoveSection(section.id, "right");
-                      setMenuOpen(false);
-                    }}
-                    disabled={!canMoveRight}
-                  >
-                    오른쪽으로 이동
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onAddSectionRight(section.id);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    오른쪽 섹션 추가
-                  </button>
-                  <button
-                    type="button"
-                    className="danger"
-                    disabled={!canRemoveSection}
-                    onClick={() => {
-                      onRemoveSection(section.id);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    섹션 삭제
-                  </button>
+                <div
+                  className="section-menu-panel timeline-selector-panel"
+                  role="menu"
+                  aria-label="타임라인 선택"
+                >
+                  {timelineOptions.map((option) => {
+                    const isSelected = timelineType === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={isSelected ? "is-active" : ""}
+                        aria-pressed={isSelected}
+                        onClick={() => {
+                          onTimelineChange(section.id, option.id);
+                          setTimelineMenuOpen(false);
+                        }}
+                      >
+                        <TimelineIcon timeline={option.id} />
+                        <span>{option.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             ) : null}
@@ -467,6 +515,7 @@ const TimelineSection = ({
                   return;
                 }
                 setMenuOpen(false);
+                setTimelineMenuOpen(false);
                 setNotificationsOpen((current) => !current);
               }}
               disabled={!account}
@@ -539,19 +588,94 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={scrollToTop}
-            disabled={isAtTop}
-            aria-label="Scroll to top"
-            title="Scroll to top"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 19V5" />
-              <path d="M5 12l7-7 7 7" />
-            </svg>
-          </button>
+          <div className="section-menu" ref={menuRef}>
+            <button
+              type="button"
+              className="icon-button menu-button"
+              aria-label="섹션 메뉴 열기"
+              onClick={() => {
+                setMenuOpen((current) => !current);
+                setNotificationsOpen(false);
+                setTimelineMenuOpen(false);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+              </svg>
+            </button>
+            {menuOpen ? (
+              <>
+                <div
+                  className="overlay-backdrop"
+                  onClick={() => setMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                <div className="section-menu-panel" role="menu">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      timeline.refresh();
+                      setMenuOpen(false);
+                    }}
+                    disabled={!account || timeline.loading}
+                  >
+                    새로고침
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onAddSectionLeft(section.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    왼쪽 섹션 추가
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onMoveSection(section.id, "left");
+                      setMenuOpen(false);
+                    }}
+                    disabled={!canMoveLeft}
+                  >
+                    왼쪽으로 이동
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onMoveSection(section.id, "right");
+                      setMenuOpen(false);
+                    }}
+                    disabled={!canMoveRight}
+                  >
+                    오른쪽으로 이동
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onAddSectionRight(section.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    오른쪽 섹션 추가
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={!canRemoveSection}
+                    onClick={() => {
+                      onRemoveSection(section.id);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    섹션 삭제
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="timeline-column-body" ref={scrollRef}>
@@ -585,6 +709,19 @@ const TimelineSection = ({
         ) : null}
         {timeline.loadingMore ? <p className="empty">더 불러오는 중...</p> : null}
       </div>
+      <button
+        type="button"
+        className="icon-button scroll-top-fab"
+        onClick={scrollToTop}
+        disabled={isAtTop}
+        aria-label="최상단으로 이동"
+        title="최상단으로 이동"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+      </button>
     </div>
   );
 };

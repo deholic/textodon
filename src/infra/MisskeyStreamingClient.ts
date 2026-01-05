@@ -1,4 +1,4 @@
-import type { Account } from "../domain/types";
+import type { Account, TimelineType } from "../domain/types";
 import type { StreamingClient, StreamingEvent } from "../services/StreamingClient";
 import { mapMisskeyStatusWithInstance } from "./misskeyMapper";
 
@@ -57,13 +57,29 @@ const mapMisskeyEvent = (
 };
 
 export class MisskeyStreamingClient implements StreamingClient {
-  connect(account: Account, onEvent: (event: StreamingEvent) => void): () => void {
+  connect(account: Account, timelineType: TimelineType, onEvent: (event: StreamingEvent) => void): () => void {
     let isClosed = false;
     let socket: WebSocket | null = null;
     let retryTimer: number | null = null;
     let pingTimer: number | null = null;
     let retryCount = 0;
     let channelId = "";
+    const channelName = (() => {
+      switch (timelineType) {
+        case "home":
+          return "homeTimeline";
+        case "local":
+          return "localTimeline";
+        case "social":
+          return "hybridTimeline";
+        case "global":
+          return "globalTimeline";
+        case "notifications":
+          return "main";
+        default:
+          return "homeTimeline";
+      }
+    })();
 
     const clearTimers = () => {
       if (retryTimer) {
@@ -99,7 +115,7 @@ export class MisskeyStreamingClient implements StreamingClient {
         retryCount = 0;
         send({
           type: "connect",
-          body: { channel: "homeTimeline", id: channelId }
+          body: { channel: channelName, id: channelId }
         });
         pingTimer = window.setInterval(() => send({ type: "ping" }), PING_INTERVAL_MS);
       };
