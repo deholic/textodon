@@ -399,11 +399,6 @@ const TimelineSection = ({
                   >
                     새로고침
                   </button>
-                  <div className="section-menu-mobile">
-                    <button type="button" onClick={scrollToTop}>
-                      최상단으로
-                    </button>
-                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -539,19 +534,6 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={scrollToTop}
-            disabled={isAtTop}
-            aria-label="Scroll to top"
-            title="Scroll to top"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 19V5" />
-              <path d="M5 12l7-7 7 7" />
-            </svg>
-          </button>
         </div>
       </div>
       <div className="timeline-column-body" ref={scrollRef}>
@@ -585,6 +567,19 @@ const TimelineSection = ({
         ) : null}
         {timeline.loadingMore ? <p className="empty">더 불러오는 중...</p> : null}
       </div>
+      <button
+        type="button"
+        className="icon-button scroll-top-fab"
+        onClick={scrollToTop}
+        disabled={isAtTop}
+        aria-label="최상단으로 이동"
+        title="최상단으로 이동"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+      </button>
     </div>
   );
 };

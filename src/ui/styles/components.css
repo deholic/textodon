@@ -708,6 +708,7 @@ button.ghost {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
   background: #fffdfa;
   border: 1px solid #e2ddd5;
   border-radius: 14px;
@@ -753,21 +754,6 @@ button.ghost {
   flex-direction: column;
   gap: 4px;
   z-index: 20;
-}
-
-.section-menu-mobile {
-  display: none;
-  flex-direction: column;
-  gap: 4px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #e2ddd5;
-  margin-bottom: 4px;
-}
-
-@media (max-width: 900px) {
-  .section-menu-mobile {
-    display: flex;
-  }
 }
 
 .section-menu-panel button {
@@ -841,6 +827,14 @@ button.ghost {
   overflow-y: auto;
   max-height: 85vh;
   padding-right: 6px;
+}
+
+.scroll-top-fab {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 5;
+  box-shadow: 0 12px 24px rgba(67, 57, 45, 0.16);
 }
 
 .timeline {
