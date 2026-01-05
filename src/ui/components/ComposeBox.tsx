@@ -414,7 +414,7 @@ export const ComposeBox = ({
   }, [attachments]);
 
   return (
-    <section className="panel">
+    <section className="panel compose-box">
       {accountSelector ? <div className="compose-account-select">{accountSelector}</div> : null}
       {replyingTo ? (
         <div className="replying">
@@ -599,16 +599,16 @@ export const ComposeBox = ({
               : null}
           </div>
         ) : null}
-        {isSubmitting ? (
-          <div className="compose-busy" role="status" aria-live="polite">
-            <div className="compose-busy-backdrop" aria-hidden="true" />
-            <div className="compose-busy-content">
-              <span className="compose-busy-spinner" aria-hidden="true" />
-              <span>게시 중...</span>
-            </div>
-          </div>
-        ) : null}
       </form>
+      {isSubmitting ? (
+        <div className="compose-busy" role="status" aria-live="polite">
+          <div className="compose-busy-backdrop" aria-hidden="true" />
+          <div className="compose-busy-content">
+            <span className="compose-busy-spinner" aria-hidden="true" />
+            <span>게시 중...</span>
+          </div>
+        </div>
+      ) : null}
       {activeImage ? (
         <div
           className="image-modal"
