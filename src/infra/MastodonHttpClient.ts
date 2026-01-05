@@ -1,6 +1,6 @@
-import type { Account, CustomEmoji, Status } from "../domain/types";
+import type { Account, CustomEmoji, Status, TimelineType } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapStatus } from "./mastodonMapper";
+import { mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
 const buildHeaders = (account: Account): HeadersInit => ({
   Authorization: `Bearer ${account.accessToken}`,
@@ -57,6 +57,36 @@ export class MastodonHttpClient implements MastodonApi {
   async fetchHomeTimeline(account: Account, limit: number, maxId?: string): Promise<Status[]> {
     const url = new URL(`${account.instanceUrl}/api/v1/timelines/home`);
     url.searchParams.set("limit", String(limit));
+    if (maxId) {
+      url.searchParams.set("max_id", maxId);
+    }
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("타임라인을 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    return data.map(mapStatus);
+  }
+
+  async fetchTimeline(
+    account: Account,
+    timeline: TimelineType,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    if (timeline === "home") {
+      return this.fetchHomeTimeline(account, limit, maxId);
+    }
+    if (timeline === "notifications") {
+      return this.fetchNotifications(account, limit, maxId);
+    }
+    const url = new URL(`${account.instanceUrl}/api/v1/timelines/public`);
+    url.searchParams.set("limit", String(limit));
+    if (timeline === "local") {
+      url.searchParams.set("local", "true");
+    }
     if (maxId) {
       url.searchParams.set("max_id", maxId);
     }
@@ -144,6 +174,28 @@ export class MastodonHttpClient implements MastodonApi {
 
   async unreblog(account: Account, statusId: string): Promise<Status> {
     return this.postAction(account, statusId, "unreblog");
+  }
+
+  private async fetchNotifications(
+    account: Account,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    const url = new URL(`${account.instanceUrl}/api/v1/notifications`);
+    url.searchParams.set("limit", String(limit));
+    if (maxId) {
+      url.searchParams.set("max_id", maxId);
+    }
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("알림을 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    return data
+      .map((item) => mapNotificationToStatus(item))
+      .filter((item): item is Status => item !== null);
   }
 
   private async postAction(account: Account, statusId: string, action: string): Promise<Status> {

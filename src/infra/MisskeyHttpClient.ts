@@ -1,6 +1,6 @@
-﻿import type { Account, CustomEmoji, Status } from "../domain/types";
+﻿import type { Account, CustomEmoji, Status, TimelineType } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapMisskeyStatusWithInstance } from "./misskeyMapper";
+import { mapMisskeyNotification, mapMisskeyStatusWithInstance } from "./misskeyMapper";
 
 const normalizeInstanceUrl = (instanceUrl: string): string => instanceUrl.replace(/\/$/, "");
 
@@ -90,23 +90,29 @@ export class MisskeyHttpClient implements MastodonApi {
   }
 
   async fetchHomeTimeline(account: Account, limit: number, maxId?: string): Promise<Status[]> {
-    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/notes/timeline`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(
-        buildBody(account, {
-          limit,
-          untilId: maxId
-        })
-      )
-    });
-    if (!response.ok) {
-      throw new Error("타임라인을 불러오지 못했습니다.");
+    return this.fetchNotesTimeline(account, "/api/notes/timeline", limit, maxId);
+  }
+
+  async fetchTimeline(
+    account: Account,
+    timeline: TimelineType,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    switch (timeline) {
+      case "home":
+        return this.fetchHomeTimeline(account, limit, maxId);
+      case "local":
+        return this.fetchNotesTimeline(account, "/api/notes/local-timeline", limit, maxId);
+      case "social":
+        return this.fetchNotesTimeline(account, "/api/notes/hybrid-timeline", limit, maxId);
+      case "global":
+        return this.fetchNotesTimeline(account, "/api/notes/global-timeline", limit, maxId);
+      case "notifications":
+        return this.fetchNotifications(account, limit, maxId);
+      default:
+        return this.fetchHomeTimeline(account, limit, maxId);
     }
-    const data = (await response.json()) as unknown[];
-    return data.map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl));
   }
 
   async fetchCustomEmojis(account: Account): Promise<CustomEmoji[]> {
@@ -260,5 +266,56 @@ export class MisskeyHttpClient implements MastodonApi {
     if (!response.ok) {
       throw new Error("요청에 실패했습니다.");
     }
+  }
+
+  private async fetchNotesTimeline(
+    account: Account,
+    path: string,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(
+        buildBody(account, {
+          limit,
+          untilId: maxId
+        })
+      )
+    });
+    if (!response.ok) {
+      throw new Error("타임라인을 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    return data.map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl));
+  }
+
+  private async fetchNotifications(
+    account: Account,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/i/notifications`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(
+        buildBody(account, {
+          limit,
+          untilId: maxId
+        })
+      )
+    });
+    if (!response.ok) {
+      throw new Error("알림을 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    return data
+      .map((item) => mapMisskeyNotification(item, account.instanceUrl))
+      .filter((item): item is Status => item !== null);
   }
 }
