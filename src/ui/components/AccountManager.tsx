@@ -31,13 +31,6 @@ export const AccountManager = ({
       setError("서버 주소를 입력해주세요.");
       return;
     }
-    const existing = accounts.find((account) => account.instanceUrl === normalizedUrl);
-    if (existing) {
-      setActiveAccount(existing.id);
-      setInstanceUrl("");
-      setShowForm(false);
-      return;
-    }
 
     setLoading(true);
     try {
@@ -104,7 +97,7 @@ export const AccountManager = ({
         type="button"
         className="account-add-button button-with-icon"
         onClick={() => setShowForm((prev) => !prev)}
-        aria-label={showForm ? "서버 추가 닫기" : "서버 추가"}
+        aria-label={showForm ? "계정 추가 닫기" : "계정 추가"}
       >
         {showForm ? (
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -117,7 +110,7 @@ export const AccountManager = ({
             <path d="M5 12h14" />
           </svg>
         )}
-        {showForm ? "서버 추가 닫기" : "서버 추가"}
+        {showForm ? "계정 추가 닫기" : "계정 추가"}
       </button>
 
       {showForm ? (

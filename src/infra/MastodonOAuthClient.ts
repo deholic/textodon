@@ -55,6 +55,7 @@ export class MastodonOAuthClient implements OAuthClient {
     authorizeUrl.searchParams.set("response_type", "code");
     authorizeUrl.searchParams.set("scope", app.scope);
     authorizeUrl.searchParams.set("state", state);
+    authorizeUrl.searchParams.set("force_login", "true");
     return authorizeUrl.toString();
   }
 
