@@ -6,6 +6,7 @@ export type CreateStatusInput = {
   visibility: Visibility;
   inReplyToId?: string;
   mediaIds?: string[];
+  spoilerText?: string;
 };
 
 export interface MastodonApi {
