@@ -1,4 +1,4 @@
-import type { Account, Status } from "../domain/types";
+import type { Account, Status, TimelineType } from "../domain/types";
 
 export type StreamingEvent =
   | { type: "update"; status: Status }
@@ -6,5 +6,5 @@ export type StreamingEvent =
   | { type: "notification" };
 
 export interface StreamingClient {
-  connect(account: Account, onEvent: (event: StreamingEvent) => void): () => void;
+  connect(account: Account, timelineType: TimelineType, onEvent: (event: StreamingEvent) => void): () => void;
 }

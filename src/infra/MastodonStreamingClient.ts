@@ -1,4 +1,4 @@
-import type { Account, Status } from "../domain/types";
+import type { Account, Status, TimelineType } from "../domain/types";
 import type { StreamingClient, StreamingEvent } from "../services/StreamingClient";
 import { mapStatus } from "./mastodonMapper";
 
@@ -21,18 +21,32 @@ const mapEvent = (payload: MessageEvent<string>): StreamingEvent | null => {
 };
 
 export class MastodonStreamingClient implements StreamingClient {
-  connect(account: Account, onEvent: (event: StreamingEvent) => void): () => void {
+  connect(account: Account, timelineType: TimelineType, onEvent: (event: StreamingEvent) => void): () => void {
     let isClosed = false;
     let socket: WebSocket | null = null;
     let retryTimer: number | null = null;
     let retryCount = 0;
+
+    const streamName = (() => {
+      switch (timelineType) {
+        case "home":
+        case "notifications":
+          return "user";
+        case "local":
+          return "public:local";
+        case "federated":
+          return "public";
+        default:
+          return "user";
+      }
+    })();
 
     const open = (useQueryToken: boolean) => {
       if (isClosed) {
         return;
       }
       const url = new URL(`${account.instanceUrl.replace(/\/$/, "")}/api/v1/streaming`);
-      url.searchParams.set("stream", "user");
+      url.searchParams.set("stream", streamName);
       if (useQueryToken) {
         url.searchParams.set("access_token", account.accessToken);
       }
