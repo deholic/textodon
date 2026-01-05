@@ -164,6 +164,9 @@ export class MisskeyHttpClient implements MastodonApi {
       visibility: mapVisibility(input.visibility),
       replyId: input.inReplyToId
     };
+    if (input.spoilerText) {
+      payload.cw = input.spoilerText;
+    }
     if (input.mediaIds && input.mediaIds.length > 0) {
       payload.fileIds = input.mediaIds;
     }

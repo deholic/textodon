@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 
@@ -56,6 +56,7 @@ export const ComposeBox = ({
     visibility: Visibility;
     inReplyToId?: string;
     files: File[];
+    spoilerText: string;
   }) => Promise<boolean>;
   replyingTo: { id: string; summary: string } | null;
   onCancelReply: () => void;
@@ -65,6 +66,9 @@ export const ComposeBox = ({
   api: MastodonApi;
 }) => {
   const [text, setText] = useState("");
+  const [cwEnabled, setCwEnabled] = useState(false);
+  const [cwText, setCwText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [visibility, setVisibility] = useState<Visibility>(() => {
     const stored = localStorage.getItem(VISIBILITY_KEY);
     if (stored === "public" || stored === "unlisted" || stored === "private" || stored === "direct") {
@@ -83,6 +87,7 @@ export const ComposeBox = ({
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const cwInputRef = useRef<HTMLInputElement | null>(null);
   const dragStateRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null
   );
@@ -196,22 +201,30 @@ export const ComposeBox = ({
   }, [visibility]);
 
   const submitPost = async () => {
-    if (!text.trim()) {
+    if (!text.trim() || isSubmitting) {
       return;
     }
-    const ok = await onSubmit({
-      text: text.trim(),
-      visibility,
-      inReplyToId: replyingTo?.id,
-      files: attachments.map((item) => item.file)
-    });
-    if (ok) {
-      setText("");
-      setAttachments((current) => {
-        current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
-        return [];
+    setIsSubmitting(true);
+    try {
+      const ok = await onSubmit({
+        text: text.trim(),
+        visibility,
+        inReplyToId: replyingTo?.id,
+        files: attachments.map((item) => item.file),
+        spoilerText: cwEnabled ? cwText.trim() : ""
       });
-      setActiveImageId(null);
+      if (ok) {
+        setText("");
+        setCwText("");
+        setCwEnabled(false);
+        setAttachments((current) => {
+          current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+          return [];
+        });
+        setActiveImageId(null);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -276,8 +289,7 @@ export const ComposeBox = ({
     setRecentOpen(true);
   }, [emojiPanelOpen]);
 
-  const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+  const addAttachments = useCallback((files: File[]) => {
     if (files.length === 0) {
       return;
     }
@@ -289,7 +301,47 @@ export const ComposeBox = ({
         previewUrl: URL.createObjectURL(file)
       }))
     ]);
+  }, []);
+
+  const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    addAttachments(files);
     event.target.value = "";
+  };
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (isSubmitting) {
+      return;
+    }
+    const items = Array.from(event.clipboardData.items);
+    const imageFiles: File[] = [];
+    items.forEach((item) => {
+      if (item.kind !== "file" || !item.type.startsWith("image/")) {
+        return;
+      }
+      const file = item.getAsFile();
+      if (file) {
+        imageFiles.push(file);
+      }
+    });
+    if (imageFiles.length > 0) {
+      event.preventDefault();
+      addAttachments(imageFiles);
+    }
+  };
+
+  const toggleCw = () => {
+    setCwEnabled((current) => {
+      const next = !current;
+      if (!next) {
+        setCwText("");
+      } else {
+        requestAnimationFrame(() => {
+          cwInputRef.current?.focus();
+        });
+      }
+      return next;
+    });
   };
 
   const insertEmoji = (shortcode: string) => {
@@ -362,7 +414,7 @@ export const ComposeBox = ({
   }, [attachments]);
 
   return (
-    <section className="panel">
+    <section className="panel compose-box">
       {accountSelector ? <div className="compose-account-select">{accountSelector}</div> : null}
       {replyingTo ? (
         <div className="replying">
@@ -372,13 +424,28 @@ export const ComposeBox = ({
           </button>
         </div>
       ) : null}
-      <form onSubmit={handleSubmit} className="compose-form">
+      <form onSubmit={handleSubmit} className="compose-form" aria-busy={isSubmitting}>
+        {cwEnabled ? (
+          <div className="compose-cw">
+            <input
+              ref={cwInputRef}
+              type="text"
+              value={cwText}
+              onChange={(event) => setCwText(event.target.value)}
+              placeholder="CW 내용을 입력하세요"
+              aria-label="콘텐츠 경고"
+              disabled={isSubmitting}
+            />
+          </div>
+        ) : null}
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="지금 무슨 생각을 하고 있나요?"
           rows={4}
+          onPaste={handlePaste}
+          disabled={isSubmitting}
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
               event.preventDefault();
@@ -409,6 +476,7 @@ export const ComposeBox = ({
           <select
             value={visibility}
             onChange={(event) => setVisibility(event.target.value as Visibility)}
+            disabled={isSubmitting}
           >
             {visibilityOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -422,7 +490,7 @@ export const ComposeBox = ({
               className={`icon-button compose-icon-button${emojiPanelOpen ? " is-active" : ""}`}
               aria-label="커스텀 이모지 팔렛트 열기"
               onClick={() => setEmojiPanelOpen((open) => !open)}
-              disabled={!account}
+              disabled={!account || isSubmitting}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="12" r="9" />
@@ -431,18 +499,35 @@ export const ComposeBox = ({
                 <path d="M8.5 15.5c1.2 1 2.4 1.5 3.5 1.5s2.3-.5 3.5-1.5" />
               </svg>
             </button>
+            <button
+              type="button"
+              className={`icon-button compose-icon-button${cwEnabled ? " is-active" : ""}`}
+              aria-label="콘텐츠 경고 입력"
+              aria-pressed={cwEnabled}
+              onClick={toggleCw}
+              disabled={isSubmitting}
+            >
+              CW
+            </button>
             <label className="file-button icon-button compose-icon-button" aria-label="이미지 추가">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
                 <circle cx="9" cy="10" r="2" />
                 <path d="M21 16l-5-5-4 4-2-2-5 5" />
               </svg>
-              <input type="file" accept="image/*" multiple onChange={handleFilesSelected} />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFilesSelected}
+                disabled={isSubmitting}
+              />
             </label>
             <button
               type="submit"
               className="icon-button compose-icon-button"
               aria-label="게시"
+              disabled={isSubmitting}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M22 2L11 13" />
@@ -515,6 +600,15 @@ export const ComposeBox = ({
           </div>
         ) : null}
       </form>
+      {isSubmitting ? (
+        <div className="compose-busy" role="status" aria-live="polite">
+          <div className="compose-busy-backdrop" aria-hidden="true" />
+          <div className="compose-busy-content">
+            <span className="compose-busy-spinner" aria-hidden="true" />
+            <span>게시 중...</span>
+          </div>
+        </div>
+      ) : null}
       {activeImage ? (
         <div
           className="image-modal"
@@ -581,3 +675,5 @@ export const ComposeBox = ({
     </section>
   );
 };
+
+
