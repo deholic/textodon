@@ -1155,6 +1155,7 @@ export const App = () => {
     visibility: "public" | "unlisted" | "private" | "direct";
     inReplyToId?: string;
     files: File[];
+    spoilerText: string;
   }): Promise<boolean> => {
     if (!composeAccount) {
       return false;
@@ -1169,7 +1170,8 @@ export const App = () => {
         status: params.text,
         visibility: params.visibility,
         inReplyToId: params.inReplyToId,
-        mediaIds
+        mediaIds,
+        spoilerText: params.spoilerText
       });
       broadcastStatusUpdate(composeAccount.id, created);
       setReplyTarget(null);

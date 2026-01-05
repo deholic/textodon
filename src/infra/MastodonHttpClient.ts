@@ -140,7 +140,8 @@ export class MastodonHttpClient implements MastodonApi {
         status: input.status,
         visibility: input.visibility,
         in_reply_to_id: input.inReplyToId,
-        media_ids: input.mediaIds
+        media_ids: input.mediaIds,
+        spoiler_text: input.spoilerText
       })
     });
     if (!response.ok) {

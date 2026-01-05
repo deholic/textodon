@@ -465,6 +465,22 @@
   resize: vertical;
 }
 
+.compose-form {
+  position: relative;
+}
+
+.compose-cw {
+  margin-bottom: 8px;
+}
+
+.compose-cw input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d8d1c7;
+  font-family: inherit;
+}
+
 .compose-actions {
   display: flex;
   justify-content: space-between;
@@ -491,6 +507,8 @@
   background: #e1e7f4;
   color: #1e2b45;
   border: 1px solid #d8d1c7;
+  width: 34px;
+  height: 34px;
 }
 
 .compose-icon-button:disabled {
@@ -508,6 +526,55 @@
   gap: 10px;
   max-height: 240px;
   overflow: auto;
+}
+
+.compose-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compose-busy-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 13, 11, 0.2);
+  border-radius: 12px;
+}
+
+.compose-busy-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fffdfa;
+  border: 1px solid #e2ddd5;
+  color: #6b5c4f;
+  font-size: 12px;
+  box-shadow: 0 12px 24px rgba(67, 57, 45, 0.16);
+}
+
+.compose-busy-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #d8d1c7;
+  border-top-color: #3b5fa8;
+  animation: compose-spin 0.8s linear infinite;
+}
+
+@keyframes compose-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .compose-emoji-empty {
@@ -610,6 +677,11 @@ button {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.icon-button.compose-icon-button {
+  width: 34px;
+  height: 34px;
 }
 
 button.is-active {
