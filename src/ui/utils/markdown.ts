@@ -8,8 +8,33 @@ const escapeHtml = (text: string): string =>
 
 const escapeAttr = (text: string): string => escapeHtml(text).replace(/\(/g, "%28").replace(/\)/g, "%29");
 
+const isSafeUrl = (url: string): boolean => {
+  const trimmed = url.trim();
+  if (trimmed.length === 0) {
+    return false;
+  }
+  const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed);
+  return !hasScheme || /^https?:/i.test(trimmed);
+};
+
+const renderImageTag = (alt: string, url: string): string => {
+  if (!isSafeUrl(url)) {
+    return escapeHtml(`![${alt}](${url})`);
+  }
+  const safeAlt = escapeHtml(alt);
+  const safeUrl = escapeAttr(url.trim());
+  return `<img src="${safeUrl}" alt="${safeAlt}" loading="lazy" />`;
+};
+
 const formatInline = (text: string): string => {
-  let out = escapeHtml(text);
+  const images: string[] = [];
+  const tokenized = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, url) => {
+    const imageTag = renderImageTag(alt, url);
+    images.push(imageTag);
+    return `\u0000${images.length - 1}\u0000`;
+  });
+  let out = escapeHtml(tokenized);
+  out = out.replace(/\u0000(\d+)\u0000/g, (_match, index) => images[Number(index)] ?? "");
   out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
   out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
@@ -27,6 +52,7 @@ export const renderMarkdown = (markdown: string): string => {
   let codeBuffer: string[] = [];
   let listBuffer: string[] = [];
   let paragraphBuffer: string[] = [];
+  const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
 
   const flushParagraph = () => {
     if (paragraphBuffer.length === 0) return;
@@ -66,6 +92,20 @@ export const renderMarkdown = (markdown: string): string => {
     if (inCode) {
       codeBuffer.push(line);
       continue;
+    }
+
+    const trimmedLine = line.trim();
+    if (trimmedLine.match(/^(!\[[^\]]*\]\([^)]+\)\s*)+$/)) {
+      flushParagraph();
+      flushList();
+      const images: string[] = [];
+      for (const match of trimmedLine.matchAll(imagePattern)) {
+        images.push(renderImageTag(match[1], match[2]));
+      }
+      if (images.length > 0) {
+        blocks.push(`<div class="readme-image-row">${images.join("")}</div>`);
+        continue;
+      }
     }
 
     const headingMatch = line.match(/^(#{1,3})\s+(.*)$/);

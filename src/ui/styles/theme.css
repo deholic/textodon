@@ -2161,6 +2161,12 @@ body[data-theme="monochrome"] .compose-icon-button {
     background: #221f1b;
   }
 
+  :root:not([data-color-scheme="light"]) .readme-image-row img,
+  body:not([data-color-scheme="light"]) .readme-image-row img {
+    border-color: #2f2a25;
+    background: #221f1b;
+  }
+
   :root:not([data-color-scheme="light"]) .status-text a,
   body:not([data-color-scheme="light"]) .status-text a {
     color: #d7cbbd;
