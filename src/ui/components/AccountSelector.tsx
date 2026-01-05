@@ -1,22 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Account, TimelineType } from "../../domain/types";
+import type { Account } from "../../domain/types";
 import { formatHandle } from "../utils/account";
-import { getTimelineOptions } from "../utils/timeline";
 
 export const AccountSelector = ({
   accounts,
   activeAccountId,
   setActiveAccount,
-  activeTimeline,
-  setActiveTimeline,
   removeAccount,
   variant = "panel"
 }: {
   accounts: Account[];
   activeAccountId: string | null;
   setActiveAccount: (id: string) => void;
-  activeTimeline?: TimelineType;
-  setActiveTimeline?: (timeline: TimelineType) => void;
   removeAccount: (id: string) => void;
   variant?: "panel" | "inline";
 }) => {
@@ -45,7 +40,6 @@ export const AccountSelector = ({
     () => accounts.find((account) => account.id === activeAccountId) ?? null,
     [accounts, activeAccountId]
   );
-  const showTimelineSelector = Boolean(setActiveTimeline);
 
   const wrapperClassName =
     variant === "panel" ? "panel account-selector-panel" : "account-selector-inline";
@@ -97,7 +91,6 @@ export const AccountSelector = ({
             <ul className="account-list">
               {accounts.map((account) => {
                 const isActiveAccount = account.id === activeAccountId;
-                const timelineOptions = getTimelineOptions(account.platform, false);
                 return (
                   <li key={account.id} className={isActiveAccount ? "active" : ""}>
                     <div className="account-row">
@@ -130,28 +123,6 @@ export const AccountSelector = ({
                         삭제
                       </button>
                     </div>
-                    {showTimelineSelector ? (
-                      <div className="account-timeline-options" role="group" aria-label="타임라인 선택">
-                        {timelineOptions.map((option) => {
-                          const isSelected = isActiveAccount && activeTimeline === option.id;
-                          return (
-                            <button
-                              key={option.id}
-                              type="button"
-                              className={`account-timeline-option${isSelected ? " is-active" : ""}`}
-                              aria-pressed={isSelected}
-                              onClick={() => {
-                                setActiveAccount(account.id);
-                                setActiveTimeline?.(option.id);
-                                setDropdownOpen(false);
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : null}
                   </li>
                 );
               })}
