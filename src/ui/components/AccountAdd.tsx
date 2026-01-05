@@ -1,16 +1,11 @@
 import React, { useState } from "react";
-import type { Account } from "../../domain/types";
 import type { OAuthClient } from "../../services/OAuthClient";
 import { normalizeInstanceUrl } from "../utils/account";
 import { createOauthState, loadRegisteredApp, saveRegisteredApp, storePendingOAuth } from "../utils/oauth";
 
 export const AccountAdd = ({
-  accounts,
-  setActiveAccount,
   oauth
 }: {
-  accounts: Account[];
-  setActiveAccount: (id: string) => void;
   oauth: OAuthClient;
 }) => {
   const [instanceUrl, setInstanceUrl] = useState("");
@@ -24,13 +19,6 @@ export const AccountAdd = ({
     const normalizedUrl = normalizeInstanceUrl(instanceUrl);
     if (!normalizedUrl) {
       setError("서버 주소를 입력해주세요.");
-      return;
-    }
-    const existing = accounts.find((account) => account.instanceUrl === normalizedUrl);
-    if (existing) {
-      setActiveAccount(existing.id);
-      setInstanceUrl("");
-      setShowForm(false);
       return;
     }
 
@@ -66,7 +54,7 @@ export const AccountAdd = ({
         type="button"
         className="account-add-button header button-with-icon"
         onClick={() => setShowForm((prev) => !prev)}
-        aria-label={showForm ? "서버 추가 닫기" : "서버 추가"}
+        aria-label={showForm ? "계정 추가 닫기" : "계정 추가"}
         aria-expanded={showForm}
       >
         {showForm ? (
@@ -80,7 +68,7 @@ export const AccountAdd = ({
             <path d="M5 12h14" />
           </svg>
         )}
-        {showForm ? "서버 추가 닫기" : "서버 추가"}
+        {showForm ? "계정 추가 닫기" : "계정 추가"}
       </button>
 
       {showForm ? (

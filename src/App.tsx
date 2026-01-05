@@ -802,6 +802,17 @@ export const App = () => {
         const verified = await services.api.verifyAccount(draft);
         const fullHandle = formatHandle(verified.handle, pending.instanceUrl);
         const displayName = verified.accountName || fullHandle;
+        const existing = accountsState.accounts.find(
+          (account) =>
+            account.platform === pending.platform &&
+            account.instanceUrl === pending.instanceUrl &&
+            account.handle === fullHandle
+        );
+        if (existing) {
+          setActionError("이미 등록된 계정입니다.");
+          accountsState.setActiveAccount(existing.id);
+          return;
+        }
         accountsState.addAccount({
           ...draft,
           name: `${displayName} @${fullHandle}`,
@@ -1220,8 +1231,6 @@ export const App = () => {
                   설정 열기
                 </button>
                 <AccountAdd
-                  accounts={accountsState.accounts}
-                  setActiveAccount={accountsState.setActiveAccount}
                   oauth={services.oauth}
                 />
               </div>
@@ -1367,8 +1376,6 @@ export const App = () => {
             </div>
             <div className="mobile-menu-section">
               <AccountAdd
-                accounts={accountsState.accounts}
-                setActiveAccount={accountsState.setActiveAccount}
                 oauth={services.oauth}
               />
             </div>
