@@ -358,6 +358,7 @@ export const mapMisskeyStatusWithInstance = (raw: unknown, instanceUrl?: string)
     mediaAttachments,
     reblog: renote,
     boostedBy: renote ? { name: accountName, handle: accountHandle, url: accountUrl } : null,
+    notification: null,
     myReaction,
     customEmojis,
     accountEmojis
@@ -366,4 +367,365 @@ export const mapMisskeyStatusWithInstance = (raw: unknown, instanceUrl?: string)
 
 export const mapMisskeyStatus = (raw: unknown): Status => {
   return mapMisskeyStatusWithInstance(raw);
+};
+
+const STATUS_LIKE_NOTIFICATION_TYPES = new Set<string>([
+  "mention",
+  "reply",
+  "quote",
+  "note",
+  "renote",
+  "reaction",
+  "pollEnded",
+  "scheduledNotePosted",
+  "reaction:grouped",
+  "renote:grouped"
+]);
+const SYSTEM_NOTIFICATION_TYPES = new Set<string>([
+  "achievementEarned",
+  "login",
+  "test",
+  "roleAssigned",
+  "announcement",
+  "unreadAnnouncement",
+  "app",
+  "scheduledNotePosted",
+  "scheduledNotePostFailed",
+  "exportCompleted",
+  "chatRoomInvitationReceived",
+  "createToken",
+  "reaction:grouped",
+  "renote:grouped"
+]);
+
+const pickTextField = (value: Record<string, unknown>, keys: string[]): string => {
+  for (const key of keys) {
+    const raw = value[key];
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (trimmed) {
+        return trimmed;
+      }
+    }
+  }
+  return "";
+};
+
+const getNotificationMessage = (value: Record<string, unknown>): string => {
+  return pickTextField(value, ["body", "message", "header", "title"]);
+};
+
+const getAnnouncementMessage = (value: Record<string, unknown>): string => {
+  const announcement = value.announcement;
+  if (announcement && typeof announcement === "object") {
+    const record = announcement as Record<string, unknown>;
+    const title = pickTextField(record, ["title", "name"]);
+    const text = pickTextField(record, ["text", "body", "message"]);
+    if (title && text) {
+      return `${title}: ${text}`;
+    }
+    return title || text;
+  }
+  return "";
+};
+
+const getAchievementDetail = (value: Record<string, unknown>): string => {
+  const achievement = value.achievement;
+  if (achievement && typeof achievement === "object") {
+    const record = achievement as Record<string, unknown>;
+    const name = pickTextField(record, ["name", "title"]);
+    const description = pickTextField(record, ["description", "detail", "body", "text"]);
+    if (name && description) {
+      return `${name} - ${description}`;
+    }
+    return name || description;
+  }
+  if (typeof achievement === "string") {
+    return achievement;
+  }
+  return "";
+};
+
+const getRoleName = (value: Record<string, unknown>): string => {
+  const role = value.role;
+  if (role && typeof role === "object") {
+    const record = role as Record<string, unknown>;
+    const name = pickTextField(record, ["name", "title"]);
+    if (name) {
+      return name;
+    }
+  }
+  if (typeof role === "string") {
+    return role;
+  }
+  return pickTextField(value, ["roleName", "role_name"]);
+};
+
+const getChatRoomInvitationDetail = (value: Record<string, unknown>): string => {
+  const invitation = value.invitation;
+  if (invitation && typeof invitation === "object") {
+    const record = invitation as Record<string, unknown>;
+    const room = record.room;
+    if (room && typeof room === "object") {
+      const roomRecord = room as Record<string, unknown>;
+      const name = pickTextField(roomRecord, ["name"]);
+      if (name) {
+        return name;
+      }
+    }
+  }
+  return "";
+};
+
+const getNoteDraftPreview = (value: Record<string, unknown>): string => {
+  const noteDraft = value.noteDraft;
+  if (noteDraft && typeof noteDraft === "object") {
+    const record = noteDraft as Record<string, unknown>;
+    return pickTextField(record, ["text", "cw"]);
+  }
+  return "";
+};
+
+const getExportEntityLabel = (value: Record<string, unknown>): string => {
+  const entity = typeof value.exportedEntity === "string" ? value.exportedEntity : "";
+  switch (entity) {
+    case "antenna":
+      return "안테나";
+    case "blocking":
+      return "차단";
+    case "clip":
+      return "클립";
+    case "customEmoji":
+      return "커스텀 이모지";
+    case "favorite":
+      return "즐겨찾기";
+    case "following":
+      return "팔로잉";
+    case "muting":
+      return "뮤트";
+    case "note":
+      return "노트";
+    case "userList":
+      return "사용자 리스트";
+    default:
+      return entity;
+  }
+};
+
+const getLoginDetail = (value: Record<string, unknown>): string => {
+  const ip = pickTextField(value, ["ip", "ipAddress", "ip_address"]);
+  const location = pickTextField(value, ["location", "place"]);
+  const userAgent = pickTextField(value, ["userAgent", "user_agent", "ua"]);
+  const parts = [];
+  if (ip) {
+    parts.push(`IP: ${ip}`);
+  }
+  if (location) {
+    parts.push(`위치: ${location}`);
+  }
+  if (userAgent) {
+    parts.push(`브라우저: ${userAgent}`);
+  }
+  return parts.join(", ");
+};
+
+const getNotificationDescriptor = (
+  type: string,
+  reaction: string | null,
+  value: Record<string, unknown>
+): { label: string; fallback: string } => {
+  switch (type) {
+    case "follow":
+      return { label: "팔로우함", fallback: "팔로우했습니다." };
+    case "receiveFollowRequest":
+      return { label: "팔로우 요청함", fallback: "팔로우 요청을 보냈습니다." };
+    case "followRequestAccepted": {
+      const followMessage = pickTextField(value, ["message"]);
+      return {
+        label: "팔로우 요청 승인함",
+        fallback: followMessage
+          ? `팔로우 요청이 승인되었습니다. ${followMessage}`
+          : "팔로우 요청이 승인되었습니다."
+      };
+    }
+    case "renote":
+      return { label: "리노트함", fallback: "리노트했습니다." };
+    case "reaction":
+      return {
+        label: reaction ? `리액션함 ${reaction}` : "리액션함",
+        fallback: reaction ? `리액션했습니다. ${reaction}` : "리액션했습니다."
+      };
+    case "pollEnded":
+      return { label: "투표 종료됨", fallback: "투표가 종료되었습니다." };
+    case "pollVote":
+      return { label: "투표함", fallback: "투표했습니다." };
+    case "note":
+      return { label: "글 작성함", fallback: "새 글을 올렸습니다." };
+    case "quote":
+      return { label: "인용함", fallback: "인용했습니다." };
+    case "reply":
+      return { label: "답글 남김", fallback: "답글을 남겼습니다." };
+    case "mention":
+      return { label: "멘션함", fallback: "멘션했습니다." };
+    case "scheduledNotePosted":
+      return { label: "예약 글 게시됨", fallback: "예약 글이 게시되었습니다." };
+    case "scheduledNotePostFailed": {
+      const preview = getNoteDraftPreview(value);
+      return {
+        label: "예약 글 게시 실패",
+        fallback: preview ? `예약 글 게시에 실패했습니다: ${preview}` : "예약 글 게시에 실패했습니다."
+      };
+    }
+    case "achievementEarned": {
+      const detail = getAchievementDetail(value) || getNotificationMessage(value);
+      return {
+        label: "도전과제 달성함",
+        fallback: detail ? `도전과제를 달성했습니다: ${detail}` : "도전과제를 달성했습니다."
+      };
+    }
+    case "login": {
+      const detail = getLoginDetail(value) || getNotificationMessage(value);
+      return {
+        label: "로그인 알림",
+        fallback: detail ? `로그인 알림입니다. ${detail}` : "로그인 알림입니다."
+      };
+    }
+    case "test": {
+      const message = getNotificationMessage(value);
+      return {
+        label: "테스트 알림",
+        fallback: message || "테스트 알림입니다."
+      };
+    }
+    case "roleAssigned": {
+      const roleName = getRoleName(value) || getNotificationMessage(value);
+      return {
+        label: "역할 부여됨",
+        fallback: roleName ? `새 역할이 부여되었습니다: ${roleName}` : "새 역할이 부여되었습니다."
+      };
+    }
+    case "announcement":
+    case "unreadAnnouncement": {
+      const announcement = getAnnouncementMessage(value) || getNotificationMessage(value);
+      return {
+        label: "공지 알림",
+        fallback: announcement ? `공지: ${announcement}` : "새 공지가 있습니다."
+      };
+    }
+    case "app": {
+      const message = getNotificationMessage(value);
+      return {
+        label: "앱 알림",
+        fallback: message || "앱 알림이 도착했습니다."
+      };
+    }
+    case "chatRoomInvitationReceived": {
+      const roomName = getChatRoomInvitationDetail(value) || getNotificationMessage(value);
+      return {
+        label: "채팅방 초대됨",
+        fallback: roomName ? `채팅방에 초대되었습니다: ${roomName}` : "채팅방에 초대되었습니다."
+      };
+    }
+    case "exportCompleted": {
+      const entity = getExportEntityLabel(value);
+      return {
+        label: "내보내기 완료됨",
+        fallback: entity ? `내보내기가 완료되었습니다: ${entity}` : "내보내기가 완료되었습니다."
+      };
+    }
+    case "createToken":
+      return { label: "토큰 생성됨", fallback: "새 토큰이 생성되었습니다." };
+    case "reaction:grouped":
+      return { label: "리액션 모음", fallback: "여러 명이 리액션했습니다." };
+    case "renote:grouped":
+      return { label: "리노트 모음", fallback: "여러 명이 리노트했습니다." };
+    default:
+      return {
+        label: "알림",
+        fallback: getNotificationMessage(value) || "알림이 도착했습니다."
+      };
+  }
+};
+
+export const mapMisskeyNotification = (raw: unknown, instanceUrl?: string): Status | null => {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const value = raw as Record<string, unknown>;
+  const notificationId = String(value.id ?? "");
+  const type = typeof value.type === "string" ? value.type : "";
+  const createdAt = String(value.createdAt ?? value.created_at ?? "");
+  const noteValue = value.note;
+  const noteStatus = noteValue ? mapMisskeyStatusWithInstance(noteValue, instanceUrl) : null;
+  if (!notificationId) {
+    return null;
+  }
+  const user = (value.user ?? {}) as Record<string, unknown>;
+  const accountName = String(user.name ?? user.username ?? "");
+  const accountHandle = String(user.username ?? "");
+  const accountUrl = buildAccountUrl(user, instanceUrl);
+  const accountAvatarUrl = typeof user.avatarUrl === "string" ? user.avatarUrl : null;
+  const reaction = typeof value.reaction === "string" ? value.reaction : null;
+  const descriptor = getNotificationDescriptor(type, reaction, value);
+  const isSystemNotification =
+    SYSTEM_NOTIFICATION_TYPES.has(type) || (!accountName && !accountHandle);
+  const appHeader = pickTextField(value, ["header"]);
+  const appIcon = typeof value.icon === "string" ? value.icon : null;
+  const isGroupedNotification = type === "reaction:grouped" || type === "renote:grouped";
+  const systemActorName = isGroupedNotification ? "여러 사용자" : "시스템";
+  const appActorName = appHeader || "앱";
+  const actor = isSystemNotification
+    ? {
+        name: type === "app" ? appActorName : systemActorName,
+        handle: "",
+        url: null,
+        avatarUrl: type === "app" ? appIcon : null
+      }
+    : {
+        name: accountName,
+        handle: accountHandle,
+        url: accountUrl,
+        avatarUrl: accountAvatarUrl
+      };
+  const normalizedAccountName = isSystemNotification ? actor.name || "시스템" : accountName;
+  const systemAccountHandle = type === "app" ? "app" : isGroupedNotification ? "grouped" : "system";
+  const normalizedAccountHandle = isSystemNotification ? systemAccountHandle : accountHandle;
+  const normalizedAccountUrl = isSystemNotification ? null : accountUrl;
+  const normalizedAccountAvatarUrl = isSystemNotification ? actor.avatarUrl ?? null : accountAvatarUrl;
+  const target = noteStatus;
+  const content = target && STATUS_LIKE_NOTIFICATION_TYPES.has(type) ? "" : descriptor.fallback;
+  return {
+    id: notificationId,
+    createdAt: createdAt || noteStatus?.createdAt || "",
+    accountName: normalizedAccountName,
+    accountHandle: normalizedAccountHandle,
+    accountUrl: normalizedAccountUrl,
+    accountAvatarUrl: normalizedAccountAvatarUrl,
+    content,
+    url: target?.url ?? null,
+    visibility: target?.visibility ?? "public",
+    spoilerText: "",
+    sensitive: Boolean(target?.sensitive ?? false),
+    card: target?.card ?? null,
+    repliesCount: 0,
+    reblogsCount: 0,
+    favouritesCount: 0,
+    reactions: [],
+    reblogged: false,
+    favourited: false,
+    inReplyToId: target?.inReplyToId ?? null,
+    mentions: [],
+    mediaAttachments: target?.mediaAttachments ?? [],
+    reblog: null,
+    boostedBy: null,
+    notification: {
+      type,
+      label: descriptor.label,
+      actor,
+      target
+    },
+    myReaction: null,
+    customEmojis: target?.customEmojis ?? [],
+    accountEmojis: mapCustomEmojis(user.emojis)
+  };
 };
