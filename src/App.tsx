@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Account, Status } from "./domain/types";
+import type { Account, Status, TimelineType } from "./domain/types";
 import { AccountAdd } from "./ui/components/AccountAdd";
 import { AccountSelector } from "./ui/components/AccountSelector";
 import { ComposeBox } from "./ui/components/ComposeBox";
@@ -9,13 +9,14 @@ import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle } from "./ui/utils/account";
 import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
+import { normalizeTimelineType } from "./ui/utils/timeline";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import readmeText from "../README.md?raw";
 import licenseText from "../LICENSE?raw";
 import { renderMarkdown } from "./ui/utils/markdown";
 
 type Route = "home" | "terms" | "license" | "oss";
-type TimelineSectionConfig = { id: string; accountId: string | null };
+type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
 
 const SECTION_STORAGE_KEY = "textodon.sections";
 const COMPOSE_ACCOUNT_KEY = "textodon.compose.accountId";
@@ -88,6 +89,7 @@ const TimelineSection = ({
   services,
   accountsState,
   onAccountChange,
+  onTimelineChange,
   onAddSectionLeft,
   onAddSectionRight,
   onRemoveSection,
@@ -97,6 +99,7 @@ const TimelineSection = ({
   canMoveLeft,
   canMoveRight,
   canRemoveSection,
+  timelineType,
   showProfileImage,
   showCustomEmojis,
   showReactions,
@@ -108,6 +111,7 @@ const TimelineSection = ({
   services: AppServices;
   accountsState: AccountsState;
   onAccountChange: (sectionId: string, accountId: string | null) => void;
+  onTimelineChange: (sectionId: string, timelineType: TimelineType) => void;
   onAddSectionLeft: (sectionId: string) => void;
   onAddSectionRight: (sectionId: string) => void;
   onRemoveSection: (sectionId: string) => void;
@@ -117,21 +121,59 @@ const TimelineSection = ({
   canMoveLeft: boolean;
   canMoveRight: boolean;
   canRemoveSection: boolean;
+  timelineType: TimelineType;
   showProfileImage: boolean;
   showCustomEmojis: boolean;
   showReactions: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
   unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
 }) => {
+  const notificationsTimeline = useTimeline({
+    account,
+    api: services.api,
+    streaming: services.streaming,
+    timelineType: "notifications",
+    enableStreaming: false
+  });
+  const {
+    items: notificationItems,
+    loading: notificationsLoading,
+    loadingMore: notificationsLoadingMore,
+    error: notificationsError,
+    refresh: refreshNotifications,
+    loadMore: loadMoreNotifications
+  } = notificationsTimeline;
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const notificationMenuRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const notificationScrollRef = useRef<HTMLDivElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const hasNotificationBadge = notificationCount > 0;
+  const notificationBadgeLabel = notificationsOpen
+    ? "알림 닫기"
+    : hasNotificationBadge
+      ? `알림 열기 (새 알림 ${notificationCount >= 99 ? "99개 이상" : `${notificationCount}개`})`
+      : "알림 열기";
+  const notificationBadgeText = notificationCount >= 99 ? "99+" : String(notificationCount);
+  const handleNotification = useCallback(() => {
+    if (notificationsOpen) {
+      refreshNotifications();
+      return;
+    }
+    setNotificationCount((count) => Math.min(count + 1, 99));
+  }, [notificationsOpen, refreshNotifications]);
   const timeline = useTimeline({
     account,
     api: services.api,
-    streaming: services.streaming
+    streaming: services.streaming,
+    timelineType,
+    onNotification: handleNotification
   });
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isAtTop, setIsAtTop] = useState(true);
+  const actionsDisabled = timelineType === "notifications";
+  const emptyMessage = timelineType === "notifications" ? "표시할 알림이 없습니다." : "표시할 글이 없습니다.";
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -153,14 +195,14 @@ const TimelineSection = ({
   }, [timeline.loadMore]);
 
   useEffect(() => {
-    if (!account) {
+    if (!account || timelineType === "notifications") {
       return;
     }
     registerTimelineListener(account.id, timeline.updateItem);
     return () => {
       unregisterTimelineListener(account.id, timeline.updateItem);
     };
-  }, [account, registerTimelineListener, timeline.updateItem, unregisterTimelineListener]);
+  }, [account, registerTimelineListener, timeline.updateItem, timelineType, unregisterTimelineListener]);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -186,6 +228,67 @@ const TimelineSection = ({
       document.removeEventListener("mousedown", handleClick);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+    const handleClick = (event: MouseEvent) => {
+      if (!notificationMenuRef.current || !(event.target instanceof Node)) {
+        return;
+      }
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".overlay-backdrop")
+      ) {
+        setNotificationsOpen(false);
+        return;
+      }
+      if (!notificationMenuRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [notificationsOpen]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+    const el = notificationScrollRef.current;
+    if (!el) {
+      return;
+    }
+      const onScroll = () => {
+        const threshold = el.scrollHeight - el.clientHeight - 120;
+        if (el.scrollTop >= threshold) {
+          loadMoreNotifications();
+        }
+      };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [notificationsOpen, loadMoreNotifications]);
+
+  useEffect(() => {
+    if (!account) {
+      setNotificationsOpen(false);
+    }
+    setNotificationCount(0);
+  }, [account?.id]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+    setNotificationCount(0);
+    refreshNotifications();
+  }, [notificationsOpen, refreshNotifications]);
 
   const handleToggleFavourite = async (status: Status) => {
     if (!account) {
@@ -247,15 +350,17 @@ const TimelineSection = ({
   };
 
   return (
-      <div className="timeline-column">
-        <div className="timeline-column-header">
-          <AccountSelector
+    <div className="timeline-column">
+      <div className="timeline-column-header">
+        <AccountSelector
           accounts={accountsState.accounts}
           activeAccountId={account?.id ?? null}
           setActiveAccount={(id) => {
             onAccountChange(section.id, id);
             accountsState.setActiveAccount(id);
           }}
+          activeTimeline={timelineType}
+          setActiveTimeline={(next) => onTimelineChange(section.id, next)}
           removeAccount={accountsState.removeAccount}
           variant="inline"
         />
@@ -265,7 +370,10 @@ const TimelineSection = ({
               type="button"
               className="icon-button menu-button"
               aria-label="섹션 메뉴 열기"
-              onClick={() => setMenuOpen((current) => !current)}
+              onClick={() => {
+                setMenuOpen((current) => !current);
+                setNotificationsOpen(false);
+              }}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 7h16" />
@@ -281,19 +389,19 @@ const TimelineSection = ({
                   aria-hidden="true"
                 />
                 <div className="section-menu-panel" role="menu">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      timeline.refresh();
+                      setMenuOpen(false);
+                    }}
+                    disabled={!account || timeline.loading}
+                  >
+                    새로고침
+                  </button>
                   <div className="section-menu-mobile">
                     <button type="button" onClick={scrollToTop}>
                       최상단으로
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        timeline.refresh();
-                        setMenuOpen(false);
-                      }}
-                      disabled={!account || timeline.loading}
-                    >
-                      새로고침
                     </button>
                   </div>
                   <button
@@ -349,6 +457,88 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
+          <div className="notification-menu" ref={notificationMenuRef}>
+            <button
+              type="button"
+              className={`icon-button${notificationsOpen ? " is-active" : ""}`}
+              onClick={() => {
+                if (!account) {
+                  onError("계정을 선택해주세요.");
+                  return;
+                }
+                setMenuOpen(false);
+                setNotificationsOpen((current) => !current);
+              }}
+              disabled={!account}
+              aria-label={notificationBadgeLabel}
+              aria-pressed={notificationsOpen}
+              title={notificationBadgeLabel}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {hasNotificationBadge ? (
+                <span className="notification-badge" aria-hidden="true">
+                  {notificationBadgeText}
+                </span>
+              ) : null}
+            </button>
+            {notificationsOpen ? (
+              <>
+                <div
+                  className="overlay-backdrop"
+                  onClick={() => setNotificationsOpen(false)}
+                  aria-hidden="true"
+                />
+                <div className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
+                  <div className="notification-popover-header">
+                    <button
+                      type="button"
+                      className="settings-close"
+                      onClick={() => setNotificationsOpen(false)}
+                      aria-label="알림 닫기"
+                    >
+                      닫기
+                    </button>
+                  </div>
+                  <div className="notification-popover-body" ref={notificationScrollRef}>
+                    {notificationsError ? <p className="error">{notificationsError}</p> : null}
+                    {notificationItems.length === 0 && !notificationsLoading ? (
+                      <p className="empty">표시할 알림이 없습니다.</p>
+                    ) : null}
+                    {notificationsLoading && notificationItems.length === 0 ? (
+                      <p className="empty">알림을 불러오는 중...</p>
+                    ) : null}
+                    {notificationItems.length > 0 ? (
+                      <div className="timeline">
+                        {notificationItems.map((status) => (
+                          <TimelineItem
+                            key={status.id}
+                            status={status}
+                            onReply={(item) => onReply(item, account)}
+                            onToggleFavourite={handleToggleFavourite}
+                            onToggleReblog={handleToggleReblog}
+                            onDelete={handleDeleteStatus}
+                            activeHandle={
+                              account?.handle ? formatHandle(account.handle, account.instanceUrl) : account?.instanceUrl ?? ""
+                            }
+                            activeAccountHandle={account?.handle ?? ""}
+                            activeAccountUrl={account?.url ?? null}
+                            showProfileImage={showProfileImage}
+                            showCustomEmojis={showCustomEmojis}
+                            showReactions={showReactions}
+                            disableActions
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                    {notificationsLoadingMore ? <p className="empty">더 불러오는 중...</p> : null}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
           <button
             type="button"
             className="icon-button"
@@ -362,46 +552,34 @@ const TimelineSection = ({
               <path d="M5 12l7-7 7 7" />
             </svg>
           </button>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={timeline.refresh}
-            disabled={!account || timeline.loading}
-            aria-label={timeline.loading ? "새로고침 중" : "새로고침"}
-            title={timeline.loading ? "새로고침 중" : "새로고침"}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-              <path d="M20 4v6h-6" />
-            </svg>
-          </button>
         </div>
       </div>
       <div className="timeline-column-body" ref={scrollRef}>
         {!account ? <p className="empty">계정을 선택하면 타임라인을 불러옵니다.</p> : null}
         {account && timeline.error ? <p className="error">{timeline.error}</p> : null}
         {account && timeline.items.length === 0 && !timeline.loading ? (
-          <p className="empty">표시할 글이 없습니다.</p>
+          <p className="empty">{emptyMessage}</p>
         ) : null}
         {account && timeline.items.length > 0 ? (
           <div className="timeline">
             {timeline.items.map((status) => (
-                      <TimelineItem
-                        key={status.id}
-                        status={status}
-                        onReply={(item) => onReply(item, account)}
-                        onToggleFavourite={handleToggleFavourite}
-                        onToggleReblog={handleToggleReblog}
-                        onDelete={handleDeleteStatus}
-                        activeHandle={
-                          account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
-                        }
-                        activeAccountHandle={account.handle ?? ""}
-                        activeAccountUrl={account.url ?? null}
-                        showProfileImage={showProfileImage}
-                        showCustomEmojis={showCustomEmojis}
-                        showReactions={showReactions}
-                      />
+              <TimelineItem
+                key={status.id}
+                status={status}
+                onReply={(item) => onReply(item, account)}
+                onToggleFavourite={handleToggleFavourite}
+                onToggleReblog={handleToggleReblog}
+                onDelete={handleDeleteStatus}
+                activeHandle={
+                  account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
+                }
+                activeAccountHandle={account.handle ?? ""}
+                activeAccountUrl={account.url ?? null}
+                showProfileImage={showProfileImage}
+                showCustomEmojis={showCustomEmojis}
+                showReactions={showReactions}
+                disableActions={actionsDisabled}
+              />
             ))}
           </div>
         ) : null}
@@ -464,11 +642,18 @@ export const App = () => {
     try {
       const raw = localStorage.getItem(SECTION_STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as TimelineSectionConfig[];
+        const parsed = JSON.parse(raw) as Array<Partial<TimelineSectionConfig>>;
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map((item) => ({
             id: item.id || crypto.randomUUID(),
-            accountId: item.accountId ?? null
+            accountId: item.accountId ?? null,
+            timelineType: normalizeTimelineType(
+              item.timelineType ?? "home",
+              item.accountId
+                ? accountsState.accounts.find((account) => account.id === item.accountId)?.platform ?? null
+                : null,
+              false
+            )
           }));
         }
       }
@@ -481,7 +666,8 @@ export const App = () => {
     return [
       {
         id: crypto.randomUUID(),
-        accountId: accountsState.activeAccountId ?? accountsState.accounts[0]?.id ?? null
+        accountId: accountsState.activeAccountId ?? accountsState.accounts[0]?.id ?? null,
+        timelineType: "home"
       }
     ];
   });
@@ -769,11 +955,23 @@ export const App = () => {
 
   useEffect(() => {
     setSections((current) =>
-      current.map((section) =>
-        section.accountId && accountsState.accounts.some((account) => account.id === section.accountId)
-          ? section
-          : { ...section, accountId: null }
-      )
+      current.map((section) => {
+        const account = section.accountId
+          ? accountsState.accounts.find((item) => item.id === section.accountId) ?? null
+          : null;
+        if (!account) {
+          return {
+            ...section,
+            accountId: null,
+            timelineType: normalizeTimelineType(section.timelineType, null, false)
+          };
+        }
+        const normalizedTimeline = normalizeTimelineType(section.timelineType, account.platform, false);
+        if (normalizedTimeline === section.timelineType) {
+          return section;
+        }
+        return { ...section, timelineType: normalizedTimeline };
+      })
     );
     setComposeAccountId((current) => {
       if (!current) {
@@ -795,7 +993,7 @@ export const App = () => {
         const next = [...current];
         addedAccounts.forEach((account) => {
           if (!next.some((section) => section.accountId === account.id)) {
-            next.push({ id: crypto.randomUUID(), accountId: account.id });
+            next.push({ id: crypto.randomUUID(), accountId: account.id, timelineType: "home" });
           }
         });
         return next;
@@ -859,7 +1057,11 @@ export const App = () => {
     setSections((current) => {
       const next = [...current];
       const insertIndex = Math.max(0, Math.min(index, next.length));
-      next.splice(insertIndex, 0, { id: crypto.randomUUID(), accountId: defaultAccountId });
+      next.splice(insertIndex, 0, {
+        id: crypto.randomUUID(),
+        accountId: defaultAccountId,
+        timelineType: "home"
+      });
       return next;
     });
     if (!composeAccountId && defaultAccountId) {
@@ -897,8 +1099,36 @@ export const App = () => {
   };
 
   const setSectionAccount = (sectionId: string, accountId: string | null) => {
+    const nextAccount = accountId
+      ? accountsState.accounts.find((account) => account.id === accountId) ?? null
+      : null;
     setSections((current) =>
-      current.map((section) => (section.id === sectionId ? { ...section, accountId } : section))
+      current.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              accountId,
+              timelineType: normalizeTimelineType(section.timelineType, nextAccount?.platform ?? null, false)
+            }
+          : section
+      )
+    );
+  };
+
+  const setSectionTimeline = (sectionId: string, timelineType: TimelineType) => {
+    setSections((current) =>
+      current.map((section) => {
+        if (section.id !== sectionId) {
+          return section;
+        }
+        const account = section.accountId
+          ? accountsState.accounts.find((item) => item.id === section.accountId) ?? null
+          : null;
+        return {
+          ...section,
+          timelineType: normalizeTimelineType(timelineType, account?.platform ?? null, false)
+        };
+      })
     );
   };
 
@@ -1037,6 +1267,7 @@ export const App = () => {
                         services={services}
                         accountsState={accountsState}
                         onAccountChange={setSectionAccount}
+                        onTimelineChange={setSectionTimeline}
                         onAddSectionLeft={(id) => addSectionNear(id, "left")}
                         onAddSectionRight={(id) => addSectionNear(id, "right")}
                         onRemoveSection={removeSection}
@@ -1046,6 +1277,7 @@ export const App = () => {
                         canMoveLeft={index > 0}
                         canMoveRight={index < sections.length - 1}
                         canRemoveSection={sections.length > 1}
+                        timelineType={section.timelineType}
                         showProfileImage={showProfileImages}
                         showCustomEmojis={showCustomEmojis}
                         showReactions={shouldShowReactions}

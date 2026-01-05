@@ -31,6 +31,9 @@ const mapMisskeyEvent = (
       if (channelBody.type === "note" && channelBody.body) {
         return { type: "update", status: mapMisskeyStatusWithInstance(channelBody.body, instanceUrl) };
       }
+      if (channelBody.type === "notification") {
+        return { type: "notification" };
+      }
       if (channelBody.type === "deleted") {
         const id =
           typeof channelBody.body === "string"
@@ -43,6 +46,9 @@ const mapMisskeyEvent = (
     }
     if (data.type === "note" && data.body) {
       return { type: "update", status: mapMisskeyStatusWithInstance(data.body, instanceUrl) };
+    }
+    if (data.type === "notification") {
+      return { type: "notification" };
     }
     return null;
   } catch {

@@ -247,17 +247,24 @@
 
 .account-list li {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.account-row {
+  display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
 }
 
-.account-list li > button:first-child {
+.account-row > button:first-child {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.account-list li.active button:first-child {
+.account-list li.active .account-row > button:first-child {
   font-weight: 700;
 }
 
@@ -268,6 +275,30 @@
   cursor: pointer;
   padding: 0;
   text-align: left;
+}
+
+.account-timeline-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 42px;
+}
+
+.account-selector-dropdown .account-list .account-timeline-option {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.account-selector-dropdown .account-list .account-timeline-option.is-active {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .account-label {
@@ -697,6 +728,13 @@ button.ghost {
   gap: 8px;
 }
 
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 13, 11, 0.12);
+  z-index: 15;
+}
+
 .section-menu {
   position: relative;
 }
@@ -744,6 +782,59 @@ button.ghost {
 .section-menu-panel .danger {
   color: #9a2e1f;
   font-weight: 600;
+}
+
+.notification-menu {
+  position: relative;
+}
+
+.notification-menu .icon-button {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--notification-badge-bg);
+  color: var(--notification-badge-text);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--notification-badge-ring);
+}
+
+.notification-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(380px, 92vw);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 30;
+}
+
+.notification-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.notification-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .timeline-column-body {
@@ -1209,6 +1300,22 @@ button.ghost {
 .boosted-by img {
   width: 18px;
   height: 18px;
+}
+
+.notification-actor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #7c6152;
+  margin-bottom: 8px;
+}
+
+.notification-actor-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .reply-info {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Account, Status } from "../../domain/types";
+import type { Account, Status, TimelineType } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import type { StreamingClient } from "../../services/StreamingClient";
 
@@ -39,14 +39,22 @@ export const useTimeline = (params: {
   account: Account | null;
   api: MastodonApi;
   streaming: StreamingClient;
+  timelineType: TimelineType;
+  onNotification?: () => void;
+  enableStreaming?: boolean;
 }) => {
-  const { account, api, streaming } = params;
+  const { account, api, streaming, timelineType, onNotification, enableStreaming = true } = params;
   const [items, setItems] = useState<Status[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const disconnectRef = useRef<null | (() => void)>(null);
+  const notificationRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    notificationRef.current = onNotification ?? null;
+  }, [onNotification]);
 
   const refresh = useCallback(async () => {
     if (!account) {
@@ -56,7 +64,7 @@ export const useTimeline = (params: {
     setError(null);
     setItems([]);
     try {
-      const timeline = await api.fetchHomeTimeline(account, 30);
+      const timeline = await api.fetchTimeline(account, timelineType, 30);
       setItems(timeline);
       setHasMore(timeline.length > 0);
     } catch (err) {
@@ -64,7 +72,7 @@ export const useTimeline = (params: {
     } finally {
       setLoading(false);
     }
-  }, [account, api]);
+  }, [account, api, timelineType]);
 
   const loadMore = useCallback(async () => {
     if (!account || loadingMore || loading) {
@@ -76,7 +84,7 @@ export const useTimeline = (params: {
     }
     setLoadingMore(true);
     try {
-      const next = await api.fetchHomeTimeline(account, 20, lastId);
+      const next = await api.fetchTimeline(account, timelineType, 20, lastId);
       setItems((current) => appendStatuses(current, next));
       if (next.length === 0) {
         setHasMore(false);
@@ -86,7 +94,7 @@ export const useTimeline = (params: {
     } finally {
       setLoadingMore(false);
     }
-  }, [account, api, hasMore, items, loading, loadingMore]);
+  }, [account, api, hasMore, items, loading, loadingMore, timelineType]);
 
   useEffect(() => {
     if (!account) {
@@ -94,15 +102,27 @@ export const useTimeline = (params: {
       setHasMore(false);
       return;
     }
-
     refresh();
+  }, [account, refresh]);
 
+  useEffect(() => {
     disconnectRef.current?.();
+    disconnectRef.current = null;
+    if (!account || !enableStreaming) {
+      return;
+    }
+
     disconnectRef.current = streaming.connect(account, (event) => {
       if (event.type === "update") {
-        setItems((current) => mergeStatus(current, event.status));
+        if (timelineType === "home") {
+          setItems((current) => mergeStatus(current, event.status));
+        }
       } else if (event.type === "delete") {
-        setItems((current) => current.filter((item) => item.id !== event.id));
+        if (timelineType === "home") {
+          setItems((current) => current.filter((item) => item.id !== event.id));
+        }
+      } else if (event.type === "notification") {
+        notificationRef.current?.();
       }
     });
 
@@ -110,7 +130,7 @@ export const useTimeline = (params: {
       disconnectRef.current?.();
       disconnectRef.current = null;
     };
-  }, [account, refresh, streaming]);
+  }, [account, enableStreaming, streaming, timelineType]);
 
   const updateItem = useCallback((status: Status) => {
     setItems((current) => replaceStatus(current, status));

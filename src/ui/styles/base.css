@@ -7,6 +7,9 @@
   --scrollbar-thumb-dark: #3b342d;
   --timeline-column-width: 440px;
   --timeline-column-max-width: 520px;
+  --notification-badge-bg: #c04b3c;
+  --notification-badge-text: #fff6f0;
+  --notification-badge-ring: #fffdfa;
 }
 
 :root[data-color-scheme="light"] {

@@ -1,4 +1,4 @@
-import type { Account, Status, Visibility } from "../domain/types";
+import type { Account, Status, TimelineType, Visibility } from "../domain/types";
 import type { CustomEmoji } from "../domain/types";
 
 export type CreateStatusInput = {
@@ -11,6 +11,7 @@ export type CreateStatusInput = {
 export interface MastodonApi {
   verifyAccount(account: Account): Promise<{ accountName: string; handle: string; avatarUrl: string | null }>;
   fetchHomeTimeline(account: Account, limit: number, maxId?: string): Promise<Status[]>;
+  fetchTimeline(account: Account, timeline: TimelineType, limit: number, maxId?: string): Promise<Status[]>;
   fetchCustomEmojis(account: Account): Promise<CustomEmoji[]>;
   uploadMedia(account: Account, file: File): Promise<string>;
   createStatus(account: Account, input: CreateStatusInput): Promise<Status>;

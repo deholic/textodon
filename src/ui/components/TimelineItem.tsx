@@ -15,7 +15,8 @@ export const TimelineItem = ({
   activeAccountUrl,
   showProfileImage,
   showCustomEmojis,
-  showReactions
+  showReactions,
+  disableActions = false
 }: {
   status: Status;
   onReply: (status: Status) => void;
@@ -28,9 +29,11 @@ export const TimelineItem = ({
   showProfileImage: boolean;
   showCustomEmojis: boolean;
   showReactions: boolean;
+  disableActions?: boolean;
 }) => {
-  const displayStatus = status.reblog ?? status;
-  const boostedBy = status.reblog ? status.boostedBy : null;
+  const notification = status.notification;
+  const displayStatus = notification?.target ?? status.reblog ?? status;
+  const boostedBy = notification ? null : status.reblog ? status.boostedBy : null;
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [showContent, setShowContent] = useState(() => displayStatus.spoilerText.length === 0);
   const [imageZoom, setImageZoom] = useState(1);
@@ -86,6 +89,9 @@ export const TimelineItem = ({
     }
   }, [boostedBy]);
   const boostedLabel = useMemo(() => {
+    if (notification) {
+      return null;
+    }
     if (boostedBy) {
       const label = boostedBy.name || boostedHandle || boostedBy.handle;
       return `${label} 님이 부스트함(@${boostedHandle ?? boostedBy.handle})`;
@@ -94,7 +100,37 @@ export const TimelineItem = ({
       return activeHandle ? `내가 부스트함(@${activeHandle})` : "내가 부스트함";
     }
     return null;
-  }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle]);
+  }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle, notification]);
+  const notificationActorHandle = useMemo(() => {
+    if (!notification) {
+      return "";
+    }
+    const handle = notification.actor.handle;
+    if (!handle) {
+      return "";
+    }
+    if (handle.includes("@")) {
+      return handle;
+    }
+    if (!notification.actor.url) {
+      return handle;
+    }
+    try {
+      const host = new URL(notification.actor.url).hostname;
+      return `${handle}@${host}`;
+    } catch {
+      return handle;
+    }
+  }, [notification]);
+  const notificationLabel = useMemo(() => {
+    if (!notification) {
+      return null;
+    }
+    const actorName =
+      notification.actor.name || notificationActorHandle || notification.actor.handle || "알 수 없음";
+    const handleSuffix = notificationActorHandle ? `(@${notificationActorHandle})` : "";
+    return `${actorName} 님이 ${notification.label}${handleSuffix}`;
+  }, [notification, notificationActorHandle]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
     [displayStatus.createdAt]
@@ -340,6 +376,9 @@ export const TimelineItem = ({
   const boostDisabled =
     !displayStatus.reblogged && (isOwnStatus || displayStatus.visibility === "private" || displayStatus.visibility === "direct");
   const shouldShowReactions = showReactions && displayStatus.reactions.length > 0;
+  const actionsEnabled = !disableActions;
+  const hasAttachmentButtons = showContent && attachments.length > 0;
+  const shouldRenderFooter = actionsEnabled || hasAttachmentButtons;
 
   useEffect(() => {
     setShowContent(displayStatus.spoilerText.length === 0);
@@ -406,6 +445,18 @@ export const TimelineItem = ({
 
   return (
     <article className="status">
+      {notificationLabel ? (
+        <div className="notification-actor">
+          <span className="status-avatar notification-actor-avatar" aria-hidden="true">
+            {notification?.actor.avatarUrl ? (
+              <img src={notification.actor.avatarUrl} alt="" loading="lazy" />
+            ) : (
+              <span className="status-avatar-fallback" aria-hidden="true" />
+            )}
+          </span>
+          <span>{notificationLabel}</span>
+        </div>
+      ) : null}
       {boostedLabel ? (
         <div className="boosted-by">
           <img src={boostIconUrl} alt="" aria-hidden="true" />
@@ -547,53 +598,59 @@ export const TimelineItem = ({
           })}
         </div>
       ) : null}
-      <footer>
-        <div className="status-actions">
-          <button type="button" onClick={() => onReply(displayStatus)}>
-            답글
-          </button>
-          <button
-            type="button"
-            className={displayStatus.favourited ? "is-active" : undefined}
-            onClick={() => onToggleFavourite(displayStatus)}
-          >
-            {displayStatus.favourited ? "좋아요 취소" : "좋아요"}
-            {displayStatus.favouritesCount > 0 ? ` (${displayStatus.favouritesCount})` : ""}
-          </button>
-          <button
-            type="button"
-            className={displayStatus.reblogged ? "is-active" : undefined}
-            onClick={() => onToggleReblog(displayStatus)}
-            disabled={boostDisabled}
-            title={boostDisabled ? "내 글은 부스트할 수 없습니다." : undefined}
-          >
-            {displayStatus.reblogged ? "부스트 취소" : "부스트"}
-            {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}
-          </button>
-          {showContent
-            ? attachments.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="attachment-thumb"
-                  onClick={() => {
-                    setImageZoom(1);
-                    setImageOffset({ x: 0, y: 0 });
-                    setActiveImageUrl(item.url);
-                  }}
-                  aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
-                >
-                  <img src={item.url} alt={item.description ?? "첨부 이미지"} loading="lazy" />
+      {shouldRenderFooter ? (
+        <footer>
+          <div className="status-actions">
+            {actionsEnabled ? (
+              <>
+                <button type="button" onClick={() => onReply(displayStatus)}>
+                  답글
                 </button>
-              ))
-            : null}
-        </div>
-        {canDelete ? (
-          <button type="button" className="delete-button" onClick={() => setShowDeleteConfirm(true)}>
-            <img src={trashIconUrl} alt="" aria-hidden="true" />
-          </button>
-        ) : null}
-      </footer>
+                <button
+                  type="button"
+                  className={displayStatus.favourited ? "is-active" : undefined}
+                  onClick={() => onToggleFavourite(displayStatus)}
+                >
+                  {displayStatus.favourited ? "좋아요 취소" : "좋아요"}
+                  {displayStatus.favouritesCount > 0 ? ` (${displayStatus.favouritesCount})` : ""}
+                </button>
+                <button
+                  type="button"
+                  className={displayStatus.reblogged ? "is-active" : undefined}
+                  onClick={() => onToggleReblog(displayStatus)}
+                  disabled={boostDisabled}
+                  title={boostDisabled ? "내 글은 부스트할 수 없습니다." : undefined}
+                >
+                  {displayStatus.reblogged ? "부스트 취소" : "부스트"}
+                  {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}
+                </button>
+              </>
+            ) : null}
+            {showContent
+              ? attachments.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="attachment-thumb"
+                    onClick={() => {
+                      setImageZoom(1);
+                      setImageOffset({ x: 0, y: 0 });
+                      setActiveImageUrl(item.url);
+                    }}
+                    aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
+                  >
+                    <img src={item.url} alt={item.description ?? "첨부 이미지"} loading="lazy" />
+                  </button>
+                ))
+              : null}
+          </div>
+          {actionsEnabled && canDelete ? (
+            <button type="button" className="delete-button" onClick={() => setShowDeleteConfirm(true)}>
+              <img src={trashIconUrl} alt="" aria-hidden="true" />
+            </button>
+          ) : null}
+        </footer>
+      ) : null}
       {showDeleteConfirm ? (
         <div className="confirm-modal" role="dialog" aria-modal="true">
           <div className="image-modal-backdrop" onClick={() => setShowDeleteConfirm(false)} />
