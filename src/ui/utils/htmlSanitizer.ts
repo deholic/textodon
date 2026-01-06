@@ -8,9 +8,9 @@ export const sanitizeHtml = (html: string): string => {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       'p', 'br', 'a', 'strong', 'em', 'u', 's', 'code', 'pre',
-      'blockquote', 'ul', 'ol', 'li', 'span'
+      'blockquote', 'ul', 'ol', 'li', 'span', 'img'
     ],
-    ALLOWED_ATTR: ['href', 'title', 'class'],
+    ALLOWED_ATTR: ['href', 'title', 'class', 'src', 'alt', 'loading'],
     FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
     ALLOW_DATA_ATTR: false,
   });

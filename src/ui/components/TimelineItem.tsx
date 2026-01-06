@@ -216,7 +216,7 @@ export const TimelineItem = ({
   }, []);
 
   const tokenizeWithEmojis = useCallback((text: string, emojiMap: Map<string, string>) => {
-    const regex = /:([a-zA-Z0-9_+@.-]+):/g;
+    const regex = /:([a-zA-Z0-9_]+):/g;
     const tokens: Array<{ type: "text"; value: string } | { type: "emoji"; name: string; url: string }> = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -275,6 +275,8 @@ export const TimelineItem = ({
     const hasHtmlTags = displayStatus.htmlContent ? /<[^>]+>/g.test(displayStatus.htmlContent) : false;
     
     if (displayStatus.hasRichContent && hasHtmlTags) {
+      // Mastodon sends custom emojis as <img> tags in HTML content already
+      // No need to process - just sanitize and render
       return (
         <div 
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayStatus.htmlContent || '') }}

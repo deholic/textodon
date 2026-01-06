@@ -162,8 +162,8 @@ export const mapStatus = (raw: unknown): Status => {
     typeof cardValue?.description === "string" ? cardValue.description : null;
   const cardImage = typeof cardValue?.image === "string" ? cardValue.image : null;
   const hasCardData = Boolean(cardTitle && cardTitle !== cardUrl) || Boolean(cardDescription || cardImage);
-  const customEmojis = mapCustomEmojis(value.emojis);
-  const accountEmojis = mapCustomEmojis(account.emojis);
+  const customEmojis = mapCustomEmojis(value.emojis || []);
+  const accountEmojis = mapCustomEmojis(account.emojis || []);
   const { reactions, myReaction } = mapReactions(value.reactions);
   return {
     id: String(value.id ?? ""),
