@@ -11,9 +11,7 @@ import { createAccountId, formatHandle } from "./ui/utils/account";
 import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
-import readmeText from "../README.md?raw";
 import licenseText from "../LICENSE?raw";
-import { renderMarkdown } from "./ui/utils/markdown";
 
 type Route = "home" | "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
@@ -833,10 +831,10 @@ export const App = () => {
   const replySummary = replyTarget
     ? `@${replyTarget.accountHandle} · ${replyTarget.content.slice(0, 80)}`
     : null;
-  const readmeHtml = useMemo(() => renderMarkdown(readmeText), [readmeText]);
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const timelineListeners = useRef<Map<string, Set<(status: Status) => void>>>(new Map());
   const previousAccountIds = useRef<Set<string>>(new Set());
+  const hasAccounts = accountsState.accounts.length > 0;
 
   const registerTimelineListener = useCallback((accountId: string, listener: (status: Status) => void) => {
     const next = new Map(timelineListeners.current);
@@ -1323,7 +1321,7 @@ export const App = () => {
         </div>
       </header>
 
-      <main className="layout">
+      <main className={`layout${hasAccounts ? "" : " layout-empty"}`}>
         <aside>
           <div className="compose-panel">
             {composeAccount ? (
@@ -1386,68 +1384,64 @@ export const App = () => {
           ) : null}
         </aside>
 
-        <section className="main-column">
-          {oauthLoading ? <p className="empty">OAuth 인증 중...</p> : null}
-          {actionError ? <p className="error">{actionError}</p> : null}
-          {route === "home" ? (
-            <section className="panel">
-            {sections.length > 0 ? (
-              <div
-                className={`timeline-board${isBoardDragging ? " is-dragging" : ""}`}
-                ref={timelineBoardRef}
-                onPointerDown={handleBoardPointerDown}
-                onPointerMove={handleBoardPointerMove}
-                  onPointerUp={handleBoardPointerUp}
-                  onPointerLeave={handleBoardPointerUp}
-                  onPointerCancel={handleBoardPointerUp}
-                >
-                  {sections.map((section, index) => {
-                    const sectionAccount =
-                      section.accountId
-                        ? accountsState.accounts.find((account) => account.id === section.accountId) ?? null
-                        : null;
-                    const shouldShowReactions = showMisskeyReactions;
-                    return (
-                      <TimelineSection
-                        key={section.id}
-                        section={section}
-                        account={sectionAccount}
-                        services={services}
-                        accountsState={accountsState}
-                        onAccountChange={setSectionAccount}
-                        onTimelineChange={setSectionTimeline}
-                        onAddSectionLeft={(id) => addSectionNear(id, "left")}
-                        onAddSectionRight={(id) => addSectionNear(id, "right")}
-                        onRemoveSection={removeSection}
-                        onReply={handleReply}
-                        onError={(message) => setActionError(message || null)}
-                        onMoveSection={moveSection}
-                        canMoveLeft={index > 0}
-                        canMoveRight={index < sections.length - 1}
-                        canRemoveSection={sections.length > 1}
-                        timelineType={section.timelineType}
-                        showProfileImage={showProfileImages}
-                        showCustomEmojis={showCustomEmojis}
-                        showReactions={shouldShowReactions}
-                        registerTimelineListener={registerTimelineListener}
-                        unregisterTimelineListener={unregisterTimelineListener}
-                      />
-                    );
-                  })}
-                </div>
-              ) : null}
-              {accountsState.accounts.length === 0 ? (
-                <div className="timeline-readme">
-                  <h3>안내</h3>
-                  <div className="readme-text" dangerouslySetInnerHTML={{ __html: readmeHtml }} />
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-          {route === "terms" ? <TermsPage /> : null}
-          {route === "license" ? <LicensePage /> : null}
-          {route === "oss" ? <OssPage /> : null}
-        </section>
+        {hasAccounts ? (
+          <section className="main-column">
+            {oauthLoading ? <p className="empty">OAuth 인증 중...</p> : null}
+            {actionError ? <p className="error">{actionError}</p> : null}
+            {route === "home" ? (
+              <section className="panel">
+                {sections.length > 0 ? (
+                  <div
+                    className={`timeline-board${isBoardDragging ? " is-dragging" : ""}`}
+                    ref={timelineBoardRef}
+                    onPointerDown={handleBoardPointerDown}
+                    onPointerMove={handleBoardPointerMove}
+                    onPointerUp={handleBoardPointerUp}
+                    onPointerLeave={handleBoardPointerUp}
+                    onPointerCancel={handleBoardPointerUp}
+                  >
+                    {sections.map((section, index) => {
+                      const sectionAccount =
+                        section.accountId
+                          ? accountsState.accounts.find((account) => account.id === section.accountId) ?? null
+                          : null;
+                      const shouldShowReactions = showMisskeyReactions;
+                      return (
+                        <TimelineSection
+                          key={section.id}
+                          section={section}
+                          account={sectionAccount}
+                          services={services}
+                          accountsState={accountsState}
+                          onAccountChange={setSectionAccount}
+                          onTimelineChange={setSectionTimeline}
+                          onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                          onAddSectionRight={(id) => addSectionNear(id, "right")}
+                          onRemoveSection={removeSection}
+                          onReply={handleReply}
+                          onError={(message) => setActionError(message || null)}
+                          onMoveSection={moveSection}
+                          canMoveLeft={index > 0}
+                          canMoveRight={index < sections.length - 1}
+                          canRemoveSection={sections.length > 1}
+                          timelineType={section.timelineType}
+                          showProfileImage={showProfileImages}
+                          showCustomEmojis={showCustomEmojis}
+                          showReactions={shouldShowReactions}
+                          registerTimelineListener={registerTimelineListener}
+                          unregisterTimelineListener={unregisterTimelineListener}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+            {route === "terms" ? <TermsPage /> : null}
+            {route === "license" ? <LicensePage /> : null}
+            {route === "oss" ? <OssPage /> : null}
+          </section>
+        ) : null}
       </main>
 
       {mobileComposeOpen ? (
