@@ -1,5 +1,6 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CustomEmoji, Status } from "../../domain/types";
+import { sanitizeHtml } from "../utils/htmlSanitizer";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
@@ -94,10 +95,10 @@ export const TimelineItem = ({
     }
     if (boostedBy) {
       const label = boostedBy.name || boostedHandle || boostedBy.handle;
-      return `${label} 님이 부스트함(@${boostedHandle ?? boostedBy.handle})`;
+      return `${label} 님이 부스트함`;
     }
     if (displayStatus.reblogged) {
-      return activeHandle ? `내가 부스트함(@${activeHandle})` : "내가 부스트함";
+      return "내가 부스트함";
     }
     return null;
   }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle, notification]);
@@ -128,8 +129,7 @@ export const TimelineItem = ({
     }
     const actorName =
       notification.actor.name || notificationActorHandle || notification.actor.handle || "알 수 없음";
-    const handleSuffix = notificationActorHandle ? `(@${notificationActorHandle})` : "";
-    return `${actorName} 님이 ${notification.label}${handleSuffix}`;
+    return `${actorName} 님이 ${notification.label}`;
   }, [notification, notificationActorHandle]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
@@ -215,7 +215,7 @@ export const TimelineItem = ({
   }, []);
 
   const tokenizeWithEmojis = useCallback((text: string, emojiMap: Map<string, string>) => {
-    const regex = /:([a-zA-Z0-9_+@.-]+):/g;
+    const regex = /:([a-zA-Z0-9_]+):/g;
     const tokens: Array<{ type: "text"; value: string } | { type: "emoji"; name: string; url: string }> = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -239,7 +239,7 @@ export const TimelineItem = ({
   }, []);
 
   const renderTextWithLinks = useCallback((text: string, keyPrefix: string) => {
-    const regex = /(https?:\/\/[^\s)\]]+)/g;
+    const regex = /(https?:\/\/[^\s)\]]+|www\.[^\s)\]]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]]*)?)(?=[^\w@]|$)/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -249,11 +249,17 @@ export const TimelineItem = ({
         parts.push(text.slice(lastIndex, match.index));
       }
       const url = match[0];
-      parts.push(
-        <a key={`${keyPrefix}-link-${key}`} href={url} target="_blank" rel="noreferrer">
-          {url}
-        </a>
-      );
+      // Skip email addresses
+      if (url.includes('@')) {
+        parts.push(url);
+      } else {
+        const normalizedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+        parts.push(
+          <a key={`${keyPrefix}-link-${key}`} href={normalizedUrl} target="_blank" rel="noreferrer">
+            {url}
+          </a>
+        );
+      }
       key += 1;
       lastIndex = match.index + url.length;
     }
@@ -264,6 +270,36 @@ export const TimelineItem = ({
   }, []);
 
   const contentParts = useMemo(() => {
+    // Check if content actually contains HTML tags before rendering as HTML
+    const hasHtmlTags = displayStatus.htmlContent ? /<[^>]+>/g.test(displayStatus.htmlContent) : false;
+    
+    if (displayStatus.hasRichContent && hasHtmlTags) {
+      // Process HTML content to ensure custom emojis are properly rendered
+      let processedHtml = displayStatus.htmlContent || '';
+      
+      // If custom emojis should be shown and we have emoji data, replace any remaining shortcodes
+      if (showCustomEmojis && displayStatus.customEmojis.length > 0) {
+        const emojiMap = buildEmojiMap(displayStatus.customEmojis);
+        
+        // Replace any remaining :shortcode: patterns that weren't converted to <img> tags
+        processedHtml = processedHtml.replace(/:([a-zA-Z0-9_]+):/g, (match, shortcode) => {
+          const url = emojiMap.get(shortcode);
+          if (url) {
+            return `<img src="${url}" alt=":${shortcode}:" class="custom-emoji" loading="lazy" />`;
+          }
+          return match; // Keep original if no emoji found
+        });
+      }
+      
+      return (
+        <div 
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedHtml) }}
+          className="rich-content"
+        />
+      );
+    }
+    
+    // Fallback to plain text with link detection
     const text = displayStatus.content;
     if (!showCustomEmojis || displayStatus.customEmojis.length === 0) {
       return renderTextWithLinks(text, "content");
@@ -291,6 +327,8 @@ export const TimelineItem = ({
     buildEmojiMap,
     displayStatus.content,
     displayStatus.customEmojis,
+    displayStatus.htmlContent,
+    displayStatus.hasRichContent,
     renderTextWithLinks,
     showCustomEmojis,
     tokenizeWithEmojis
