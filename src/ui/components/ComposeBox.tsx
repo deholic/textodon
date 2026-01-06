@@ -618,9 +618,14 @@ export const ComposeBox = ({
         >
           <div 
             className="image-modal-backdrop" 
-            onClick={() => setActiveImageId(null)}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setActiveImageId(null);
+            }}
             onTouchStart={(event) => {
               event.preventDefault();
+              event.stopPropagation();
               setActiveImageId(null);
             }}
           />

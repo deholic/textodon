@@ -1313,6 +1313,8 @@ button.ghost {
   position: absolute;
   inset: 0;
   background: rgba(15, 13, 11, 0.7);
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .image-modal-content {

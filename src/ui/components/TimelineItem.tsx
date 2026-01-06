@@ -745,9 +745,14 @@ export const TimelineItem = ({
         >
           <div 
             className="image-modal-backdrop" 
-            onClick={() => setActiveImageUrl(null)}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setActiveImageUrl(null);
+            }}
             onTouchStart={(event) => {
               event.preventDefault();
+              event.stopPropagation();
               setActiveImageUrl(null);
             }}
           />
