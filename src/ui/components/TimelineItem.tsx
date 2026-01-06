@@ -275,11 +275,26 @@ export const TimelineItem = ({
     const hasHtmlTags = displayStatus.htmlContent ? /<[^>]+>/g.test(displayStatus.htmlContent) : false;
     
     if (displayStatus.hasRichContent && hasHtmlTags) {
-      // Mastodon sends custom emojis as <img> tags in HTML content already
-      // No need to process - just sanitize and render
+      // Process HTML content to ensure custom emojis are properly rendered
+      let processedHtml = displayStatus.htmlContent || '';
+      
+      // If custom emojis should be shown and we have emoji data, replace any remaining shortcodes
+      if (showCustomEmojis && displayStatus.customEmojis.length > 0) {
+        const emojiMap = buildEmojiMap(displayStatus.customEmojis);
+        
+        // Replace any remaining :shortcode: patterns that weren't converted to <img> tags
+        processedHtml = processedHtml.replace(/:([a-zA-Z0-9_]+):/g, (match, shortcode) => {
+          const url = emojiMap.get(shortcode);
+          if (url) {
+            return `<img src="${url}" alt=":${shortcode}:" class="custom-emoji" loading="lazy" />`;
+          }
+          return match; // Keep original if no emoji found
+        });
+      }
+      
       return (
         <div 
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayStatus.htmlContent || '') }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedHtml) }}
           className="rich-content"
         />
       );
@@ -313,6 +328,8 @@ export const TimelineItem = ({
     buildEmojiMap,
     displayStatus.content,
     displayStatus.customEmojis,
+    displayStatus.htmlContent,
+    displayStatus.hasRichContent,
     renderTextWithLinks,
     showCustomEmojis,
     tokenizeWithEmojis
