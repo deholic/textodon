@@ -271,11 +271,13 @@ export const TimelineItem = ({
   }, []);
 
   const contentParts = useMemo(() => {
-    // Auto-detect HTML content
-    if (displayStatus.hasRichContent && displayStatus.htmlContent) {
+    // Check if content actually contains HTML tags before rendering as HTML
+    const hasHtmlTags = displayStatus.htmlContent ? /<[^>]+>/g.test(displayStatus.htmlContent) : false;
+    
+    if (displayStatus.hasRichContent && hasHtmlTags) {
       return (
         <div 
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayStatus.htmlContent) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayStatus.htmlContent || '') }}
           className="rich-content"
         />
       );
