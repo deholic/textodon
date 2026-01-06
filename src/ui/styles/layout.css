@@ -86,6 +86,12 @@
   min-height: calc(100vh - 24px);
 }
 
+.layout.layout-empty {
+  grid-template-columns: minmax(260px, 320px);
+  justify-content: center;
+  align-content: center;
+}
+
 aside {
   display: flex;
   flex-direction: column;

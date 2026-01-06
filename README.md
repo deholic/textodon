@@ -2,6 +2,8 @@
 
 오픈소스 페디버스 웹 클라이언트입니다. 여러 계정을 등록해 전환하면서 여러 타임라인 섹션을 동시에 확인하고, 스트리밍으로 실시간 반영합니다.
 
+![텍스트돈 라이트 모드 미리보기](src/ui/assets/deck-preview-light.png) ![텍스트돈 다크 모드 미리보기](src/ui/assets/deck-preview-dark.png)
+
 ## 시작하기
 
 ```bash

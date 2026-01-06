@@ -104,6 +104,22 @@
   overflow: auto;
 }
 
+.readme-image-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.readme-image-row img {
+  flex: 1 1 calc(50% - 4px);
+  max-width: calc(50% - 4px);
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid #e2ddd5;
+  background: #f5efe7;
+}
+
 .license {
   white-space: pre-wrap;
   font-size: 12px;
