@@ -72,6 +72,8 @@ export type Status = {
   accountUrl: string | null;
   accountAvatarUrl: string | null;
   content: string;
+  htmlContent?: string;
+  hasRichContent: boolean;
   url: string | null;
   visibility: Visibility;
   spoilerText: string;

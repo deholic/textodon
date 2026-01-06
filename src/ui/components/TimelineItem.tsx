@@ -1,5 +1,6 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CustomEmoji, Status } from "../../domain/types";
+import { sanitizeHtml } from "../utils/htmlSanitizer";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
@@ -239,7 +240,7 @@ export const TimelineItem = ({
   }, []);
 
   const renderTextWithLinks = useCallback((text: string, keyPrefix: string) => {
-    const regex = /(https?:\/\/[^\s)\]]+)/g;
+    const regex = /(https?:\/\/[^\s)\]]+|www\.[^\s)\]]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]]*)?)(?=[^\w@]|$)/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -249,11 +250,17 @@ export const TimelineItem = ({
         parts.push(text.slice(lastIndex, match.index));
       }
       const url = match[0];
-      parts.push(
-        <a key={`${keyPrefix}-link-${key}`} href={url} target="_blank" rel="noreferrer">
-          {url}
-        </a>
-      );
+      // Skip email addresses
+      if (url.includes('@')) {
+        parts.push(url);
+      } else {
+        const normalizedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
+        parts.push(
+          <a key={`${keyPrefix}-link-${key}`} href={normalizedUrl} target="_blank" rel="noreferrer">
+            {url}
+          </a>
+        );
+      }
       key += 1;
       lastIndex = match.index + url.length;
     }
@@ -264,6 +271,17 @@ export const TimelineItem = ({
   }, []);
 
   const contentParts = useMemo(() => {
+    // Auto-detect HTML content
+    if (displayStatus.hasRichContent && displayStatus.htmlContent) {
+      return (
+        <div 
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayStatus.htmlContent) }}
+          className="rich-content"
+        />
+      );
+    }
+    
+    // Fallback to plain text with link detection
     const text = displayStatus.content;
     if (!showCustomEmojis || displayStatus.customEmojis.length === 0) {
       return renderTextWithLinks(text, "content");

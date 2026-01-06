@@ -1,11 +1,15 @@
 import type { MediaAttachment, Reaction, Status } from "../domain/types";
 
 const htmlToText = (html: string): string => {
-  const withBreaks = html
+  // Preserve links as "text (url)" format before DOM parsing
+  const withLinkPreservation = html.replace(/<a\s+[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '$2 ($1)');
+  
+  const withBreaks = withLinkPreservation
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
     .replace(/<\/div>/gi, "\n")
     .replace(/<\/li>/gi, "\n");
+    
   const parser = new DOMParser();
   const doc = parser.parseFromString(withBreaks, "text/html");
   const text = doc.body.textContent ?? "";
@@ -169,6 +173,8 @@ export const mapStatus = (raw: unknown): Status => {
     accountUrl,
     accountAvatarUrl,
     content: htmlToText(String(value.content ?? "")),
+    htmlContent: String(value.content ?? ""),
+    hasRichContent: true,
     url:
       typeof value.url === "string"
         ? value.url
