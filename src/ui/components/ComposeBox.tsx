@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 
@@ -616,7 +616,14 @@ export const ComposeBox = ({
           aria-modal="true"
           onWheel={(event) => event.preventDefault()}
         >
-          <div className="image-modal-backdrop" onClick={() => setActiveImageId(null)} />
+          <div 
+            className="image-modal-backdrop" 
+            onClick={() => setActiveImageId(null)}
+            onTouchStart={(event) => {
+              event.preventDefault();
+              setActiveImageId(null);
+            }}
+          />
           <div className="image-modal-content" ref={imageContainerRef}>
             <div className="image-modal-actions">
               <button

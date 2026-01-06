@@ -743,7 +743,14 @@ export const TimelineItem = ({
           aria-modal="true"
           onWheel={(event) => event.preventDefault()}
         >
-          <div className="image-modal-backdrop" onClick={() => setActiveImageUrl(null)} />
+          <div 
+            className="image-modal-backdrop" 
+            onClick={() => setActiveImageUrl(null)}
+            onTouchStart={(event) => {
+              event.preventDefault();
+              setActiveImageUrl(null);
+            }}
+          />
           <div className="image-modal-content" ref={imageContainerRef}>
             <button
               type="button"
