@@ -615,9 +615,25 @@ export const ComposeBox = ({
           role="dialog"
           aria-modal="true"
           onWheel={(event) => event.preventDefault()}
+          onMouseDown={(event) => {
+            if (!(event.target instanceof Element)) {
+              return;
+            }
+            if (!event.target.closest(".image-modal-content")) {
+              setActiveImageId(null);
+            }
+          }}
         >
           <div className="image-modal-backdrop" onClick={() => setActiveImageId(null)} />
-          <div className="image-modal-content" ref={imageContainerRef}>
+          <div
+            className="image-modal-content"
+            ref={imageContainerRef}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setActiveImageId(null);
+              }
+            }}
+          >
             <div className="image-modal-actions">
               <button
                 type="button"
