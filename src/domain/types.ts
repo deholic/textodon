@@ -96,6 +96,12 @@ export type Status = {
   accountEmojis: CustomEmoji[];
 };
 
+export type ThreadContext = {
+  ancestors: Status[];
+  descendants: Status[];
+  conversation?: Status[]; // Misskey 전체 대화용 (시간순 정렬)
+};
+
 export type TimelineItem = {
   status: Status;
 };
