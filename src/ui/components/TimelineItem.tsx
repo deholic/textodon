@@ -43,8 +43,10 @@ export const TimelineItem = ({
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null
   );
@@ -137,6 +139,28 @@ export const TimelineItem = ({
     () => new Date(displayStatus.createdAt).toLocaleString(),
     [displayStatus.createdAt]
   );
+  const originUrl = useMemo(() => {
+    if (displayStatus.url) {
+      return displayStatus.url;
+    }
+    const hostFromAccount = activeAccountUrl
+      ? (() => {
+          try {
+            return new URL(activeAccountUrl).hostname;
+          } catch {
+            return "";
+          }
+        })()
+      : "";
+    const hostFromHandle = activeHandle.includes("@")
+      ? activeHandle.split("@").pop() ?? ""
+      : "";
+    const host = hostFromAccount || hostFromHandle;
+    if (!host || !displayStatus.id) {
+      return null;
+    }
+    return `https://${host}/notes/${displayStatus.id}`;
+  }, [activeAccountUrl, activeHandle, displayStatus.id, displayStatus.url]);
   const handleHeaderClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       if (!displayStatus.accountUrl) {
@@ -168,6 +192,39 @@ export const TimelineItem = ({
     },
     [displayStatus.accountUrl]
   );
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+    const handleClick = (event: MouseEvent) => {
+      if (!menuRef.current || !(event.target instanceof Node)) {
+        return;
+      }
+      if (!menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("click", handleClick);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("click", handleClick);
+    };
+  }, [menuOpen]);
+
+  const handleOpenOrigin = useCallback(() => {
+    if (!originUrl) {
+      return;
+    }
+    window.open(originUrl, "_blank", "noopener,noreferrer");
+    setMenuOpen(false);
+  }, [originUrl]);
 
   const handleStatusClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -523,9 +580,34 @@ export const TimelineItem = ({
         </div>
       ) : null}
       <header className="status-header-main">
-        {showProfileImage ? (
-          <span
-            className="status-avatar"
+        <div className="status-header-info">
+          {showProfileImage ? (
+            <span
+              className="status-avatar"
+              onClick={handleHeaderClick}
+              onKeyDown={handleHeaderKeyDown}
+              role={displayStatus.accountUrl ? "link" : undefined}
+              tabIndex={displayStatus.accountUrl ? 0 : undefined}
+              aria-label={
+                displayStatus.accountUrl
+                  ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
+                  : undefined
+              }
+              data-interactive={displayStatus.accountUrl ? "true" : undefined}
+            >
+              {displayStatus.accountAvatarUrl ? (
+                <img
+                  src={displayStatus.accountAvatarUrl}
+                  alt={`${displayStatus.accountName || displayStatus.accountHandle} 프로필 이미지`}
+                  loading="lazy"
+                />
+              ) : (
+                <span className="status-avatar-fallback" aria-hidden="true" />
+              )}
+            </span>
+          ) : null}
+          <div
+            className="status-account"
             onClick={handleHeaderClick}
             onKeyDown={handleHeaderKeyDown}
             role={displayStatus.accountUrl ? "link" : undefined}
@@ -537,48 +619,55 @@ export const TimelineItem = ({
             }
             data-interactive={displayStatus.accountUrl ? "true" : undefined}
           >
-            {displayStatus.accountAvatarUrl ? (
-              <img
-                src={displayStatus.accountAvatarUrl}
-                alt={`${displayStatus.accountName || displayStatus.accountHandle} 프로필 이미지`}
-                loading="lazy"
+            <strong>
+              {displayStatus.accountUrl ? (
+                <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
+                  {accountNameNode}
+                </a>
+              ) : (
+                accountNameNode
+              )}
+            </strong>
+            <span>
+              {displayStatus.accountUrl ? (
+                <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
+                  @{displayHandle}
+                </a>
+              ) : (
+                `@${displayHandle}`
+              )}
+            </span>
+          </div>
+        </div>
+        <div className="status-menu section-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="게시글 메뉴 열기"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((current) => !current)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.7" />
+              <circle cx="12" cy="12" r="1.7" />
+              <circle cx="12" cy="19" r="1.7" />
+            </svg>
+          </button>
+          {menuOpen ? (
+            <>
+              <div
+                className="overlay-backdrop"
+                onClick={() => setMenuOpen(false)}
+                aria-hidden="true"
               />
-            ) : (
-              <span className="status-avatar-fallback" aria-hidden="true" />
-            )}
-          </span>
-        ) : null}
-        <div
-          className="status-account"
-          onClick={handleHeaderClick}
-          onKeyDown={handleHeaderKeyDown}
-          role={displayStatus.accountUrl ? "link" : undefined}
-          tabIndex={displayStatus.accountUrl ? 0 : undefined}
-          aria-label={
-            displayStatus.accountUrl
-              ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
-              : undefined
-          }
-          data-interactive={displayStatus.accountUrl ? "true" : undefined}
-        >
-          <strong>
-            {displayStatus.accountUrl ? (
-              <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
-                {accountNameNode}
-              </a>
-            ) : (
-              accountNameNode
-            )}
-          </strong>
-          <span>
-            {displayStatus.accountUrl ? (
-              <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
-                @{displayHandle}
-              </a>
-            ) : (
-              `@${displayHandle}`
-            )}
-          </span>
+              <div className="section-menu-panel status-menu-panel" role="menu">
+                <button type="button" onClick={handleOpenOrigin} disabled={!originUrl}>
+                  원본 서버에서 보기
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
       </header>
       {displayStatus.spoilerText ? (

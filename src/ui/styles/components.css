@@ -972,6 +972,25 @@ button.ghost {
   color: #6b5c4f;
 }
 
+.status-header-main {
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.status-header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  flex-direction: row;
+}
+
+.status-menu {
+  margin-left: auto;
+}
+
 .status-avatar,
 .status-account {
   cursor: pointer;
@@ -981,6 +1000,11 @@ button.ghost {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.status header .status-header-info {
+  flex-direction: row;
+  gap: 8px;
 }
 
 .custom-emoji {
@@ -1037,9 +1061,29 @@ button.ghost {
   gap: 4px;
 }
 
+.status header .status-header-info {
+  flex-direction: row;
+  align-items: center;
+}
+
+.status-menu-panel {
+  min-width: 180px;
+}
+
+.status-menu .icon-button {
+  width: 32px;
+  height: 32px;
+}
+
 .status header a {
   color: inherit;
   text-decoration: none;
+}
+
+.status-account strong {
+  display: block;
+  line-height: 1.2;
+  max-height: 1.4em;
 }
 
 .time-link {
