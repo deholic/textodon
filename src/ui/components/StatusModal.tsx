@@ -52,7 +52,7 @@ export const StatusModal = ({
             onClick={onClose}
             aria-label="닫기"
           >
-            닫기
+            ×
           </button>
         </div>
         

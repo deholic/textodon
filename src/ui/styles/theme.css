@@ -29,6 +29,7 @@
 :root[data-theme="christmas"] .status-modal-content {
   background: #fff7f2;
   border: 1px solid #ead7cc;
+  box-shadow: 0 20px 60px rgba(134, 40, 40, 0.15);
 }
 
 :root[data-theme="christmas"] .status-modal-header {
@@ -326,6 +327,7 @@ body[data-theme="christmas"] .compose-icon-button {
 :root[data-theme="sky-pink"] .status-modal-content {
   background: #f7fbff;
   border: 1px solid #d6e5f2;
+  box-shadow: 0 20px 60px rgba(58, 118, 185, 0.15);
 }
 
 :root[data-theme="sky-pink"] .status-modal-header {
@@ -619,6 +621,7 @@ body[data-theme="sky-pink"] .compose-icon-button {
 :root[data-theme="monochrome"] .status-modal-content {
   background: #ffffff;
   border: 1px solid #1d1d1d;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
 :root[data-theme="monochrome"] .status-modal-header {
@@ -1756,6 +1759,7 @@ body[data-theme="monochrome"] .compose-icon-button {
   body:not([data-color-scheme="light"]) .status-modal-content {
     background: #171512;
     border: 1px solid #3b342d;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   }
 
   :root:not([data-color-scheme="light"]) .status-modal-header,
@@ -1806,6 +1810,7 @@ body[data-theme="monochrome"] .compose-icon-button {
   body:not([data-color-scheme="light"])[data-theme="christmas"] .status-modal-content {
     background: #201412;
     border: 1px solid #4a2f2c;
+    box-shadow: 0 20px 60px rgba(64, 20, 20, 0.15);
   }
 
   :root:not([data-color-scheme="light"])[data-theme="christmas"] .status-modal-header,
@@ -1840,10 +1845,11 @@ body[data-theme="monochrome"] .compose-icon-button {
     background: rgba(29, 51, 74, 0.7);
   }
 
-  :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .status-modal-content,
+:root:not([data-color-scheme="light"])[data-theme="sky-pink"] .status-modal-content,
   body:not([data-color-scheme="light"])[data-theme="sky-pink"] .status-modal-content {
-    background: #1a202dcc;
+    background: #1a202d;
     border: 1px solid #2e3b50;
+    box-shadow: 0 20px 60px rgba(12, 18, 28, 0.15);
   }
 
   :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .status-modal-header,
@@ -1882,6 +1888,7 @@ body[data-theme="monochrome"] .compose-icon-button {
   body:not([data-color-scheme="light"])[data-theme="monochrome"] .status-modal-content {
     background: #121212;
     border: 1px solid #3a3a3a;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   }
 
   :root:not([data-color-scheme="light"])[data-theme="monochrome"] .status-modal-header,
@@ -3344,6 +3351,11 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     background: #2c3b59;
   }
 
+  :root[data-color-scheme="dark"] .status-modal-close:hover,
+  body[data-color-scheme="dark"] .status-modal-close:hover {
+    background: #2c3b59;
+  }
+
   :root[data-color-scheme="dark"] .back-link,
   body[data-color-scheme="dark"] .back-link {
     color: #d7cbbd;
@@ -3394,6 +3406,11 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     background: #3b2624;
   }
 
+  :root[data-color-scheme="dark"][data-theme="christmas"] .status-modal-close:hover,
+  body[data-color-scheme="dark"][data-theme="christmas"] .status-modal-close:hover {
+    background: #3b2624;
+  }
+
   :root[data-color-scheme="dark"][data-theme="sky-pink"] .boosted-by,
   body[data-color-scheme="dark"][data-theme="sky-pink"] .boosted-by,
   :root[data-color-scheme="dark"][data-theme="sky-pink"] .notification-actor,
@@ -3432,6 +3449,11 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     background: #223047;
   }
 
+  :root[data-color-scheme="dark"][data-theme="sky-pink"] .status-modal-close:hover,
+  body[data-color-scheme="dark"][data-theme="sky-pink"] .status-modal-close:hover {
+    background: #223047;
+  }
+
   :root[data-color-scheme="dark"][data-theme="monochrome"] .boosted-by,
   body[data-color-scheme="dark"][data-theme="monochrome"] .boosted-by,
   :root[data-color-scheme="dark"][data-theme="monochrome"] .notification-actor,
@@ -3463,6 +3485,11 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
   :root[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close,
   body[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close {
     color: #f0f0f0;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close:hover,
+  body[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close:hover {
+    background: #2a2a2a;
   }
 
   :root[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close:hover,
