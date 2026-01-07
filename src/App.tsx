@@ -1671,6 +1671,7 @@ onAccountChange={setSectionAccount}
         <StatusModal
           status={selectedStatus}
           account={composeAccount}
+          api={services.api}
           onClose={handleCloseStatusModal}
           onReply={(status) => {
             if (composeAccount) {

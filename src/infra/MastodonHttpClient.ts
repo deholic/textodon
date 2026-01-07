@@ -1,4 +1,4 @@
-import type { Account, CustomEmoji, Status, TimelineType } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 import { mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
@@ -130,6 +130,30 @@ export class MastodonHttpClient implements MastodonApi {
       throw new Error("업로드된 미디어 정보를 찾을 수 없습니다.");
     }
     return id;
+  }
+
+  async fetchContext(account: Account, statusId: string): Promise<ThreadContext> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/statuses/${statusId}/context`, {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("스레드 컨텍스트를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as Record<string, unknown>;
+    
+    // 마스토돈 API 응답: { ancestors: Status[], descendants: Status[] }
+    const ancestors = Array.isArray(data.ancestors) 
+      ? data.ancestors.map(mapStatus).filter((status): status is Status => status !== null)
+      : [];
+    
+    const descendants = Array.isArray(data.descendants)
+      ? data.descendants.map(mapStatus).filter((status): status is Status => status !== null)
+      : [];
+
+    return {
+      ancestors,
+      descendants
+    };
   }
 
   async createStatus(account: Account, input: CreateStatusInput): Promise<Status> {

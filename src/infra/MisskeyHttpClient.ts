@@ -1,4 +1,4 @@
-﻿import type { Account, CustomEmoji, Status, TimelineType } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 import { mapMisskeyNotification, mapMisskeyStatusWithInstance } from "./misskeyMapper";
 
@@ -156,6 +156,38 @@ export class MisskeyHttpClient implements MastodonApi {
       throw new Error("업로드된 미디어 정보를 찾을 수 없습니다.");
     }
     return id;
+  }
+
+  async fetchConversation(account: Account, noteId: string): Promise<ThreadContext> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/notes/conversation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(buildBody(account, { noteId, limit: 100 }))
+    });
+    if (!response.ok) {
+      throw new Error("대화를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    
+    // 미스키는 시간순으로 정렬된 전체 대화를 반환
+    const conversation = data
+      .map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl))
+      .filter((status): status is Status => status !== null);
+
+    // 전체 대화에서 현재 노트를 찾아서 ancestors/descendants로 분리
+    const currentIndex = conversation.findIndex(status => status.id === noteId);
+    const ancestors = currentIndex > 0 ? conversation.slice(0, currentIndex) : [];
+    const descendants = currentIndex >= 0 && currentIndex < conversation.length - 1 
+      ? conversation.slice(currentIndex + 1) 
+      : [];
+
+    return {
+      ancestors,
+      descendants,
+      conversation // 미스키 전용: 전체 대화 보존
+    };
   }
 
   async createStatus(account: Account, input: CreateStatusInput): Promise<Status> {

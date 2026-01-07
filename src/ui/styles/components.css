@@ -1463,6 +1463,34 @@ button.ghost {
   font-weight: 600;
 }
 
+.status-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thread-loading-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b5c4f;
+}
+
+.thread-loading-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid #d8d1c7;
+  border-top-color: #3b5fa8;
+  border-radius: 50%;
+  animation: thread-loading-spin 0.8s linear infinite;
+}
+
+.thread-loading-text {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 
 
 .status-modal-body {
@@ -1636,6 +1664,97 @@ button.ghost {
 
 .mobile-compose-button {
   display: none;
+}
+
+/* 스레드 컨텍스트 스타일 */
+.thread-context.thread-ancestors {
+  margin-bottom: 16px; /* 본문 상단 스레드: 하단 마진 */
+}
+
+.thread-context.thread-descendants {
+  margin-top: 16px; /* 본문 하단 스레드: 상단 마진 */
+}
+
+/* 스레드가 없을 때는 상단 여백 제거 */
+.thread-context:empty {
+  display: none;
+}
+
+.thread-item {
+  margin-bottom: 12px;
+  margin-left: 24px; /* leading margin으로 계층 표현 */
+}
+
+/* 마지막 스레드 아이템에는 하단 여백 제거 */
+.thread-item:last-child {
+  margin-bottom: 0;
+}
+
+.thread-item.thread-ancestor {
+  opacity: 0.85;
+}
+
+.thread-item.thread-descendant {
+  opacity: 0.9;
+}
+
+.thread-item.thread-ancestor .status,
+.thread-item.thread-descendant .status {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #f0ebe3;
+  background: #faf9f6;
+}
+
+/* 스레드 커넥터 불필요하여 제거 */
+
+.thread-error {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  border-radius: 10px;
+  margin: 8px 0; /* 위아래 여백 축소 */
+}
+
+/* 스레드 로딩은 헤더에서 처리하여 컨텐츠 영역에 영향 주지 않음 */
+
+@keyframes thread-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.thread-error {
+  color: #9a2e1f;
+  background: #fdf2f0;
+  border: 1px solid #f5d6d0;
+}
+
+/* 스레드 아이템 내부의 액션 버튼들은 작게 표시 */
+.thread-item .status-actions button {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.thread-item .icon-button {
+  width: 32px;
+  height: 32px;
+}
+
+.thread-item .status-text {
+  font-size: 14px;
+}
+
+.thread-item .rich-content {
+  font-size: 14px;
+}
+
+.thread-item .status-time {
+  font-size: 11px;
 }
 
 @media (max-width: 900px) {
