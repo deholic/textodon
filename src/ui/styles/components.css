@@ -1463,16 +1463,7 @@ button.ghost {
   font-weight: 600;
 }
 
-.status-modal-close {
-  background: none;
-  color: #666;
-  border: none;
-  padding: 4px 8px;
-  font-size: 18px;
-  cursor: pointer;
-  line-height: 1;
-  font-weight: 300;
-}
+
 
 .status-modal-body {
   padding: 16px;
