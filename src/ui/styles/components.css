@@ -1465,18 +1465,13 @@ button.ghost {
 
 .status-modal-close {
   background: none;
-  color: #3b5fa8;
+  color: #666;
   border: none;
   padding: 4px 8px;
   font-size: 18px;
   cursor: pointer;
-  border-radius: 8px;
   line-height: 1;
   font-weight: 300;
-}
-
-.status-modal-close:hover {
-  background: #f3efe7;
 }
 
 .status-modal-body {
