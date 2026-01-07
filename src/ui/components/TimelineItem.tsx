@@ -11,6 +11,7 @@ export const TimelineItem = ({
   onToggleFavourite,
   onToggleReblog,
   onDelete,
+  onStatusClick,
   activeHandle,
   activeAccountHandle,
   activeAccountUrl,
@@ -24,6 +25,7 @@ export const TimelineItem = ({
   onToggleFavourite: (status: Status) => void;
   onToggleReblog: (status: Status) => void;
   onDelete: (status: Status) => void;
+  onStatusClick?: (status: Status) => void;
   activeHandle: string;
   activeAccountHandle: string;
   activeAccountUrl: string | null;
@@ -165,6 +167,19 @@ export const TimelineItem = ({
       window.open(displayStatus.accountUrl, "_blank", "noopener,noreferrer");
     },
     [displayStatus.accountUrl]
+  );
+
+  const handleStatusClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (!onStatusClick) {
+        return;
+      }
+      if (event.target instanceof Element && event.target.closest("a")) {
+        return;
+      }
+      onStatusClick(displayStatus);
+    },
+    [displayStatus, onStatusClick]
   );
   const visibilityIcon = useMemo(() => {
     switch (displayStatus.visibility) {
@@ -596,16 +611,17 @@ export const TimelineItem = ({
           ) : null}
         </>
       ) : null}
-      <div className="status-time">
+      <div 
+        className="status-time"
+        onClick={handleStatusClick}
+        role={onStatusClick ? "button" : undefined}
+        tabIndex={onStatusClick ? 0 : undefined}
+        aria-label={onStatusClick ? "글 보기" : undefined}
+        data-interactive={onStatusClick ? "true" : undefined}
+      >
         {visibilityIcon}
         {visibilityIcon ? <span className="time-separator" aria-hidden="true">·</span> : null}
-        {displayStatus.url ? (
-          <a href={displayStatus.url} target="_blank" rel="noreferrer" className="time-link">
-            <time dateTime={displayStatus.createdAt}>{timestamp}</time>
-          </a>
-        ) : (
-          <time dateTime={displayStatus.createdAt}>{timestamp}</time>
-        )}
+        <time dateTime={displayStatus.createdAt}>{timestamp}</time>
       </div>
       {shouldShowReactions ? (
         <div className="status-reactions" aria-label="받은 리액션">
