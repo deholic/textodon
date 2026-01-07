@@ -173,8 +173,9 @@ const TimelineSection = ({
   onAddSectionRight: (sectionId: string) => void;
   onRemoveSection: (sectionId: string) => void;
   onReply: (status: Status, account: Account | null) => void;
-  onStatusClick: (status: Status) => void;
+  onStatusClick: (status: Status, columnAccount: Account | null) => void;
   onError: (message: string | null) => void;
+  columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
   onCloseStatusModal: () => void;
   canMoveLeft: boolean;
@@ -569,9 +570,9 @@ const TimelineSection = ({
                           <TimelineItem
                             key={status.id}
                             status={status}
-                            onReply={(item) => onReply(item, account)}
-                            onStatusClick={onStatusClick}
-                            onToggleFavourite={handleToggleFavourite}
+                             onReply={(item) => onReply(item, account)}
+                             onStatusClick={(status) => onStatusClick(status, account)}
+                             onToggleFavourite={handleToggleFavourite}
                             onToggleReblog={handleToggleReblog}
                             onDelete={handleDeleteStatus}
                             activeHandle={
@@ -695,9 +696,9 @@ const TimelineSection = ({
               <TimelineItem
                 key={status.id}
                 status={status}
-                onReply={(item) => onReply(item, account)}
-                onStatusClick={onStatusClick}
-                onToggleFavourite={handleToggleFavourite}
+                 onReply={(item) => onReply(item, account)}
+                 onStatusClick={(status) => onStatusClick(status, account)}
+                 onToggleFavourite={handleToggleFavourite}
                 onToggleReblog={handleToggleReblog}
                 onDelete={handleDeleteStatus}
                 activeHandle={
@@ -1200,8 +1201,10 @@ export const App = () => {
     setSelectedStatus(null);
   };
 
-  const handleStatusClick = (status: Status) => {
+  const handleStatusClick = (status: Status, columnAccount: Account | null) => {
     setSelectedStatus(status);
+    // Status에 columnAccount 정보를 임시 저장
+    (status as any).__columnAccount = columnAccount;
   };
 
   const handleCloseStatusModal = () => {
@@ -1437,7 +1440,8 @@ onAccountChange={setSectionAccount}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
                            onReply={handleReply}
-                           onStatusClick={handleStatusClick}
+                            onStatusClick={handleStatusClick}
+                           columnAccount={sectionAccount}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}
                           onMoveSection={moveSection}
@@ -1671,6 +1675,7 @@ onAccountChange={setSectionAccount}
         <StatusModal
           status={selectedStatus}
           account={composeAccount}
+          threadAccount={(selectedStatus as any).__columnAccount || null}
           api={services.api}
           onClose={handleCloseStatusModal}
           onReply={(status) => {

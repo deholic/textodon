@@ -6,6 +6,7 @@ import boostIconUrl from "../assets/boost-icon.svg";
 export const StatusModal = ({
   status,
   account,
+  threadAccount,
   api,
   onClose,
   onReply,
@@ -21,6 +22,7 @@ export const StatusModal = ({
 }: {
   status: Status;
   account: Account | null;
+  threadAccount: Account | null;
   api: any; // UnifiedApiClient
   onClose: () => void;
   onReply: (status: Status) => void;
@@ -51,7 +53,9 @@ export const StatusModal = ({
       setThreadError(null);
       
       try {
-        const context = await api.fetchThreadContext(account, displayStatus.id);
+        // 스레드를 가져올 때는 해당 게시글이 속한 컬럼의 계정 사용
+        const targetAccount = threadAccount || account;
+        const context = await api.fetchThreadContext(targetAccount, displayStatus.id);
         setThreadContext(context);
       } catch (error) {
         console.error("스레드 컨텍스트 로딩 실패:", error);
