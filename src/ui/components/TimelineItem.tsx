@@ -95,10 +95,10 @@ export const TimelineItem = ({
     }
     if (boostedBy) {
       const label = boostedBy.name || boostedHandle || boostedBy.handle;
-      return `${label} 님이 부스트함(@${boostedHandle ?? boostedBy.handle})`;
+      return `${label} 님이 부스트함`;
     }
     if (displayStatus.reblogged) {
-      return activeHandle ? `내가 부스트함(@${activeHandle})` : "내가 부스트함";
+      return "내가 부스트함";
     }
     return null;
   }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle, notification]);
@@ -129,8 +129,7 @@ export const TimelineItem = ({
     }
     const actorName =
       notification.actor.name || notificationActorHandle || notification.actor.handle || "알 수 없음";
-    const handleSuffix = notificationActorHandle ? `(@${notificationActorHandle})` : "";
-    return `${actorName} 님이 ${notification.label}${handleSuffix}`;
+    return `${actorName} 님이 ${notification.label}`;
   }, [notification, notificationActorHandle]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
