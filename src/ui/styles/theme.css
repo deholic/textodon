@@ -1762,7 +1762,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root:not([data-color-scheme="light"]) .status-modal-close,
   body:not([data-color-scheme="light"]) .status-modal-close {
-    color: #999;
+    color: #8fa6cf;
   }
 
   :root:not([data-color-scheme="light"]) .back-link,
@@ -1842,7 +1842,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .status-modal-close,
   body:not([data-color-scheme="light"])[data-theme="sky-pink"] .status-modal-close {
-    color: #aeb7c6;
+    color: #f0a6c8;
   }
 
   :root:not([data-color-scheme="light"])[data-theme="monochrome"] .boosted-by,
@@ -1876,7 +1876,7 @@ body[data-theme="monochrome"] .compose-icon-button {
 
   :root:not([data-color-scheme="light"])[data-theme="monochrome"] .status-modal-close,
   body:not([data-color-scheme="light"])[data-theme="monochrome"] .status-modal-close {
-    color: #999;
+    color: #f0f0f0;
   }
 
   :root:not([data-color-scheme="light"]) .reply-info,
@@ -3311,7 +3311,7 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
 
   :root[data-color-scheme="dark"] .status-modal-close,
   body[data-color-scheme="dark"] .status-modal-close {
-    color: #999;
+    color: #8fa6cf;
   }
 
   :root[data-color-scheme="dark"] .status-modal-close:hover,
@@ -3399,7 +3399,7 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
 
   :root[data-color-scheme="dark"][data-theme="sky-pink"] .status-modal-close,
   body[data-color-scheme="dark"][data-theme="sky-pink"] .status-modal-close {
-    color: #aeb7c6;
+    color: #f0a6c8;
   }
 
   :root[data-color-scheme="dark"][data-theme="sky-pink"] .status-modal-close:hover,
@@ -3437,7 +3437,7 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
 
   :root[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close,
   body[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close {
-    color: #999;
+    color: #f0f0f0;
   }
 
   :root[data-color-scheme="dark"][data-theme="monochrome"] .status-modal-close:hover,
