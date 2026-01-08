@@ -511,8 +511,9 @@ export const ComposeBox = ({
               }
             }}
           />
-          {attachments.length > 0 ? (
-            <div className="compose-attachments">
+          <div className="compose-attachments">
+            {/* 첨부된 이미지들과 이미지 추가 버튼 */}
+            <div className="compose-attachments-scroll">
               {attachments.map((item) => (
                 <button
                   key={item.id}
@@ -528,8 +529,33 @@ export const ComposeBox = ({
                   <img src={item.previewUrl} alt="선택한 이미지" loading="lazy" />
                 </button>
               ))}
+              
+              {/* 이미지 추가 버튼 */}
+              <label className="file-button attachment-thumb" aria-label="이미지 추가">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
+                  <circle cx="9" cy="10" r="2" />
+                  <path d="M21 16l-5-5-4 4-2-2-5 5" />
+                </svg>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFilesSelected}
+                  disabled={isSubmitting}
+                />
+              </label>
             </div>
-          ) : null}
+            
+            {/* 문자 수 표시 - 고정 위치 */}
+            {characterLimit && (
+              <div className="compose-attachments-character-count">
+                <span className={getCharacterCountClassName(charCountStatus)}>
+                  {currentCharCount.toLocaleString()} / {characterLimit.toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="compose-actions">
           <select
@@ -543,15 +569,6 @@ export const ComposeBox = ({
               </option>
             ))}
           </select>
-          
-          {/* 문자 수 표시 */}
-          {characterLimit && (
-            <div className="compose-character-count">
-              <span className={getCharacterCountClassName(charCountStatus)}>
-                {currentCharCount.toLocaleString()} / {characterLimit.toLocaleString()}
-              </span>
-            </div>
-          )}
           
           <div className="compose-actions-right">
             <button
@@ -578,20 +595,6 @@ export const ComposeBox = ({
             >
               CW
             </button>
-            <label className="file-button icon-button compose-icon-button" aria-label="이미지 추가">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
-                <circle cx="9" cy="10" r="2" />
-                <path d="M21 16l-5-5-4 4-2-2-5 5" />
-              </svg>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFilesSelected}
-                disabled={isSubmitting}
-              />
-            </label>
             <button
               type="submit"
               className="icon-button compose-icon-button"

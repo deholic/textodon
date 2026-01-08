@@ -1361,17 +1361,104 @@ button.ghost {
   width: 32px;
   height: 32px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .compose-attachments {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
   padding: 8px 12px 12px;
   background: #f9f6f2;
   border-top: 1px solid #e8dfd4;
   border-radius: 0 0 12px 12px;
+  align-items: center;
+  min-height: 56px; /* 32px 이미지 썸네일 + 패딩과 동일 */
+  width: 100%;
+  box-sizing: border-box;
 }
+
+.compose-attachments-scroll {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  min-width: 0; /* 플렉스 아이템이 넘치도록 */
+  /* 스크롤바 숨기기 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.compose-attachments-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.compose-attachments-character-count {
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 첨부 영역 내의 이미지 추가 버튼 */
+.compose-attachments .file-button.attachment-thumb {
+  background: transparent;
+  border: 2px dashed #a89b8a;
+  color: #6b5c4f;
+  flex-shrink: 0;
+}
+
+.compose-attachments .file-button.attachment-thumb svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 테마별 외곽선 색상 */
+:root[data-theme="christmas"] .compose-attachments .file-button.attachment-thumb {
+  border-color: #c9b9a6;
+  color: #7b3f3f;
+}
+
+:root[data-theme="sky-pink"] .compose-attachments .file-button.attachment-thumb {
+  border-color: #aeb7c6;
+  color: #4a6b86;
+}
+
+:root[data-theme="monochrome"] .compose-attachments .file-button.attachment-thumb {
+  border-color: #9e9e9e;
+  color: #2a2a2a;
+}
+
+/* 다크 모드에서의 외곽선 색상 */
+:root:not([data-color-scheme="light"]) .compose-attachments .file-button.attachment-thumb {
+  border-color: #8fa6cf;
+  color: #c4b6a6;
+}
+
+:root:not([data-color-scheme="light"])[data-theme="christmas"] .compose-attachments .file-button.attachment-thumb {
+  border-color: #cf8c8c;
+  color: #cf8c8c;
+}
+
+:root:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-attachments .file-button.attachment-thumb {
+  border-color: #f0a6c8;
+  color: #d7ddea;
+}
+
+:root:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-attachments .file-button.attachment-thumb {
+  border-color: #f0f0f0;
+  color: #d6d6d6;
+}
+
+/* 스크롤바 스타일 없음 - 사용자 요청 */
 
 .file-button {
   background: #e1e7f4;
