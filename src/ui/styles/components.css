@@ -1343,6 +1343,49 @@ button.ghost {
   z-index: 2;
 }
 
+.image-modal-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s;
+}
+
+.image-modal-nav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.image-modal-nav-prev {
+  left: 12px;
+}
+
+.image-modal-nav-next {
+  right: 12px;
+}
+
+.image-modal-counter {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  z-index: 2;
+}
+
 .confirm-modal {
   position: fixed;
   inset: 0;

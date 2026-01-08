@@ -34,7 +34,7 @@ export const TimelineItem = ({
   const notification = status.notification;
   const displayStatus = notification?.target ?? status.reblog ?? status;
   const boostedBy = notification ? null : status.reblog ? status.boostedBy : null;
-  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [showContent, setShowContent] = useState(() => displayStatus.spoilerText.length === 0);
   const [imageZoom, setImageZoom] = useState(1);
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
@@ -47,6 +47,44 @@ export const TimelineItem = ({
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const attachments = displayStatus.mediaAttachments;
+  const activeImageUrl = activeImageIndex !== null ? attachments[activeImageIndex]?.url ?? null : null;
+
+  const goToPrevImage = useCallback(() => {
+    if (activeImageIndex === null || attachments.length <= 1) return;
+    const prevIndex = activeImageIndex === 0 ? attachments.length - 1 : activeImageIndex - 1;
+    setActiveImageIndex(prevIndex);
+    setImageZoom(1);
+    setImageOffset({ x: 0, y: 0 });
+  }, [activeImageIndex, attachments.length]);
+
+  const goToNextImage = useCallback(() => {
+    if (activeImageIndex === null || attachments.length <= 1) return;
+    const nextIndex = activeImageIndex === attachments.length - 1 ? 0 : activeImageIndex + 1;
+    setActiveImageIndex(nextIndex);
+    setImageZoom(1);
+    setImageOffset({ x: 0, y: 0 });
+  }, [activeImageIndex, attachments.length]);
+
+  useEffect(() => {
+    if (activeImageIndex === null) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goToPrevImage();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goToNextImage();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setActiveImageIndex(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeImageIndex, goToPrevImage, goToNextImage]);
+
   const previewCard = displayStatus.card;
   const mentionNames = useMemo(() => {
     if (!displayStatus.mentions || displayStatus.mentions.length === 0) {
@@ -627,7 +665,7 @@ export const TimelineItem = ({
               </>
             ) : null}
             {showContent
-              ? attachments.map((item) => (
+              ? attachments.map((item, index) => (
                   <button
                     key={item.id}
                     type="button"
@@ -635,7 +673,7 @@ export const TimelineItem = ({
                     onClick={() => {
                       setImageZoom(1);
                       setImageOffset({ x: 0, y: 0 });
-                      setActiveImageUrl(item.url);
+                      setActiveImageIndex(index);
                     }}
                     aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
                   >
@@ -703,16 +741,56 @@ export const TimelineItem = ({
           role="dialog"
           aria-modal="true"
           onWheel={(event) => event.preventDefault()}
+          onMouseDown={(event) => {
+            if (!(event.target instanceof Element)) {
+              return;
+            }
+            if (!event.target.closest(".image-modal-content")) {
+              setActiveImageIndex(null);
+            }
+          }}
         >
-          <div className="image-modal-backdrop" onClick={() => setActiveImageUrl(null)} />
-          <div className="image-modal-content" ref={imageContainerRef}>
+          <div className="image-modal-backdrop" onClick={() => setActiveImageIndex(null)} />
+          <div
+            className="image-modal-content"
+            ref={imageContainerRef}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setActiveImageIndex(null);
+              }
+            }}
+          >
             <button
               type="button"
               className="image-modal-close"
-              onClick={() => setActiveImageUrl(null)}
+              onClick={() => setActiveImageIndex(null)}
             >
               닫기
             </button>
+            {attachments.length > 1 ? (
+              <button
+                type="button"
+                className="image-modal-nav image-modal-nav-prev"
+                onClick={goToPrevImage}
+                aria-label="이전 이미지"
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : null}
+            {attachments.length > 1 ? (
+              <button
+                type="button"
+                className="image-modal-nav image-modal-nav-next"
+                onClick={goToNextImage}
+                aria-label="다음 이미지"
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : null}
             <img
               src={activeImageUrl}
               alt="첨부 이미지 원본"
@@ -752,6 +830,11 @@ export const TimelineItem = ({
                 setIsDragging(true);
               }}
             />
+            {attachments.length > 1 ? (
+              <div className="image-modal-counter">
+                {(activeImageIndex ?? 0) + 1} / {attachments.length}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
