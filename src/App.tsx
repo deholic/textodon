@@ -3,6 +3,7 @@ import type { Account, Status, TimelineType } from "./domain/types";
 import { AccountAdd } from "./ui/components/AccountAdd";
 import { AccountSelector } from "./ui/components/AccountSelector";
 import { ComposeBox } from "./ui/components/ComposeBox";
+import { StatusModal } from "./ui/components/StatusModal";
 import { TimelineItem } from "./ui/components/TimelineItem";
 import { useTimeline } from "./ui/hooks/useTimeline";
 import { useAppContext } from "./ui/state/AppContext";
@@ -148,6 +149,8 @@ const TimelineSection = ({
   onAddSectionRight,
   onRemoveSection,
   onReply,
+  onStatusClick,
+  onCloseStatusModal,
   onError,
   onMoveSection,
   canMoveLeft,
@@ -170,8 +173,11 @@ const TimelineSection = ({
   onAddSectionRight: (sectionId: string) => void;
   onRemoveSection: (sectionId: string) => void;
   onReply: (status: Status, account: Account | null) => void;
+  onStatusClick: (status: Status, columnAccount: Account | null) => void;
   onError: (message: string | null) => void;
+  columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
+  onCloseStatusModal: () => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
   canRemoveSection: boolean;
@@ -422,6 +428,7 @@ const TimelineSection = ({
     try {
       await services.api.deleteStatus(account, status.id);
       timeline.removeItem(status.id);
+      onCloseStatusModal();
     } catch (err) {
       onError(err instanceof Error ? err.message : "게시글 삭제에 실패했습니다.");
     }
@@ -563,8 +570,9 @@ const TimelineSection = ({
                           <TimelineItem
                             key={status.id}
                             status={status}
-                            onReply={(item) => onReply(item, account)}
-                            onToggleFavourite={handleToggleFavourite}
+                             onReply={(item) => onReply(item, account)}
+                             onStatusClick={(status) => onStatusClick(status, account)}
+                             onToggleFavourite={handleToggleFavourite}
                             onToggleReblog={handleToggleReblog}
                             onDelete={handleDeleteStatus}
                             activeHandle={
@@ -688,8 +696,9 @@ const TimelineSection = ({
               <TimelineItem
                 key={status.id}
                 status={status}
-                onReply={(item) => onReply(item, account)}
-                onToggleFavourite={handleToggleFavourite}
+                 onReply={(item) => onReply(item, account)}
+                 onStatusClick={(status) => onStatusClick(status, account)}
+                 onToggleFavourite={handleToggleFavourite}
                 onToggleReblog={handleToggleReblog}
                 onDelete={handleDeleteStatus}
                 activeHandle={
@@ -822,6 +831,7 @@ export const App = () => {
     [accountsState.accounts, composeAccountId]
   );
   const [replyTarget, setReplyTarget] = useState<Status | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
@@ -1188,6 +1198,17 @@ export const App = () => {
     setComposeAccountId(account.id);
     setReplyTarget(status);
     setMentionSeed(`@${status.accountHandle}`);
+    setSelectedStatus(null);
+  };
+
+  const handleStatusClick = (status: Status, columnAccount: Account | null) => {
+    setSelectedStatus(status);
+    // Status에 columnAccount 정보를 임시 저장
+    (status as any).__columnAccount = columnAccount;
+  };
+
+  const handleCloseStatusModal = () => {
+    setSelectedStatus(null);
   };
 
   const composeAccountSelector = (
@@ -1413,13 +1434,16 @@ export const App = () => {
                           account={sectionAccount}
                           services={services}
                           accountsState={accountsState}
-                          onAccountChange={setSectionAccount}
-                          onTimelineChange={setSectionTimeline}
-                          onAddSectionLeft={(id) => addSectionNear(id, "left")}
-                          onAddSectionRight={(id) => addSectionNear(id, "right")}
-                          onRemoveSection={removeSection}
-                          onReply={handleReply}
-                          onError={(message) => setActionError(message || null)}
+onAccountChange={setSectionAccount}
+                           onTimelineChange={setSectionTimeline}
+                           onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                           onAddSectionRight={(id) => addSectionNear(id, "right")}
+                           onRemoveSection={removeSection}
+                           onReply={handleReply}
+                            onStatusClick={handleStatusClick}
+                           columnAccount={sectionAccount}
+                           onCloseStatusModal={handleCloseStatusModal}
+                           onError={(message) => setActionError(message || null)}
                           onMoveSection={moveSection}
                           canMoveLeft={index > 0}
                           canMoveRight={index < sections.length - 1}
@@ -1645,6 +1669,72 @@ export const App = () => {
             </div>
           </div>
         </div>
+      ) : null}
+      
+      {selectedStatus ? (
+        <StatusModal
+          status={selectedStatus}
+          account={composeAccount}
+          threadAccount={(selectedStatus as any).__columnAccount || null}
+          api={services.api}
+          onClose={handleCloseStatusModal}
+          onReply={(status) => {
+            if (composeAccount) {
+              handleReply(status, composeAccount);
+            }
+          }}
+          onToggleFavourite={async (status) => {
+            if (!composeAccount) {
+              setActionError("계정을 선택해주세요.");
+              return;
+            }
+            setActionError(null);
+            try {
+              const updated = status.favourited
+                ? await services.api.unfavourite(composeAccount, status.id)
+                : await services.api.favourite(composeAccount, status.id);
+              // Update the status in modal
+              setSelectedStatus(updated);
+            } catch (err) {
+              setActionError(err instanceof Error ? err.message : "좋아요 처리에 실패했습니다.");
+            }
+          }}
+          onToggleReblog={async (status) => {
+            if (!composeAccount) {
+              setActionError("계정을 선택해주세요.");
+              return;
+            }
+            setActionError(null);
+            try {
+              const updated = status.reblogged
+                ? await services.api.unreblog(composeAccount, status.id)
+                : await services.api.reblog(composeAccount, status.id);
+              setSelectedStatus(updated);
+            } catch (err) {
+              setActionError(err instanceof Error ? err.message : "부스트 처리에 실패했습니다.");
+            }
+          }}
+          onDelete={async (status) => {
+            if (!composeAccount) {
+              return;
+            }
+            setActionError(null);
+            try {
+              await services.api.deleteStatus(composeAccount, status.id);
+              setSelectedStatus(null);
+            } catch (err) {
+              setActionError(err instanceof Error ? err.message : "게시글 삭제에 실패했습니다.");
+            }
+          }}
+          activeHandle={
+            composeAccount?.handle ? formatHandle(composeAccount.handle, composeAccount.instanceUrl) : composeAccount?.instanceUrl ?? ""
+          }
+          activeAccountHandle={composeAccount?.handle ?? ""}
+          activeAccountUrl={composeAccount?.url ?? null}
+          showProfileImage={showProfileImages}
+          showCustomEmojis={showCustomEmojis}
+          showReactions={showMisskeyReactions}
+        />
       ) : null}
     </div>
   );

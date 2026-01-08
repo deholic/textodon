@@ -11,6 +11,7 @@ export const TimelineItem = ({
   onToggleFavourite,
   onToggleReblog,
   onDelete,
+  onStatusClick,
   activeHandle,
   activeAccountHandle,
   activeAccountUrl,
@@ -24,6 +25,7 @@ export const TimelineItem = ({
   onToggleFavourite: (status: Status) => void;
   onToggleReblog: (status: Status) => void;
   onDelete: (status: Status) => void;
+  onStatusClick?: (status: Status) => void;
   activeHandle: string;
   activeAccountHandle: string;
   activeAccountUrl: string | null;
@@ -35,19 +37,59 @@ export const TimelineItem = ({
   const notification = status.notification;
   const displayStatus = notification?.target ?? status.reblog ?? status;
   const boostedBy = notification ? null : status.reblog ? status.boostedBy : null;
-  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [showContent, setShowContent] = useState(() => displayStatus.spoilerText.length === 0);
   const [imageZoom, setImageZoom] = useState(1);
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
   const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const attachments = displayStatus.mediaAttachments;
+  const activeImageUrl = activeImageIndex !== null ? attachments[activeImageIndex]?.url ?? null : null;
+
+  const goToPrevImage = useCallback(() => {
+    if (activeImageIndex === null || attachments.length <= 1) return;
+    const prevIndex = activeImageIndex === 0 ? attachments.length - 1 : activeImageIndex - 1;
+    setActiveImageIndex(prevIndex);
+    setImageZoom(1);
+    setImageOffset({ x: 0, y: 0 });
+  }, [activeImageIndex, attachments.length]);
+
+  const goToNextImage = useCallback(() => {
+    if (activeImageIndex === null || attachments.length <= 1) return;
+    const nextIndex = activeImageIndex === attachments.length - 1 ? 0 : activeImageIndex + 1;
+    setActiveImageIndex(nextIndex);
+    setImageZoom(1);
+    setImageOffset({ x: 0, y: 0 });
+  }, [activeImageIndex, attachments.length]);
+
+  useEffect(() => {
+    if (activeImageIndex === null) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goToPrevImage();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goToNextImage();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setActiveImageIndex(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeImageIndex, goToPrevImage, goToNextImage]);
+
   const previewCard = displayStatus.card;
   const mentionNames = useMemo(() => {
     if (!displayStatus.mentions || displayStatus.mentions.length === 0) {
@@ -135,6 +177,28 @@ export const TimelineItem = ({
     () => new Date(displayStatus.createdAt).toLocaleString(),
     [displayStatus.createdAt]
   );
+  const originUrl = useMemo(() => {
+    if (displayStatus.url) {
+      return displayStatus.url;
+    }
+    const hostFromAccount = activeAccountUrl
+      ? (() => {
+          try {
+            return new URL(activeAccountUrl).hostname;
+          } catch {
+            return "";
+          }
+        })()
+      : "";
+    const hostFromHandle = activeHandle.includes("@")
+      ? activeHandle.split("@").pop() ?? ""
+      : "";
+    const host = hostFromAccount || hostFromHandle;
+    if (!host || !displayStatus.id) {
+      return null;
+    }
+    return `https://${host}/notes/${displayStatus.id}`;
+  }, [activeAccountUrl, activeHandle, displayStatus.id, displayStatus.url]);
   const handleHeaderClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       if (!displayStatus.accountUrl) {
@@ -165,6 +229,52 @@ export const TimelineItem = ({
       window.open(displayStatus.accountUrl, "_blank", "noopener,noreferrer");
     },
     [displayStatus.accountUrl]
+  );
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+    const handleClick = (event: MouseEvent) => {
+      if (!menuRef.current || !(event.target instanceof Node)) {
+        return;
+      }
+      if (!menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("click", handleClick);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("click", handleClick);
+    };
+  }, [menuOpen]);
+
+  const handleOpenOrigin = useCallback(() => {
+    if (!originUrl) {
+      return;
+    }
+    window.open(originUrl, "_blank", "noopener,noreferrer");
+    setMenuOpen(false);
+  }, [originUrl]);
+
+  const handleStatusClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (!onStatusClick) {
+        return;
+      }
+      if (event.target instanceof Element && event.target.closest("a")) {
+        return;
+      }
+      onStatusClick(displayStatus);
+    },
+    [displayStatus, onStatusClick]
   );
   const visibilityIcon = useMemo(() => {
     switch (displayStatus.visibility) {
@@ -508,9 +618,34 @@ export const TimelineItem = ({
         </div>
       ) : null}
       <header className="status-header-main">
-        {showProfileImage ? (
-          <span
-            className="status-avatar"
+        <div className="status-header-info">
+          {showProfileImage ? (
+            <span
+              className="status-avatar"
+              onClick={handleHeaderClick}
+              onKeyDown={handleHeaderKeyDown}
+              role={displayStatus.accountUrl ? "link" : undefined}
+              tabIndex={displayStatus.accountUrl ? 0 : undefined}
+              aria-label={
+                displayStatus.accountUrl
+                  ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
+                  : undefined
+              }
+              data-interactive={displayStatus.accountUrl ? "true" : undefined}
+            >
+              {displayStatus.accountAvatarUrl ? (
+                <img
+                  src={displayStatus.accountAvatarUrl}
+                  alt={`${displayStatus.accountName || displayStatus.accountHandle} 프로필 이미지`}
+                  loading="lazy"
+                />
+              ) : (
+                <span className="status-avatar-fallback" aria-hidden="true" />
+              )}
+            </span>
+          ) : null}
+          <div
+            className="status-account"
             onClick={handleHeaderClick}
             onKeyDown={handleHeaderKeyDown}
             role={displayStatus.accountUrl ? "link" : undefined}
@@ -522,48 +657,55 @@ export const TimelineItem = ({
             }
             data-interactive={displayStatus.accountUrl ? "true" : undefined}
           >
-            {displayStatus.accountAvatarUrl ? (
-              <img
-                src={displayStatus.accountAvatarUrl}
-                alt={`${displayStatus.accountName || displayStatus.accountHandle} 프로필 이미지`}
-                loading="lazy"
+            <strong>
+              {displayStatus.accountUrl ? (
+                <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
+                  {accountNameNode}
+                </a>
+              ) : (
+                accountNameNode
+              )}
+            </strong>
+            <span>
+              {displayStatus.accountUrl ? (
+                <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
+                  @{displayHandle}
+                </a>
+              ) : (
+                `@${displayHandle}`
+              )}
+            </span>
+          </div>
+        </div>
+        <div className="status-menu section-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="게시글 메뉴 열기"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((current) => !current)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.7" />
+              <circle cx="12" cy="12" r="1.7" />
+              <circle cx="12" cy="19" r="1.7" />
+            </svg>
+          </button>
+          {menuOpen ? (
+            <>
+              <div
+                className="overlay-backdrop"
+                onClick={() => setMenuOpen(false)}
+                aria-hidden="true"
               />
-            ) : (
-              <span className="status-avatar-fallback" aria-hidden="true" />
-            )}
-          </span>
-        ) : null}
-        <div
-          className="status-account"
-          onClick={handleHeaderClick}
-          onKeyDown={handleHeaderKeyDown}
-          role={displayStatus.accountUrl ? "link" : undefined}
-          tabIndex={displayStatus.accountUrl ? 0 : undefined}
-          aria-label={
-            displayStatus.accountUrl
-              ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
-              : undefined
-          }
-          data-interactive={displayStatus.accountUrl ? "true" : undefined}
-        >
-          <strong>
-            {displayStatus.accountUrl ? (
-              <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
-                {accountNameNode}
-              </a>
-            ) : (
-              accountNameNode
-            )}
-          </strong>
-          <span>
-            {displayStatus.accountUrl ? (
-              <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
-                @{displayHandle}
-              </a>
-            ) : (
-              `@${displayHandle}`
-            )}
-          </span>
+              <div className="section-menu-panel status-menu-panel" role="menu">
+                <button type="button" onClick={handleOpenOrigin} disabled={!originUrl}>
+                  원본 서버에서 보기
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
       </header>
       {displayStatus.spoilerText ? (
@@ -596,16 +738,17 @@ export const TimelineItem = ({
           ) : null}
         </>
       ) : null}
-      <div className="status-time">
+      <div 
+        className="status-time"
+        onClick={handleStatusClick}
+        role={onStatusClick ? "button" : undefined}
+        tabIndex={onStatusClick ? 0 : undefined}
+        aria-label={onStatusClick ? "글 보기" : undefined}
+        data-interactive={onStatusClick ? "true" : undefined}
+      >
         {visibilityIcon}
         {visibilityIcon ? <span className="time-separator" aria-hidden="true">·</span> : null}
-        {displayStatus.url ? (
-          <a href={displayStatus.url} target="_blank" rel="noreferrer" className="time-link">
-            <time dateTime={displayStatus.createdAt}>{timestamp}</time>
-          </a>
-        ) : (
-          <time dateTime={displayStatus.createdAt}>{timestamp}</time>
-        )}
+        <time dateTime={displayStatus.createdAt}>{timestamp}</time>
       </div>
       {shouldShowReactions ? (
         <div className="status-reactions" aria-label="받은 리액션">
@@ -665,7 +808,7 @@ export const TimelineItem = ({
               </>
             ) : null}
             {showContent
-              ? attachments.map((item) => (
+              ? attachments.map((item, index) => (
                   <button
                     key={item.id}
                     type="button"
@@ -673,7 +816,7 @@ export const TimelineItem = ({
                     onClick={() => {
                       setImageZoom(1);
                       setImageOffset({ x: 0, y: 0 });
-                      setActiveImageUrl(item.url);
+                      setActiveImageIndex(index);
                     }}
                     aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
                   >
@@ -741,16 +884,56 @@ export const TimelineItem = ({
           role="dialog"
           aria-modal="true"
           onWheel={(event) => event.preventDefault()}
+          onMouseDown={(event) => {
+            if (!(event.target instanceof Element)) {
+              return;
+            }
+            if (!event.target.closest(".image-modal-content")) {
+              setActiveImageIndex(null);
+            }
+          }}
         >
-          <div className="image-modal-backdrop" onClick={() => setActiveImageUrl(null)} />
-          <div className="image-modal-content" ref={imageContainerRef}>
+          <div className="image-modal-backdrop" onClick={() => setActiveImageIndex(null)} />
+          <div
+            className="image-modal-content"
+            ref={imageContainerRef}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setActiveImageIndex(null);
+              }
+            }}
+          >
             <button
               type="button"
               className="image-modal-close"
-              onClick={() => setActiveImageUrl(null)}
+              onClick={() => setActiveImageIndex(null)}
             >
               닫기
             </button>
+            {attachments.length > 1 ? (
+              <button
+                type="button"
+                className="image-modal-nav image-modal-nav-prev"
+                onClick={goToPrevImage}
+                aria-label="이전 이미지"
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : null}
+            {attachments.length > 1 ? (
+              <button
+                type="button"
+                className="image-modal-nav image-modal-nav-next"
+                onClick={goToNextImage}
+                aria-label="다음 이미지"
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : null}
             <img
               src={activeImageUrl}
               alt="첨부 이미지 원본"
@@ -790,6 +973,11 @@ export const TimelineItem = ({
                 setIsDragging(true);
               }}
             />
+            {attachments.length > 1 ? (
+              <div className="image-modal-counter">
+                {(activeImageIndex ?? 0) + 1} / {attachments.length}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

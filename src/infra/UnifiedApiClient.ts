@@ -1,4 +1,4 @@
-import type { Account, TimelineType } from "../domain/types";
+import type { Account, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
 import type { CustomEmoji } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 
@@ -28,6 +28,11 @@ export class UnifiedApiClient implements MastodonApi {
     return this.getClient(account).fetchCustomEmojis(account);
   }
 
+  fetchInstanceInfo(account: Account): Promise<InstanceInfo> {
+    const client = this.getClient(account) as any;
+    return client.fetchInstanceInfo(account);
+  }
+
   uploadMedia(account: Account, file: File) {
     return this.getClient(account).uploadMedia(account, file);
   }
@@ -54,5 +59,17 @@ export class UnifiedApiClient implements MastodonApi {
 
   unreblog(account: Account, statusId: string) {
     return this.getClient(account).unreblog(account, statusId);
+  }
+
+  async fetchThreadContext(account: Account, statusId: string): Promise<ThreadContext> {
+    if (account.platform === "misskey") {
+      // MisskeyHttpClient에는 fetchConversation 메서드가 있음
+      const misskeyClient = this.getClient(account) as any;
+      return misskeyClient.fetchConversation(account, statusId);
+    } else {
+      // MastodonHttpClient에는 fetchContext 메서드가 있음
+      const mastodonClient = this.getClient(account) as any;
+      return mastodonClient.fetchContext(account, statusId);
+    }
   }
 }
