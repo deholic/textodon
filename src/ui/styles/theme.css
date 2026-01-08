@@ -274,15 +274,32 @@ body[data-theme="christmas"] .compose-icon-button {
   color: #7b3f3f;
 }
 
-:root[data-theme="christmas"] .account-form input,
-:root[data-theme="christmas"] .compose-form textarea,
-:root[data-theme="christmas"] .compose-cw input,
-:root[data-theme="christmas"] .compose-actions select,
-:root[data-theme="christmas"] .settings-item select {
-  background: #fff7f2;
-  border: 1px solid #ead7cc;
-  color: #5b1f1f;
-}
+  :root[data-theme="christmas"] .account-form input,
+  :root[data-theme="christmas"] .compose-form textarea,
+  :root[data-theme="christmas"] .compose-cw input,
+  :root[data-theme="christmas"] .compose-actions select,
+  :root[data-theme="christmas"] .settings-item select {
+    background: #fff7f2;
+    border: 1px solid #ead7cc;
+    color: #5b1f1f;
+  }
+
+  :root[data-theme="christmas"] .compose-input-container {
+    background: #fff7f2;
+    border: 1px solid #ead7cc;
+  }
+
+  :root[data-theme="christmas"] .compose-input-container textarea {
+    color: #5b1f1f !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-theme="christmas"] .compose-attachments {
+    background: #f3e4dc;
+    border-top: 1px solid #ead7cc;
+  }
 
 :root[data-theme="christmas"] .account-form input::placeholder,
 :root[data-theme="christmas"] .compose-form textarea::placeholder,
@@ -562,15 +579,32 @@ body[data-theme="sky-pink"] .compose-icon-button {
   color: #c86a92;
 }
 
-:root[data-theme="sky-pink"] .account-form input,
-:root[data-theme="sky-pink"] .compose-form textarea,
-:root[data-theme="sky-pink"] .compose-cw input,
-:root[data-theme="sky-pink"] .compose-actions select,
-:root[data-theme="sky-pink"] .settings-item select {
-  background: #f7fbff;
-  border: 1px solid #d6e5f2;
-  color: #2b4f7d;
-}
+  :root[data-theme="sky-pink"] .account-form input,
+  :root[data-theme="sky-pink"] .compose-form textarea,
+  :root[data-theme="sky-pink"] .compose-cw input,
+  :root[data-theme="sky-pink"] .compose-actions select,
+  :root[data-theme="sky-pink"] .settings-item select {
+    background: #f7fbff;
+    border: 1px solid #d6e5f2;
+    color: #2b4f7d;
+  }
+
+  :root[data-theme="sky-pink"] .compose-input-container {
+    background: #f7fbff;
+    border: 1px solid #d6e5f2;
+  }
+
+  :root[data-theme="sky-pink"] .compose-input-container textarea {
+    color: #2b4f7d !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-theme="sky-pink"] .compose-attachments {
+    background: #e9f2fb;
+    border-top: 1px solid #d6e5f2;
+  }
 
 :root[data-theme="sky-pink"] .account-form input::placeholder,
 :root[data-theme="sky-pink"] .compose-form textarea::placeholder,
@@ -863,15 +897,32 @@ body[data-theme="monochrome"] .compose-icon-button {
   color: #2a2a2a;
 }
 
-:root[data-theme="monochrome"] .account-form input,
-:root[data-theme="monochrome"] .compose-form textarea,
-:root[data-theme="monochrome"] .compose-cw input,
-:root[data-theme="monochrome"] .compose-actions select,
-:root[data-theme="monochrome"] .settings-item select {
-  background: #ffffff;
-  border: 1px solid #1d1d1d;
-  color: #111111;
-}
+  :root[data-theme="monochrome"] .account-form input,
+  :root[data-theme="monochrome"] .compose-form textarea,
+  :root[data-theme="monochrome"] .compose-cw input,
+  :root[data-theme="monochrome"] .compose-actions select,
+  :root[data-theme="monochrome"] .settings-item select {
+    background: #ffffff;
+    border: 1px solid #1d1d1d;
+    color: #111111;
+  }
+
+  :root[data-theme="monochrome"] .compose-input-container {
+    background: #ffffff;
+    border: 1px solid #1d1d1d;
+  }
+
+  :root[data-theme="monochrome"] .compose-input-container textarea {
+    color: #111111 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-theme="monochrome"] .compose-attachments {
+    background: #f1f1f1;
+    border-top: 1px solid #1d1d1d;
+  }
 
 :root[data-theme="monochrome"] .account-form input::placeholder,
 :root[data-theme="monochrome"] .compose-form textarea::placeholder,
@@ -1176,6 +1227,26 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #f0e7dc;
   }
 
+  :root:not([data-color-scheme="light"]) .compose-input-container,
+  body:not([data-color-scheme="light"]) .compose-input-container {
+    background: #151310;
+    border: 1px solid #3a312a;
+  }
+
+  :root:not([data-color-scheme="light"]) .compose-input-container textarea,
+  body:not([data-color-scheme="light"]) .compose-input-container textarea {
+    color: #f0e7dc !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root:not([data-color-scheme="light"]) .compose-attachments,
+  body:not([data-color-scheme="light"]) .compose-attachments {
+    background: #1a1814;
+    border-top: 1px solid #3a312a;
+  }
+
   :root:not([data-color-scheme="light"])[data-theme="christmas"] .account-form input,
   body:not([data-color-scheme="light"])[data-theme="christmas"] .account-form input,
   :root:not([data-color-scheme="light"])[data-theme="christmas"] .compose-form textarea,
@@ -1191,6 +1262,26 @@ body[data-theme="monochrome"] .compose-icon-button {
     color: #f7e7df;
   }
 
+  :root:not([data-color-scheme="light"])[data-theme="christmas"] .compose-input-container,
+  body:not([data-color-scheme="light"])[data-theme="christmas"] .compose-input-container {
+    background: #1a100f;
+    border: 1px solid #3b2624;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="christmas"] .compose-input-container textarea,
+  body:not([data-color-scheme="light"])[data-theme="christmas"] .compose-input-container textarea {
+    color: #f7e7df !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="christmas"] .compose-attachments,
+  body:not([data-color-scheme="light"])[data-theme="christmas"] .compose-attachments {
+    background: #2a1b19;
+    border-top: 1px solid #3b2624;
+  }
+
   :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .account-form input,
   body:not([data-color-scheme="light"])[data-theme="sky-pink"] .account-form input,
   :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-form textarea,
@@ -1204,6 +1295,26 @@ body[data-theme="monochrome"] .compose-icon-button {
     background: #181e2a;
     border: 1px solid #2e3b50;
     color: #eff1f7;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-input-container,
+  body:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-input-container {
+    background: #181e2a;
+    border: 1px solid #2e3b50;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-input-container textarea,
+  body:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-input-container textarea {
+    color: #eff1f7 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-attachments,
+  body:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-attachments {
+    background: #212a3a;
+    border-top: 1px solid #2e3b50;
   }
 
   :root:not([data-color-scheme="light"])[data-theme="christmas"] .account-form input::placeholder,
@@ -1237,6 +1348,26 @@ body[data-theme="monochrome"] .compose-icon-button {
     background: #101010;
     border: 1px solid #3a3a3a;
     color: #f0f0f0;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-input-container,
+  body:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-input-container {
+    background: #101010;
+    border: 1px solid #3a3a3a;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-input-container textarea,
+  body:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-input-container textarea {
+    color: #f0f0f0 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-attachments,
+  body:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-attachments {
+    background: #181818;
+    border-top: 1px solid #3a3a3a;
   }
 
   :root:not([data-color-scheme="light"])[data-theme="monochrome"] .account-form input::placeholder,
@@ -2702,6 +2833,26 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     color: #f0e7dc;
   }
 
+  :root[data-color-scheme="dark"] .compose-input-container,
+  body[data-color-scheme="dark"] .compose-input-container {
+    background: #151310;
+    border: 1px solid #3a312a;
+  }
+
+  :root[data-color-scheme="dark"] .compose-input-container textarea,
+  body[data-color-scheme="dark"] .compose-input-container textarea {
+    color: #f0e7dc !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-color-scheme="dark"] .compose-attachments,
+  body[data-color-scheme="dark"] .compose-attachments {
+    background: #1a1814;
+    border-top: 1px solid #3a312a;
+  }
+
   :root[data-color-scheme="dark"][data-theme="christmas"] .account-form input,
   body[data-color-scheme="dark"][data-theme="christmas"] .account-form input,
   :root[data-color-scheme="dark"][data-theme="christmas"] .compose-form textarea,
@@ -2717,6 +2868,26 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     color: #f7e7df;
   }
 
+  :root[data-color-scheme="dark"][data-theme="christmas"] .compose-input-container,
+  body[data-color-scheme="dark"][data-theme="christmas"] .compose-input-container {
+    background: #1a100f;
+    border: 1px solid #3b2624;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="christmas"] .compose-input-container textarea,
+  body[data-color-scheme="dark"][data-theme="christmas"] .compose-input-container textarea {
+    color: #f7e7df !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="christmas"] .compose-attachments,
+  body[data-color-scheme="dark"][data-theme="christmas"] .compose-attachments {
+    background: #2a1b19;
+    border-top: 1px solid #3b2624;
+  }
+
   :root[data-color-scheme="dark"][data-theme="sky-pink"] .account-form input,
   body[data-color-scheme="dark"][data-theme="sky-pink"] .account-form input,
   :root[data-color-scheme="dark"][data-theme="sky-pink"] .compose-form textarea,
@@ -2730,6 +2901,26 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     background: #181e2a;
     border: 1px solid #2e3b50;
     color: #eff1f7;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="sky-pink"] .compose-input-container,
+  body[data-color-scheme="dark"][data-theme="sky-pink"] .compose-input-container {
+    background: #181e2a;
+    border: 1px solid #2e3b50;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="sky-pink"] .compose-input-container textarea,
+  body[data-color-scheme="dark"][data-theme="sky-pink"] .compose-input-container textarea {
+    color: #eff1f7 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="sky-pink"] .compose-attachments,
+  body[data-color-scheme="dark"][data-theme="sky-pink"] .compose-attachments {
+    background: #212a3a;
+    border-top: 1px solid #2e3b50;
   }
 
   :root[data-color-scheme="dark"][data-theme="christmas"] .account-form input::placeholder,
@@ -2763,6 +2954,26 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     background: #101010;
     border: 1px solid #3a3a3a;
     color: #f0f0f0;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="monochrome"] .compose-input-container,
+  body[data-color-scheme="dark"][data-theme="monochrome"] .compose-input-container {
+    background: #101010;
+    border: 1px solid #3a3a3a;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="monochrome"] .compose-input-container textarea,
+  body[data-color-scheme="dark"][data-theme="monochrome"] .compose-input-container textarea {
+    color: #f0f0f0 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :root[data-color-scheme="dark"][data-theme="monochrome"] .compose-attachments,
+  body[data-color-scheme="dark"][data-theme="monochrome"] .compose-attachments {
+    background: #181818;
+    border-top: 1px solid #3a3a3a;
   }
 
   :root[data-color-scheme="dark"][data-theme="monochrome"] .account-form input::placeholder,

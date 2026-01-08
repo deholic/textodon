@@ -495,40 +495,42 @@ export const ComposeBox = ({
             />
           </div>
         ) : null}
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder="지금 무슨 생각을 하고 있나요?"
-          rows={4}
-          onPaste={handlePaste}
-          disabled={isSubmitting}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-              event.preventDefault();
-              void submitPost();
-            }
-          }}
-        />
-        {attachments.length > 0 ? (
-          <div className="compose-attachments">
-            {attachments.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="attachment-thumb"
-                onClick={() => {
-                  setImageZoom(1);
-                  setImageOffset({ x: 0, y: 0 });
-                  setActiveImageId(item.id);
-                }}
-                aria-label="이미지 미리보기"
-              >
-                <img src={item.previewUrl} alt="선택한 이미지" loading="lazy" />
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <div className="compose-input-container">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="지금 무슨 생각을 하고 있나요?"
+            rows={4}
+            onPaste={handlePaste}
+            disabled={isSubmitting}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                void submitPost();
+              }
+            }}
+          />
+          {attachments.length > 0 ? (
+            <div className="compose-attachments">
+              {attachments.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="attachment-thumb"
+                  onClick={() => {
+                    setImageZoom(1);
+                    setImageOffset({ x: 0, y: 0 });
+                    setActiveImageId(item.id);
+                  }}
+                  aria-label="이미지 미리보기"
+                >
+                  <img src={item.previewUrl} alt="선택한 이미지" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <div className="compose-actions">
           <select
             value={visibility}

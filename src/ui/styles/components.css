@@ -472,13 +472,34 @@
   font-family: inherit;
 }
 
-.compose-form textarea {
+.compose-input-container {
+  position: relative;
   width: 100%;
-  padding: 12px;
   border-radius: 12px;
   border: 1px solid #d8d1c7;
+  background: #fffdfa;
+  display: flex;
+  flex-direction: column;
+}
+
+.compose-input-container textarea {
+  flex: 1;
+  width: 100%;
+  padding: 12px;
+  border: none !important;
+  border-radius: 0 !important;
   font-family: inherit;
-  resize: vertical;
+  resize: vertical !important;
+  background: transparent !important;
+  min-height: 80px;
+  color: inherit !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.compose-input-container textarea::placeholder {
+  color: inherit;
+  opacity: 0.6;
 }
 
 .compose-box {
@@ -1345,8 +1366,11 @@ button.ghost {
 .compose-attachments {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
   flex-wrap: wrap;
+  padding: 8px 12px 12px;
+  background: #f9f6f2;
+  border-top: 1px solid #e8dfd4;
+  border-radius: 0 0 12px 12px;
 }
 
 .file-button {
