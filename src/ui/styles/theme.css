@@ -3925,3 +3925,34 @@ body[data-color-scheme="dark"][data-theme="monochrome"] {
     border: 1px solid #3b342d;
     color: #f0e7dc;
   }
+
+  /* Character count dark theme styles */
+  :root:not([data-color-scheme="light"]) .compose-character-count-normal,
+  body:not([data-color-scheme="light"]) .compose-character-count-normal {
+    color: #9ca3af;
+  }
+
+  :root:not([data-color-scheme="light"]) .compose-character-count-warning,
+  body:not([data-color-scheme="light"]) .compose-character-count-warning {
+    color: #fbbf24;
+  }
+
+  :root:not([data-color-scheme="light"]) .compose-character-count-limit,
+  body:not([data-color-scheme="light"]) .compose-character-count-limit {
+    color: #f87171;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="christmas"] .compose-character-count-normal,
+  body:not([data-color-scheme="light"])[data-theme="christmas"] .compose-character-count-normal {
+    color: #cf8c8c;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-character-count-normal,
+  body:not([data-color-scheme="light"])[data-theme="sky-pink"] .compose-character-count-normal {
+    color: #d7ddea;
+  }
+
+  :root:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-character-count-normal,
+  body:not([data-color-scheme="light"])[data-theme="monochrome"] .compose-character-count-normal {
+    color: #d6d6d6;
+  }

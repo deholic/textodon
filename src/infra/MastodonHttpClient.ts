@@ -1,4 +1,4 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 import { mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
@@ -109,6 +109,23 @@ export class MastodonHttpClient implements MastodonApi {
     }
     const data = (await response.json()) as unknown;
     return mapCustomEmojis(data);
+  }
+
+  async fetchInstanceInfo(account: Account): Promise<InstanceInfo> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/instance`, {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("인스턴스 정보를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as Record<string, unknown>;
+    return {
+      uri: String(data.uri || data.domain || ""),
+      title: String(data.title || ""),
+      description: data.description ? String(data.description) : undefined,
+      max_toot_chars: typeof data.max_toot_chars === "number" ? data.max_toot_chars : 500,
+      platform: "mastodon"
+    };
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {

@@ -599,6 +599,26 @@
   margin: 0;
 }
 
+.compose-character-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0 8px;
+}
+
+.compose-character-count-normal {
+  color: #6b7280;
+}
+
+.compose-character-count-warning {
+  color: #f59e0b;
+}
+
+.compose-character-count-limit {
+  color: #ef4444;
+  font-weight: 600;
+}
+
 .compose-emoji-category {
   display: flex;
   flex-direction: column;
