@@ -1,4 +1,4 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 import { mapMisskeyNotification, mapMisskeyStatusWithInstance } from "./misskeyMapper";
 
@@ -134,6 +134,27 @@ export class MisskeyHttpClient implements MastodonApi {
     }
     const data = (await response.json()) as unknown;
     return mapMisskeyEmojis(data);
+  }
+
+  async fetchInstanceInfo(account: Account): Promise<InstanceInfo> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/meta`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(buildBody(account, {}))
+    });
+    if (!response.ok) {
+      throw new Error("인스턴스 정보를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as Record<string, unknown>;
+    return {
+      uri: String(data.uri || ""),
+      title: String(data.name || ""),
+      description: data.description ? String(data.description) : undefined,
+      maxNoteLength: typeof data.maxNoteLength === "number" ? data.maxNoteLength : 3000,
+      platform: "misskey"
+    };
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {

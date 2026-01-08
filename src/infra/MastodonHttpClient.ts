@@ -1,4 +1,4 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 import { mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
@@ -109,6 +109,67 @@ export class MastodonHttpClient implements MastodonApi {
     }
     const data = (await response.json()) as unknown;
     return mapCustomEmojis(data);
+  }
+
+  async fetchInstanceInfo(account: Account): Promise<InstanceInfo> {
+    // 먼저 v2 API를 시도
+    try {
+      const v2Response = await fetch(`${account.instanceUrl}/api/v2/instance`, {
+        headers: buildHeaders(account)
+      });
+      if (v2Response.ok) {
+        const v2Data = (await v2Response.json()) as Record<string, unknown>;
+        const configuration = v2Data.configuration as Record<string, unknown> || {};
+        const statuses = configuration.statuses as Record<string, unknown> || {};
+        
+        // v2 API에서 max_characters 가져오기, 없으면 v1 호환 필드 사용
+        const maxChars = typeof statuses.max_characters === "number" 
+          ? statuses.max_characters 
+          : typeof v2Data.max_toot_chars === "number" 
+            ? v2Data.max_toot_chars 
+            : 500;
+        
+        return {
+          uri: String(v2Data.uri || v2Data.domain || ""),
+          title: String(v2Data.title || ""),
+          description: v2Data.description ? String(v2Data.description) : undefined,
+          max_toot_chars: maxChars,
+          platform: "mastodon"
+        };
+      }
+    } catch {
+      // v2 API 실패 시 v1 API로 fallback
+    }
+
+    const v1Response = await fetch(`${account.instanceUrl}/api/v1/instance`, {
+      headers: buildHeaders(account)
+    });
+    if (!v1Response.ok) {
+      throw new Error("인스턴스 정보를 불러오지 못했습니다.");
+    }
+    const data = (await v1Response.json()) as Record<string, unknown>;
+    
+    // v1 API에서 configuration 확인 (이전 버전과의 호환성)
+    let maxChars = 500;
+    if (typeof data.max_toot_chars === "number") {
+      maxChars = data.max_toot_chars;
+    } else if (data.configuration && typeof data.configuration === "object") {
+      const config = data.configuration as Record<string, unknown>;
+      if (config.statuses && typeof config.statuses === "object") {
+        const statuses = config.statuses as Record<string, unknown>;
+        if (typeof statuses.max_characters === "number") {
+          maxChars = statuses.max_characters;
+        }
+      }
+    }
+    
+    return {
+      uri: String(data.uri || data.domain || ""),
+      title: String(data.title || ""),
+      description: data.description ? String(data.description) : undefined,
+      max_toot_chars: maxChars,
+      platform: "mastodon"
+    };
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {

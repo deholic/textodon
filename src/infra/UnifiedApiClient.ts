@@ -1,4 +1,4 @@
-import type { Account, ThreadContext, TimelineType } from "../domain/types";
+import type { Account, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
 import type { CustomEmoji } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
 
@@ -26,6 +26,11 @@ export class UnifiedApiClient implements MastodonApi {
 
   fetchCustomEmojis(account: Account): Promise<CustomEmoji[]> {
     return this.getClient(account).fetchCustomEmojis(account);
+  }
+
+  fetchInstanceInfo(account: Account): Promise<InstanceInfo> {
+    const client = this.getClient(account) as any;
+    return client.fetchInstanceInfo(account);
   }
 
   uploadMedia(account: Account, file: File) {

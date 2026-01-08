@@ -1,4 +1,4 @@
-import type { Account, Status, TimelineType, Visibility } from "../domain/types";
+import type { Account, Status, TimelineType, Visibility, InstanceInfo } from "../domain/types";
 import type { CustomEmoji } from "../domain/types";
 
 export type CreateStatusInput = {
@@ -21,4 +21,5 @@ export interface MastodonApi {
   unfavourite(account: Account, statusId: string): Promise<Status>;
   reblog(account: Account, statusId: string): Promise<Status>;
   unreblog(account: Account, statusId: string): Promise<Status>;
+  fetchInstanceInfo(account: Account): Promise<InstanceInfo>;
 }

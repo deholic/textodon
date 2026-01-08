@@ -1,6 +1,13 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
+import { 
+  calculateCharacterCount, 
+  getCharacterLimit, 
+  getCharacterCountStatus, 
+  getCharacterCountClassName,
+  getDefaultCharacterLimit 
+} from "../utils/characterCount";
 
 const VISIBILITY_KEY = "textodon.compose.visibility";
 
@@ -100,6 +107,10 @@ export const ComposeBox = ({
   const [recentByInstance, setRecentByInstance] = useState<Record<string, string[]>>({});
   const [expandedByInstance, setExpandedByInstance] = useState<Record<string, Set<string>>>({});
   const [recentOpen, setRecentOpen] = useState(true);
+  
+  // 문자 수 관련 상태
+  const [characterLimit, setCharacterLimit] = useState<number | null>(null);
+  const [instanceLoading, setInstanceLoading] = useState(false);
   const activeImage = useMemo(
     () => attachments.find((item) => item.id === activeImageId) ?? null,
     [attachments, activeImageId]
@@ -200,10 +211,56 @@ export const ComposeBox = ({
     localStorage.setItem(VISIBILITY_KEY, visibility);
   }, [visibility]);
 
+  // 계정 변경 시 인스턴스 정보 로드
+  useEffect(() => {
+    if (!account) {
+      setCharacterLimit(null);
+      return;
+    }
+    
+    const loadInstanceInfo = async () => {
+      try {
+        setInstanceLoading(true);
+        const instanceInfo = await api.fetchInstanceInfo(account);
+        const limit = getCharacterLimit(instanceInfo);
+        setCharacterLimit(limit);
+      } catch (error) {
+        console.error("인스턴스 정보 로드 실패:", error);
+        // fallback: 기본값 사용
+        const fallbackLimit = getDefaultCharacterLimit(account.platform);
+        setCharacterLimit(fallbackLimit);
+      } finally {
+        setInstanceLoading(false);
+      }
+    };
+    
+    loadInstanceInfo();
+  }, [account, api]);
+
+  // 현재 문자 수 계산
+  const currentCharCount = useMemo(() => {
+    if (!account) return 0;
+    const fullText = (cwEnabled ? cwText + "\n" : "") + text;
+    return calculateCharacterCount(fullText, account.platform);
+  }, [text, cwText, cwEnabled, account]);
+
+  // 문자 수 상태 계산
+  const charCountStatus = useMemo(() => {
+    if (!characterLimit) return "normal";
+    return getCharacterCountStatus(currentCharCount, characterLimit);
+  }, [currentCharCount, characterLimit]);
+
   const submitPost = async () => {
     if (!text.trim() || isSubmitting) {
       return;
     }
+
+    // 문자 수 제한 검사
+    if (characterLimit && currentCharCount > characterLimit) {
+      alert(`글자 수 제한(${characterLimit.toLocaleString()}자)을 초과했습니다.`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const ok = await onSubmit({
@@ -438,40 +495,68 @@ export const ComposeBox = ({
             />
           </div>
         ) : null}
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder="지금 무슨 생각을 하고 있나요?"
-          rows={4}
-          onPaste={handlePaste}
-          disabled={isSubmitting}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-              event.preventDefault();
-              void submitPost();
-            }
-          }}
-        />
-        {attachments.length > 0 ? (
+        <div className="compose-input-container">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="지금 무슨 생각을 하고 있나요?"
+            rows={4}
+            onPaste={handlePaste}
+            disabled={isSubmitting}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                void submitPost();
+              }
+            }}
+          />
           <div className="compose-attachments">
-            {attachments.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="attachment-thumb"
-                onClick={() => {
-                  setImageZoom(1);
-                  setImageOffset({ x: 0, y: 0 });
-                  setActiveImageId(item.id);
-                }}
-                aria-label="이미지 미리보기"
-              >
-                <img src={item.previewUrl} alt="선택한 이미지" loading="lazy" />
-              </button>
-            ))}
+            {/* 첨부된 이미지들과 이미지 추가 버튼 */}
+            <div className="compose-attachments-scroll">
+              {attachments.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="attachment-thumb"
+                  onClick={() => {
+                    setImageZoom(1);
+                    setImageOffset({ x: 0, y: 0 });
+                    setActiveImageId(item.id);
+                  }}
+                  aria-label="이미지 미리보기"
+                >
+                  <img src={item.previewUrl} alt="선택한 이미지" loading="lazy" />
+                </button>
+              ))}
+              
+              {/* 이미지 추가 버튼 */}
+              <label className="file-button attachment-thumb" aria-label="이미지 추가">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
+                  <circle cx="9" cy="10" r="2" />
+                  <path d="M21 16l-5-5-4 4-2-2-5 5" />
+                </svg>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFilesSelected}
+                  disabled={isSubmitting}
+                />
+              </label>
+            </div>
+            
+            {/* 문자 수 표시 - 고정 위치 */}
+            {characterLimit && (
+              <div className="compose-attachments-character-count">
+                <span className={getCharacterCountClassName(charCountStatus)}>
+                  {currentCharCount.toLocaleString()} / {characterLimit.toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
-        ) : null}
+        </div>
         <div className="compose-actions">
           <select
             value={visibility}
@@ -484,6 +569,7 @@ export const ComposeBox = ({
               </option>
             ))}
           </select>
+          
           <div className="compose-actions-right">
             <button
               type="button"
@@ -509,20 +595,6 @@ export const ComposeBox = ({
             >
               CW
             </button>
-            <label className="file-button icon-button compose-icon-button" aria-label="이미지 추가">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
-                <circle cx="9" cy="10" r="2" />
-                <path d="M21 16l-5-5-4 4-2-2-5 5" />
-              </svg>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFilesSelected}
-                disabled={isSubmitting}
-              />
-            </label>
             <button
               type="submit"
               className="icon-button compose-icon-button"

@@ -51,7 +51,7 @@
 .brand-text p {
   margin: 0;
   font-size: 11px;
-  color: #6b5c4f;
+  color: var(--color-brand-text);
 }
 
 .brand + .sidebar-description {
@@ -67,7 +67,7 @@
 
 .back-link {
   font-size: 12px;
-  color: #7c6152;
+  color: var(--color-back-link);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -99,11 +99,11 @@ aside {
 }
 
 .panel {
-  background: #ffffffcc;
-  border: 1px solid #e2ddd5;
+  background: var(--color-panel-bg);
+  border: 1px solid var(--color-panel-border);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 18px 40px rgba(67, 57, 45, 0.08);
+  box-shadow: var(--shadow-panel);
 }
 
 .panel h2 {
@@ -156,7 +156,7 @@ aside {
   }
 
   .brand-text p {
-    color: #c4b6a6;
+    color: var(--color-brand-text-mobile);
   }
 
   .timeline-column {

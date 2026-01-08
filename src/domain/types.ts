@@ -105,3 +105,21 @@ export type ThreadContext = {
 export type TimelineItem = {
   status: Status;
 };
+
+export type InstanceInfo = {
+  // 공통 필드
+  uri: string;
+  title: string;
+  description?: string;
+  
+  // Mastodon 전용
+  max_toot_chars?: number;
+  
+  // Misskey 전용
+  maxNoteLength?: number;
+  
+  // 플랫폼 식별
+  platform: AccountPlatform;
+};
+
+export type CharacterCountStatus = "normal" | "warning" | "limit";
