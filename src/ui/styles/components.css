@@ -1373,17 +1373,6 @@ button.ghost {
   position: relative;
 }
 
-.reaction-picker-toggle {
-  min-width: 72px;
-  border: 1px solid transparent;
-}
-
-.reaction-picker-toggle.is-active {
-  background: var(--color-emoji-toggle-bg);
-  color: var(--color-emoji-toggle-text);
-  border-color: var(--color-emoji-toggle-border);
-}
-
 .reaction-picker-panel {
   position: fixed;
   z-index: 20;

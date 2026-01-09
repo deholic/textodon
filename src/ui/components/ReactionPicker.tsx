@@ -301,7 +301,7 @@ export const ReactionPicker = ({
     <div className="reaction-picker">
       <button
         type="button"
-        className={`reaction-picker-toggle${open ? " is-active" : ""}`}
+        className={open ? "is-active" : undefined}
         onClick={() => setOpen((current) => !current)}
         disabled={disabled}
         ref={buttonRef}
