@@ -68,6 +68,59 @@ const mapMisskeyEmojis = (data: unknown): CustomEmoji[] => {
 };
 
 export class MisskeyHttpClient implements MastodonApi {
+  private async fetchNoteChildren(
+    account: Account,
+    noteId: string,
+    limit: number
+  ): Promise<Status[]> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/notes/children`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(buildBody(account, { noteId, limit }))
+    });
+    if (!response.ok) {
+      throw new Error("답글을 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    return data
+      .map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl))
+      .filter((status): status is Status => status !== null);
+  }
+
+  private async fetchDescendants(
+    account: Account,
+    noteId: string,
+    maxNotes: number,
+    maxDepth: number
+  ): Promise<Status[]> {
+    const queue: Array<{ id: string; depth: number }> = [{ id: noteId, depth: 0 }];
+    const seen = new Set<string>([noteId]);
+    const result: Status[] = [];
+
+    while (queue.length > 0 && result.length < maxNotes) {
+      const current = queue.shift();
+      if (!current || current.depth >= maxDepth) {
+        continue;
+      }
+      const children = await this.fetchNoteChildren(account, current.id, 100);
+      for (const child of children) {
+        if (seen.has(child.id)) {
+          continue;
+        }
+        seen.add(child.id);
+        result.push(child);
+        if (result.length >= maxNotes) {
+          break;
+        }
+        queue.push({ id: child.id, depth: current.depth + 1 });
+      }
+    }
+
+    return result.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
   async verifyAccount(
     account: Account
   ): Promise<{ accountName: string; handle: string; avatarUrl: string | null }> {
@@ -195,14 +248,19 @@ export class MisskeyHttpClient implements MastodonApi {
     // 미스키는 시간순으로 정렬된 전체 대화를 반환
     const conversation = data
       .map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl))
-      .filter((status): status is Status => status !== null);
+      .filter((status): status is Status => status !== null)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
     // 전체 대화에서 현재 노트를 찾아서 ancestors/descendants로 분리
-    const currentIndex = conversation.findIndex(status => status.id === noteId);
-    const ancestors = currentIndex > 0 ? conversation.slice(0, currentIndex) : [];
-    const descendants = currentIndex >= 0 && currentIndex < conversation.length - 1 
-      ? conversation.slice(currentIndex + 1) 
-      : [];
+    const currentIndex = conversation.findIndex((status) => status.id === noteId);
+    const ancestors =
+      currentIndex === -1 ? conversation : currentIndex > 0 ? conversation.slice(0, currentIndex) : [];
+    let descendants: Status[] = [];
+    try {
+      descendants = await this.fetchDescendants(account, noteId, 200, 6);
+    } catch (error) {
+      console.error("후손 스레드 로딩 실패:", error);
+    }
 
     return {
       ancestors,
