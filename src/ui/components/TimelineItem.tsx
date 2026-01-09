@@ -8,6 +8,7 @@ import trashIconUrl from "../assets/trash-icon.svg";
 import { ReactionPicker } from "./ReactionPicker";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useImageZoom } from "../hooks/useImageZoom";
+import { AccountLabel } from "./AccountLabel";
 
 export const TimelineItem = ({
   status,
@@ -815,19 +816,17 @@ export const TimelineItem = ({
             <h3>게시글 삭제</h3>
             <div className="status confirm-status">
               <header className="status-header">
-                {displayStatus.accountAvatarUrl ? (
-                  <span className="status-avatar" aria-hidden="true">
-                    <img src={displayStatus.accountAvatarUrl} alt="" loading="lazy" />
-                  </span>
-                ) : (
-                  <span className="status-avatar" aria-hidden="true">
-                    <span className="status-avatar-fallback" />
-                  </span>
-                )}
-                <div>
-                  <strong>{displayStatus.accountName || displayStatus.accountHandle}</strong>
-                  <span>@{displayHandle}</span>
-                </div>
+                <AccountLabel
+                  avatarUrl={displayStatus.accountAvatarUrl}
+                  displayName={displayStatus.accountName}
+                  name={displayStatus.accountHandle}
+                  handle={displayHandle}
+                  avatarClassName="status-avatar"
+                  avatarFallbackClassName="status-avatar-fallback"
+                  textAsDiv={true}
+                  boldName={true}
+                  className=""
+                />
               </header>
               <p className="status-text confirm-text">
                 {displayStatus.content || "(내용 없음)"}
