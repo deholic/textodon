@@ -33,6 +33,8 @@
     --shadow-timeline-column: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 24px rgba(0, 0, 0, 0.35);
     --color-status-bg: #171512;
     --color-status-border: #302822;
+    --color-thread-bg: var(--color-status-bg);
+    --color-thread-border: var(--color-status-border);
     --color-status-header: #c4b6a6;
     --color-status-meta: #c4b6a6;
     --color-status-time: #c4b6a6;
@@ -492,6 +494,8 @@
   --shadow-timeline-column: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 24px rgba(0, 0, 0, 0.35);
   --color-status-bg: #171512;
   --color-status-border: #302822;
+  --color-thread-bg: var(--color-status-bg);
+  --color-thread-border: var(--color-status-border);
   --color-status-header: #c4b6a6;
   --color-status-meta: #c4b6a6;
   --color-status-time: #c4b6a6;
