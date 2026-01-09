@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "dompurify": "^3.3.1",
+    "mfm-js": "^0.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "wrangler": "3.90.0"

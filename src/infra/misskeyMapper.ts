@@ -1,4 +1,5 @@
 import type { CustomEmoji, MediaAttachment, Mention, Reaction, Status, Visibility } from "../domain/types";
+import { isMfmText } from "../ui/utils/mfm";
 
 const mapVisibility = (visibility: string): Visibility => {
   switch (visibility) {
@@ -342,7 +343,7 @@ export const mapMisskeyStatusWithInstance = (raw: unknown, instanceUrl?: string)
     accountUrl,
     accountAvatarUrl,
     content: text,
-    hasRichContent: false,
+    hasRichContent: isMfmText(text),
     url: typeof value.url === "string" ? value.url : typeof value.uri === "string" ? value.uri : null,
     visibility: mapVisibility(String(value.visibility ?? "public")),
     spoilerText,

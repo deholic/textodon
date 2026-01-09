@@ -42,9 +42,18 @@ export type AppServices = {
   oauth: OAuthClient;
 };
 
+export type UserPreferences = {
+  enableMfmAnimations: boolean;
+  showCustomEmojis: boolean;
+  showReactions: boolean;
+  showProfileImages: boolean;
+};
+
 export type AccountsState = {
   accounts: Account[];
   activeAccountId: string | null;
+  preferences: UserPreferences;
+  updatePreferences: (preferences: Partial<UserPreferences>) => void;
   addAccount: (account: Account) => void;
   removeAccount: (accountId: string) => void;
   setActiveAccount: (accountId: string) => void;
@@ -79,6 +88,43 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
   const [activeAccountId, setActiveAccountId] = useState<string | null>(
     loadActiveAccountId(accounts)
   );
+
+  // 사용자 설정 관리
+  const [preferences, setPreferences] = useState<UserPreferences>(() => {
+    try {
+      const stored = localStorage.getItem('textodon.preferences');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          enableMfmAnimations: true,
+          showCustomEmojis: true,
+          showReactions: true,
+          showProfileImages: true,
+          ...parsed
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to load user preferences:', error);
+    }
+    return {
+      enableMfmAnimations: true,
+      showCustomEmojis: true,
+      showReactions: true,
+      showProfileImages: true
+    };
+  });
+
+  const updatePreferences = useCallback((newPreferences: Partial<UserPreferences>) => {
+    setPreferences(prev => {
+      const updated = { ...prev, ...newPreferences };
+      try {
+        localStorage.setItem('textodon.preferences', JSON.stringify(updated));
+      } catch (error) {
+        console.warn('Failed to save user preferences:', error);
+      }
+      return updated;
+    });
+  }, []);
 
   useEffect(() => {
     persistActiveAccountId(activeAccountId);
@@ -174,8 +220,16 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
   }, []);
 
   const accountsState = useMemo(
-    () => ({ accounts, activeAccountId, addAccount, removeAccount, setActiveAccount }),
-    [accounts, activeAccountId, addAccount, removeAccount, setActiveAccount]
+    () => ({ 
+      accounts, 
+      activeAccountId, 
+      preferences,
+      updatePreferences,
+      addAccount, 
+      removeAccount, 
+      setActiveAccount 
+    }),
+    [accounts, activeAccountId, preferences, updatePreferences, addAccount, removeAccount, setActiveAccount]
   );
 
   return (

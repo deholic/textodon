@@ -28,10 +28,13 @@ export const sanitizeHtml = (html: string): string => {
   return DOMPurify.sanitize(processedHtml, {
     ALLOWED_TAGS: [
       'p', 'br', 'a', 'strong', 'em', 'u', 's', 'code', 'pre',
-      'blockquote', 'ul', 'ol', 'li', 'span', 'img'
+      'blockquote', 'ul', 'ol', 'li', 'span', 'img', 'div', 'ruby', 'rt', 'time'
     ],
-    ALLOWED_ATTR: ['href', 'title', 'class', 'src', 'alt', 'loading', 'target', 'rel'],
+    ALLOWED_ATTR: [
+      'href', 'title', 'class', 'src', 'alt', 'loading', 'target', 'rel', 
+      'style', 'datetime', 'data-event-id'
+    ],
     FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
-    ALLOW_DATA_ATTR: false,
+    ALLOW_DATA_ATTR: true, // MFM 애니메이션을 위해 data 속성 허용
   });
 };

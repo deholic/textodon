@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, ReactionInput, Status } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
+import { useAppContext } from "../state/AppContext";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
+import { renderMfm, isMfmText } from "../utils/mfm";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
@@ -23,9 +25,6 @@ export const TimelineItem = ({
   activeHandle,
   activeAccountHandle,
   activeAccountUrl,
-  showProfileImage,
-  showCustomEmojis,
-  showReactions,
   disableActions = false,
   enableReactionActions = true
 }: {
@@ -41,12 +40,11 @@ export const TimelineItem = ({
   activeHandle: string;
   activeAccountHandle: string;
   activeAccountUrl: string | null;
-  showProfileImage: boolean;
-  showCustomEmojis: boolean;
-  showReactions: boolean;
   disableActions?: boolean;
   enableReactionActions?: boolean;
 }) => {
+  const { services, accountsState } = useAppContext();
+  const { showCustomEmojis, showReactions, showProfileImages, enableMfmAnimations } = accountsState.preferences;
   const notification = status.notification;
   const displayStatus = notification?.target ?? status.reblog ?? status;
   const boostedBy = notification ? null : status.reblog ? status.boostedBy : null;
@@ -372,6 +370,23 @@ export const TimelineItem = ({
   }, []);
 
   const contentParts = useMemo(() => {
+    const text = displayStatus.content;
+    
+    // Check if this is a Misskey instance and the content contains MFM syntax
+    if (account?.platform === "misskey" && isMfmText(text)) {
+      const mfmHtml = renderMfm(text, displayStatus.customEmojis, {
+        enableAnimation: enableMfmAnimations,
+        enableEmoji: showCustomEmojis,
+      });
+      
+      return (
+        <div 
+          dangerouslySetInnerHTML={{ __html: mfmHtml }}
+          className="mfm-content rich-content"
+        />
+      );
+    }
+    
     // Check if content actually contains HTML tags before rendering as HTML
     const hasHtmlTags = displayStatus.htmlContent ? /<[^>]+>/g.test(displayStatus.htmlContent) : false;
     
@@ -402,7 +417,6 @@ export const TimelineItem = ({
     }
     
     // Fallback to plain text with link detection
-    const text = displayStatus.content;
     if (!showCustomEmojis || displayStatus.customEmojis.length === 0) {
       return renderTextWithLinks(text, "content");
     }
@@ -580,7 +594,7 @@ export const TimelineItem = ({
       ) : null}
       <header className="status-header-main">
         <div className="status-header-info">
-          {showProfileImage ? (
+          {showProfileImages ? (
             <span
               className="status-avatar"
               onClick={handleHeaderClick}

@@ -1,0 +1,389 @@
+/* MFM (Misskey Markup Language) 스타일 */
+
+.mfm-content {
+  word-wrap: break-word;
+  line-height: 1.6;
+}
+
+.mfm-content strong {
+  font-weight: bold;
+}
+
+.mfm-content em {
+  font-style: italic;
+}
+
+.mfm-content s {
+  text-decoration: line-through;
+}
+
+.mfm-content small {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.mfm-content code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  background-color: var(--color-code-bg);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.mfm-content pre {
+  background-color: var(--color-code-bg);
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.mfm-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.9em;
+}
+
+.mfm-content blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 1em;
+  margin: 0.5em 0;
+  opacity: 0.8;
+}
+
+.mfm-content a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.mfm-content a:hover {
+  text-decoration: underline;
+}
+
+.mfm-content .mention {
+  color: var(--color-mention);
+  font-weight: 500;
+}
+
+.mfm-content .hashtag {
+  color: var(--color-hashtag);
+  font-weight: 500;
+}
+
+.mfm-content .custom-emoji {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+  object-fit: contain;
+}
+
+/* MFM 검색 스타일 */
+.mfm-content .search {
+  display: inline-block;
+  padding: 0.2em 0.5em;
+  background-color: var(--color-search-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* MFM 함수 스타일 */
+
+/* Tada 애니메이션 */
+.mfm-tada {
+  display: inline-block;
+  font-size: 150%;
+  animation: mfm-tada 1s ease-in-out infinite;
+}
+
+@keyframes mfm-tada {
+  0% { transform: scale(1); }
+  10%, 20% { transform: scale(0.9) rotate(-3deg); }
+  30%, 50%, 70%, 90% { transform: scale(1.3) rotate(3deg); }
+  40%, 60%, 80% { transform: scale(1.3) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* Spin 애니메이션 */
+.mfm-spin {
+  display: inline-block;
+  animation: mfm-spin 1.5s linear infinite;
+}
+
+.mfm-spin[data-mfm-spin-x="true"] {
+  animation: mfm-spin-x 1.5s linear infinite;
+}
+
+.mfm-spin[data-mfm-spin-y="true"] {
+  animation: mfm-spin-y 1.5s linear infinite;
+}
+
+.mfm-spin[data-mfm-spin-left="true"] {
+  animation-direction: reverse;
+}
+
+.mfm-spin[data-mfm-spin-alternate="true"] {
+  animation: mfm-spin-alternate 1.5s ease-in-out infinite;
+}
+
+@keyframes mfm-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mfm-spin-x {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(360deg); }
+}
+
+@keyframes mfm-spin-y {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+@keyframes mfm-spin-alternate {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Jump 애니메이션 */
+.mfm-jump {
+  display: inline-block;
+  animation: mfm-jump 0.75s ease-in-out infinite;
+}
+
+@keyframes mfm-jump {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-0.8em); }
+  100% { transform: translateY(0); }
+}
+
+/* Bounce 애니메이션 */
+.mfm-bounce {
+  display: inline-block;
+  animation: mfm-bounce 0.75s ease-in-out infinite;
+}
+
+@keyframes mfm-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.3em); }
+}
+
+/* Shake 애니메이션 */
+.mfm-shake {
+  display: inline-block;
+  animation: mfm-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes mfm-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px) rotate(-1deg); }
+  75% { transform: translateX(2px) rotate(1deg); }
+}
+
+/* Twitch 애니메이션 */
+.mfm-twitch {
+  display: inline-block;
+  animation: mfm-twitch 0.5s ease-in-out infinite;
+}
+
+@keyframes mfm-twitch {
+  0%, 100% { transform: translate(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-1px, 1px); }
+  20%, 40%, 60%, 80% { transform: translate(1px, -1px); }
+}
+
+/* Jelly 애니메이션 */
+.mfm-jelly {
+  display: inline-block;
+  animation: mfm-jelly 0.8s ease-in-out infinite;
+}
+
+@keyframes mfm-jelly {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(0.9, 1.1); }
+  50% { transform: scale(1.1, 0.9); }
+  75% { transform: scale(0.95, 1.05); }
+}
+
+/* Rainbow 애니메이션 */
+.mfm-rainbow {
+  display: inline-block;
+  animation: mfm-rainbow 2s linear infinite;
+  background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+}
+
+@keyframes mfm-rainbow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* Sparkle 효과 */
+.mfm-sparkle {
+  display: inline-block;
+  position: relative;
+}
+
+.mfm-sparkle::before {
+  content: "✨";
+  position: absolute;
+  left: -0.8em;
+  top: -0.3em;
+  font-size: 0.6em;
+  animation: sparkle-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Fade 효과 */
+.mfm-fade {
+  opacity: 0.7;
+}
+
+/* Flip 효과 */
+.mfm-flip {
+  display: inline-block;
+}
+
+.mfm-flip[data-mfm-flip-h="true"] {
+  transform: scaleX(-1);
+}
+
+.mfm-flip[data-mfm-flip-v="true"] {
+  transform: scaleY(-1);
+}
+
+.mfm-flip[data-mfm-flip-h="true"][data-mfm-flip-v="true"] {
+  transform: scale(-1, -1);
+}
+
+/* 크기 조절 */
+.mfm-x2 {
+  font-size: 200%;
+}
+
+.mfm-x3 {
+  font-size: 300%;
+}
+
+.mfm-x4 {
+  font-size: 400%;
+}
+
+/* 위치 조절 */
+.mfm-position {
+  position: relative;
+  display: inline-block;
+}
+
+.mfm-position[style*="--mfm-x"] {
+  left: calc(var(--mfm-x, 0) * 1em);
+}
+
+.mfm-position[style*="--mfm-y"] {
+  top: calc(var(--mfm-y, 0) * 1em);
+}
+
+/* Blur 효과 */
+.mfm-blur {
+  filter: blur(1.5px);
+  transition: filter 0.3s ease;
+}
+
+.mfm-blur:hover {
+  filter: blur(0);
+}
+
+/* Ruby (루비) 문자 */
+.mfm-content ruby {
+  ruby-align: center;
+}
+
+.mfm-content rt {
+  font-size: 0.6em;
+  color: var(--color-muted);
+}
+
+/* 클릭 가능한 요소 */
+.mfm-clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 2px;
+}
+
+.mfm-clickable:hover {
+  color: var(--color-link-hover);
+}
+
+/* 다크 모드 변수 조정 */
+[data-theme="dark"] {
+  --color-mention: #8cc7ff;
+  --color-hashtag: #ff8c8c;
+  --color-search-bg: rgba(255, 255, 255, 0.1);
+  --color-muted: #888;
+}
+
+[data-theme="light"] {
+  --color-mention: #0066cc;
+  --color-hashtag: #cc0000;
+  --color-search-bg: rgba(0, 0, 0, 0.05);
+  --color-muted: #666;
+}
+
+/* 애니메이션 비활성화 클래스 */
+.mfm-no-animation .mfm-tada,
+.mfm-no-animation .mfm-spin,
+.mfm-no-animation .mfm-jump,
+.mfm-no-animation .mfm-bounce,
+.mfm-no-animation .mfm-shake,
+.mfm-no-animation .mfm-twitch,
+.mfm-no-animation .mfm-jelly,
+.mfm-no-animation .mfm-rainbow {
+  animation: none !important;
+}
+
+.mfm-no-animation .mfm-rainbow {
+  background: none !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
+  color: inherit !important;
+}
+
+.mfm-no-animation .mfm-sparkle::before {
+  display: none !important;
+}
+
+/* 접근성: 사용자가 애니메이션을 선호하지 않는 경우 */
+@media (prefers-reduced-motion: reduce) {
+  .mfm-tada,
+  .mfm-spin,
+  .mfm-jump,
+  .mfm-bounce,
+  .mfm-shake,
+  .mfm-twitch,
+  .mfm-jelly,
+  .mfm-rainbow {
+    animation: none !important;
+  }
+  
+  .mfm-rainbow {
+    background: none !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+    color: inherit !important;
+  }
+  
+  .mfm-sparkle::before {
+    display: none !important;
+  }
+}
