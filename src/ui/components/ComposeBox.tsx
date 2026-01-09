@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Account, CustomEmoji, Visibility } from "../../domain/types";
+import type { Account, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
-import { getCachedEmojis, setCachedEmojis } from "../utils/emojiCache";
-import { 
-  calculateCharacterCount, 
-  getCharacterLimit, 
-  getCharacterCountStatus, 
+import { useEmojiManager } from "../hooks/useEmojiManager";
+import {
+  calculateCharacterCount,
+  getCharacterLimit,
+  getCharacterCountStatus,
   getCharacterCountClassName,
-  getDefaultCharacterLimit 
+  getDefaultCharacterLimit
 } from "../utils/characterCount";
 
 const VISIBILITY_KEY = "textodon.compose.visibility";
@@ -19,36 +19,7 @@ const visibilityOptions: { value: Visibility; label: string }[] = [
   { value: "direct", label: "DM" }
 ];
 
-const RECENT_EMOJI_KEY_PREFIX = "textodon.compose.recentEmojis.";
-const RECENT_EMOJI_LIMIT = 24;
 const ZERO_WIDTH_SPACE = "\u200b";
-
-const buildRecentEmojiKey = (instanceUrl: string) =>
-  `${RECENT_EMOJI_KEY_PREFIX}${encodeURIComponent(instanceUrl)}`;
-
-const loadRecentEmojis = (instanceUrl: string): string[] => {
-  try {
-    const stored = localStorage.getItem(buildRecentEmojiKey(instanceUrl));
-    if (!stored) {
-      return [];
-    }
-    const parsed = JSON.parse(stored) as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.filter((item) => typeof item === "string");
-  } catch {
-    return [];
-  }
-};
-
-const persistRecentEmojis = (instanceUrl: string, list: string[]) => {
-  try {
-    localStorage.setItem(buildRecentEmojiKey(instanceUrl), JSON.stringify(list));
-  } catch {
-    return;
-  }
-};
 
 export const ComposeBox = ({
   onSubmit,
@@ -100,54 +71,28 @@ export const ComposeBox = ({
     null
   );
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
-  const [emojiCatalogs, setEmojiCatalogs] = useState<Record<string, CustomEmoji[]>>({});
-  const [emojiLoadState, setEmojiLoadState] = useState<
-    Record<string, "idle" | "loading" | "loaded" | "error">
-  >({});
-  const [emojiErrors, setEmojiErrors] = useState<Record<string, string | null>>({});
-  const [recentByInstance, setRecentByInstance] = useState<Record<string, string[]>>({});
-  const [expandedByInstance, setExpandedByInstance] = useState<Record<string, Set<string>>>({});
   const [recentOpen, setRecentOpen] = useState(true);
-  
+
   // 문자 수 관련 상태
   const [characterLimit, setCharacterLimit] = useState<number | null>(null);
   const [instanceLoading, setInstanceLoading] = useState(false);
+
+  // useEmojiManager 훅 사용
+  const {
+    emojis: activeEmojis,
+    emojiStatus,
+    emojiError,
+    emojiCategories,
+    expandedCategories,
+    loadEmojis,
+    addToRecent,
+    toggleCategory
+  } = useEmojiManager(account, api, false);
+
   const activeImage = useMemo(
     () => attachments.find((item) => item.id === activeImageId) ?? null,
     [attachments, activeImageId]
   );
-  const activeInstanceUrl = account?.instanceUrl ?? null;
-  const activeEmojis = useMemo(
-    () => (activeInstanceUrl ? emojiCatalogs[activeInstanceUrl] ?? [] : []),
-    [activeInstanceUrl, emojiCatalogs]
-  );
-  const emojiStatus = activeInstanceUrl ? emojiLoadState[activeInstanceUrl] ?? "idle" : "idle";
-  const recentShortcodes = activeInstanceUrl ? recentByInstance[activeInstanceUrl] ?? [] : [];
-  const emojiMap = useMemo(() => new Map(activeEmojis.map((emoji) => [emoji.shortcode, emoji])), [activeEmojis]);
-  const recentEmojis = useMemo(
-    () => recentShortcodes.map((shortcode) => emojiMap.get(shortcode)).filter(Boolean) as CustomEmoji[],
-    [emojiMap, recentShortcodes]
-  );
-  const categorizedEmojis = useMemo(() => {
-    const grouped = new Map<string, CustomEmoji[]>();
-    activeEmojis.forEach((emoji) => {
-      const category = emoji.category?.trim() || "기타";
-      const list = grouped.get(category) ?? [];
-      list.push(emoji);
-      grouped.set(category, list);
-    });
-    return Array.from(grouped.entries())
-      .sort(([a], [b]) => a.localeCompare(b, "ko-KR"))
-      .map(([label, emojis]) => ({ id: `category:${label}`, label, emojis }));
-  }, [activeEmojis]);
-  const emojiCategories = useMemo(() => {
-    const categories = [...categorizedEmojis];
-    if (recentEmojis.length > 0) {
-      categories.unshift({ id: "recent", label: "최근 사용", emojis: recentEmojis });
-    }
-    return categories;
-  }, [categorizedEmojis, recentEmojis]);
-  const expandedCategories = activeInstanceUrl ? expandedByInstance[activeInstanceUrl] ?? new Set() : new Set();
 
   useEffect(() => {
     if (!activeImage) {
@@ -297,65 +242,12 @@ export const ComposeBox = ({
     }
   }, [mentionText]);
 
+  // 이모지 패널이 열리면 이모지 로드
   useEffect(() => {
-    if (!activeInstanceUrl) {
-      return;
+    if (emojiPanelOpen && account) {
+      void loadEmojis();
     }
-    const cached = getCachedEmojis(activeInstanceUrl);
-    if (cached) {
-      setEmojiCatalogs((current) => ({
-        ...current,
-        [activeInstanceUrl]: cached
-      }));
-      setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loaded" }));
-      setEmojiErrors((current) => ({ ...current, [activeInstanceUrl]: null }));
-    }
-    setRecentByInstance((current) => {
-      if (current[activeInstanceUrl]) {
-        return current;
-      }
-      return { ...current, [activeInstanceUrl]: loadRecentEmojis(activeInstanceUrl) };
-    });
-    setExpandedByInstance((current) => {
-      if (current[activeInstanceUrl]) {
-        return current;
-      }
-      return { ...current, [activeInstanceUrl]: new Set() };
-    });
-  }, [activeInstanceUrl]);
-
-  useEffect(() => {
-    if (!emojiPanelOpen || !activeInstanceUrl || !account) {
-      return;
-    }
-    if (emojiStatus === "loaded") {
-      return;
-    }
-    const cached = getCachedEmojis(activeInstanceUrl);
-    if (cached) {
-      setEmojiCatalogs((current) => ({ ...current, [activeInstanceUrl]: cached }));
-      setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loaded" }));
-      setEmojiErrors((current) => ({ ...current, [activeInstanceUrl]: null }));
-      return;
-    }
-    setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loading" }));
-    setEmojiErrors((current) => ({ ...current, [activeInstanceUrl]: null }));
-    const load = async () => {
-      try {
-        const emojis = await api.fetchCustomEmojis(account);
-        setCachedEmojis(activeInstanceUrl, emojis);
-        setEmojiCatalogs((current) => ({ ...current, [activeInstanceUrl]: emojis }));
-        setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loaded" }));
-      } catch (err) {
-        setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "error" }));
-        setEmojiErrors((current) => ({
-          ...current,
-          [activeInstanceUrl]: err instanceof Error ? err.message : "이모지를 불러오지 못했습니다."
-        }));
-      }
-    };
-    void load();
-  }, [account, activeInstanceUrl, api, emojiPanelOpen, emojiStatus]);
+  }, [emojiPanelOpen, account, loadEmojis]);
 
   useEffect(() => {
     if (!emojiPanelOpen) {
@@ -437,37 +329,17 @@ export const ComposeBox = ({
     });
   };
 
-  const handleEmojiSelect = (emoji: CustomEmoji) => {
-    if (!activeInstanceUrl) {
-      return;
-    }
+  const handleEmojiSelect = (emoji) => {
     insertEmoji(emoji.shortcode);
-    setRecentByInstance((current) => {
-      const currentList = current[activeInstanceUrl] ?? [];
-      const filtered = currentList.filter((item) => item !== emoji.shortcode);
-      const nextList = [emoji.shortcode, ...filtered].slice(0, RECENT_EMOJI_LIMIT);
-      persistRecentEmojis(activeInstanceUrl, nextList);
-      return { ...current, [activeInstanceUrl]: nextList };
-    });
+    addToRecent(emoji.shortcode);
   };
 
-  const toggleCategory = (categoryId: string) => {
-    if (!activeInstanceUrl) {
-      return;
-    }
+  const handleToggleCategory = (categoryId: string) => {
     if (categoryId === "recent") {
       setRecentOpen((current) => !current);
-      return;
+    } else {
+      toggleCategory(categoryId);
     }
-    setExpandedByInstance((current) => {
-      const next = new Set(current[activeInstanceUrl] ?? []);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return { ...current, [activeInstanceUrl]: next };
-    });
   };
 
   const handleDeleteActive = () => {
@@ -634,17 +506,8 @@ export const ComposeBox = ({
             ) : null}
             {account && emojiStatus === "error" ? (
               <div className="compose-emoji-empty">
-                <p>{emojiErrors[activeInstanceUrl ?? ""] ?? "이모지를 불러오지 못했습니다."}</p>
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={() => {
-                    if (!activeInstanceUrl) {
-                      return;
-                    }
-                    setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "idle" }));
-                  }}
-                >
+                <p>{emojiError ?? "이모지를 불러오지 못했습니다."}</p>
+                <button type="button" className="ghost" onClick={() => loadEmojis()}>
                   다시 불러오기
                 </button>
               </div>
@@ -654,7 +517,7 @@ export const ComposeBox = ({
             ) : null}
             {account && emojiStatus === "loaded"
               ? emojiCategories.map((category) => {
-                  const categoryKey = `${activeInstanceUrl ?? "unknown"}::${category.id}`;
+                  const categoryKey = `${account.instanceUrl}::${category.id}`;
                   const isCollapsed =
                     category.id === "recent" ? !recentOpen : !expandedCategories.has(category.id);
                   return (
@@ -662,7 +525,7 @@ export const ComposeBox = ({
                       <button
                         type="button"
                         className="compose-emoji-category-toggle"
-                        onClick={() => toggleCategory(category.id)}
+                        onClick={() => handleToggleCategory(category.id)}
                         aria-expanded={!isCollapsed}
                       >
                         <span>{category.label}</span>
