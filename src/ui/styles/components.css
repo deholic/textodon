@@ -1453,7 +1453,7 @@ button.ghost {
 /* 첨부 영역 내의 이미지 추가 버튼 */
 .compose-attachments .file-button.attachment-thumb {
   background: transparent;
-  border: 2px dashed var(--color-attachment-add-border);
+  border: 1px dashed var(--color-attachment-add-border);
   color: var(--color-attachment-add-text);
   flex-shrink: 0;
 }
