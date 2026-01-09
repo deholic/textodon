@@ -7,6 +7,7 @@ import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
 import { ReactionPicker } from "./ReactionPicker";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useImageZoom } from "../hooks/useImageZoom";
 
 export const TimelineItem = ({
   status,
@@ -50,18 +51,22 @@ export const TimelineItem = ({
   const boostedBy = notification ? null : status.reblog ? status.boostedBy : null;
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [showContent, setShowContent] = useState(() => displayStatus.spoilerText.length === 0);
-  const [imageZoom, setImageZoom] = useState(1);
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
-  const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const dragStateRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
-    null
-  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // useImageZoom 훅 사용
+  const {
+    zoom: imageZoom,
+    offset: imageOffset,
+    isDragging,
+    handleWheel,
+    handleImageLoad,
+    handlePointerDown,
+    reset: resetImageZoom
+  } = useImageZoom(imageContainerRef, imageRef);
   const attachments = displayStatus.mediaAttachments;
   const activeImageUrl = activeImageIndex !== null ? attachments[activeImageIndex]?.url ?? null : null;
 
@@ -69,17 +74,15 @@ export const TimelineItem = ({
     if (activeImageIndex === null || attachments.length <= 1) return;
     const prevIndex = activeImageIndex === 0 ? attachments.length - 1 : activeImageIndex - 1;
     setActiveImageIndex(prevIndex);
-    setImageZoom(1);
-    setImageOffset({ x: 0, y: 0 });
-  }, [activeImageIndex, attachments.length]);
+    resetImageZoom();
+  }, [activeImageIndex, attachments.length, resetImageZoom]);
 
   const goToNextImage = useCallback(() => {
     if (activeImageIndex === null || attachments.length <= 1) return;
     const nextIndex = activeImageIndex === attachments.length - 1 ? 0 : activeImageIndex + 1;
     setActiveImageIndex(nextIndex);
-    setImageZoom(1);
-    setImageOffset({ x: 0, y: 0 });
-  }, [activeImageIndex, attachments.length]);
+    resetImageZoom();
+  }, [activeImageIndex, attachments.length, resetImageZoom]);
 
   useEffect(() => {
     if (activeImageIndex === null) return;
@@ -537,53 +540,6 @@ export const TimelineItem = ({
     };
   }, [activeImageUrl]);
 
-  const clampOffset = useCallback(
-    (next: { x: number; y: number }, zoom: number) => {
-      if (!baseSize || !imageContainerRef.current) {
-        return next;
-      }
-      const container = imageContainerRef.current.getBoundingClientRect();
-      const maxX = Math.max(0, (baseSize.width * zoom - container.width) / 2);
-      const maxY = Math.max(0, (baseSize.height * zoom - container.height) / 2);
-      return {
-        x: Math.min(maxX, Math.max(-maxX, next.x)),
-        y: Math.min(maxY, Math.max(-maxY, next.y))
-      };
-    },
-    [baseSize]
-  );
-
-  useEffect(() => {
-    setImageOffset((current) => clampOffset(current, imageZoom));
-  }, [imageZoom, clampOffset]);
-
-  useEffect(() => {
-    if (!isDragging) {
-      return;
-    }
-    const handleMove = (event: PointerEvent) => {
-      if (!dragStateRef.current) {
-        return;
-      }
-      const dx = event.clientX - dragStateRef.current.startX;
-      const dy = event.clientY - dragStateRef.current.startY;
-      const next = {
-        x: dragStateRef.current.originX + dx,
-        y: dragStateRef.current.originY + dy
-      };
-      setImageOffset(clampOffset(next, imageZoom));
-    };
-    const handleUp = () => {
-      setIsDragging(false);
-      dragStateRef.current = null;
-    };
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    return () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-    };
-  }, [clampOffset, imageZoom, isDragging]);
 
   const handleReactionSelect = useCallback(
     (reaction: ReactionInput) => {
@@ -835,8 +791,7 @@ export const TimelineItem = ({
                     type="button"
                     className="attachment-thumb"
                     onClick={() => {
-                      setImageZoom(1);
-                      setImageOffset({ x: 0, y: 0 });
+                      resetImageZoom();
                       setActiveImageIndex(index);
                     }}
                     aria-label={item.description ? `이미지 보기: ${item.description}` : "이미지 보기"}
@@ -964,35 +919,9 @@ export const TimelineItem = ({
               style={{
                 transform: `scale(${imageZoom}) translate(${imageOffset.x / imageZoom}px, ${imageOffset.y / imageZoom}px)`
               }}
-              onWheel={(event) => {
-                event.preventDefault();
-                const delta = event.deltaY > 0 ? -0.1 : 0.1;
-                setImageZoom((current) => Math.min(3, Math.max(0.6, current + delta)));
-              }}
-              onLoad={() => {
-                setImageZoom(1);
-                setImageOffset({ x: 0, y: 0 });
-                requestAnimationFrame(() => {
-                  if (!imageRef.current) {
-                    return;
-                  }
-                  const rect = imageRef.current.getBoundingClientRect();
-                  setBaseSize({ width: rect.width, height: rect.height });
-                });
-              }}
-              onPointerDown={(event) => {
-                if (event.button !== 0) {
-                  return;
-                }
-                event.preventDefault();
-                dragStateRef.current = {
-                  startX: event.clientX,
-                  startY: event.clientY,
-                  originX: imageOffset.x,
-                  originY: imageOffset.y
-                };
-                setIsDragging(true);
-              }}
+              onWheel={handleWheel}
+              onLoad={handleImageLoad}
+              onPointerDown={handlePointerDown}
             />
             {attachments.length > 1 ? (
               <div className="image-modal-counter">

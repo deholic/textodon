@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Account, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { useEmojiManager } from "../hooks/useEmojiManager";
+import { useImageZoom } from "../hooks/useImageZoom";
 import {
   calculateCharacterCount,
   getCharacterLimit,
@@ -59,17 +60,21 @@ export const ComposeBox = ({
     { id: string; file: File; previewUrl: string }[]
   >([]);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
-  const [imageZoom, setImageZoom] = useState(1);
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 });
-  const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const cwInputRef = useRef<HTMLInputElement | null>(null);
-  const dragStateRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
-    null
-  );
+
+  // useImageZoom 훅 사용
+  const {
+    zoom: imageZoom,
+    offset: imageOffset,
+    isDragging,
+    handleWheel,
+    handleImageLoad,
+    handlePointerDown,
+    reset: resetImageZoom
+  } = useImageZoom(imageContainerRef, imageRef);
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(true);
 
@@ -104,54 +109,6 @@ export const ComposeBox = ({
       document.body.style.overflow = previous;
     };
   }, [activeImage]);
-
-  const clampOffset = useCallback(
-    (next: { x: number; y: number }, zoom: number) => {
-      if (!baseSize || !imageContainerRef.current) {
-        return next;
-      }
-      const container = imageContainerRef.current.getBoundingClientRect();
-      const maxX = Math.max(0, (baseSize.width * zoom - container.width) / 2);
-      const maxY = Math.max(0, (baseSize.height * zoom - container.height) / 2);
-      return {
-        x: Math.min(maxX, Math.max(-maxX, next.x)),
-        y: Math.min(maxY, Math.max(-maxY, next.y))
-      };
-    },
-    [baseSize]
-  );
-
-  useEffect(() => {
-    setImageOffset((current) => clampOffset(current, imageZoom));
-  }, [imageZoom, clampOffset]);
-
-  useEffect(() => {
-    if (!isDragging) {
-      return;
-    }
-    const handleMove = (event: PointerEvent) => {
-      if (!dragStateRef.current) {
-        return;
-      }
-      const dx = event.clientX - dragStateRef.current.startX;
-      const dy = event.clientY - dragStateRef.current.startY;
-      const next = {
-        x: dragStateRef.current.originX + dx,
-        y: dragStateRef.current.originY + dy
-      };
-      setImageOffset(clampOffset(next, imageZoom));
-    };
-    const handleUp = () => {
-      setIsDragging(false);
-      dragStateRef.current = null;
-    };
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    return () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-    };
-  }, [clampOffset, imageZoom, isDragging]);
 
   useEffect(() => {
     localStorage.setItem(VISIBILITY_KEY, visibility);
@@ -410,8 +367,7 @@ export const ComposeBox = ({
                   type="button"
                   className="attachment-thumb"
                   onClick={() => {
-                    setImageZoom(1);
-                    setImageOffset({ x: 0, y: 0 });
+                    resetImageZoom();
                     setActiveImageId(item.id);
                   }}
                   aria-label="이미지 미리보기"
@@ -608,35 +564,9 @@ export const ComposeBox = ({
               style={{
                 transform: `scale(${imageZoom}) translate(${imageOffset.x / imageZoom}px, ${imageOffset.y / imageZoom}px)`
               }}
-              onWheel={(event) => {
-                event.preventDefault();
-                const delta = event.deltaY > 0 ? -0.1 : 0.1;
-                setImageZoom((current) => Math.min(3, Math.max(0.6, current + delta)));
-              }}
-              onLoad={() => {
-                setImageZoom(1);
-                setImageOffset({ x: 0, y: 0 });
-                requestAnimationFrame(() => {
-                  if (!imageRef.current) {
-                    return;
-                  }
-                  const rect = imageRef.current.getBoundingClientRect();
-                  setBaseSize({ width: rect.width, height: rect.height });
-                });
-              }}
-              onPointerDown={(event) => {
-                if (event.button !== 0) {
-                  return;
-                }
-                event.preventDefault();
-                dragStateRef.current = {
-                  startX: event.clientX,
-                  startY: event.clientY,
-                  originX: imageOffset.x,
-                  originY: imageOffset.y
-                };
-                setIsDragging(true);
-              }}
+              onWheel={handleWheel}
+              onLoad={handleImageLoad}
+              onPointerDown={handlePointerDown}
             />
           </div>
         </div>
