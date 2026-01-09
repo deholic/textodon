@@ -824,6 +824,7 @@ export const TimelineItem = ({
                   avatarClassName="status-avatar"
                   avatarFallbackClassName="status-avatar-fallback"
                   textAsDiv={true}
+                  boldName={true}
                   className=""
                 />
               </header>

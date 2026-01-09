@@ -39,6 +39,8 @@ export interface AccountLabelProps {
   customNameNode?: React.ReactNode;
   /** 텍스트를 별도 div로 렌더링 (기본값: false, span 사용) */
   textAsDiv?: boolean;
+  /** 이름을 굵게 표시할지 여부 (기본값: false) */
+  boldName?: boolean;
 }
 
 /**
@@ -64,7 +66,8 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
   avatarSize = 32,
   ariaLabel,
   customNameNode,
-  textAsDiv = false
+  textAsDiv = false,
+  boldName = false
 }) => {
   const effectiveDisplayName = displayName || name || instanceUrl || "알 수 없음";
   const isInteractive = !!(onClick || accountUrl);
@@ -107,9 +110,10 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
   }
 
   const TextContainer = textAsDiv ? "div" : "span";
+  const nameContent = customNameNode || effectiveDisplayName;
   const textContent = (
     <TextContainer className={textContainerClassName}>
-      <strong>{customNameNode || effectiveDisplayName}</strong>
+      {boldName ? <strong>{nameContent}</strong> : <span>{nameContent}</span>}
       {handle ? <span className={handleClassName}>@{handle}</span> : null}
     </TextContainer>
   );
