@@ -23,12 +23,22 @@ export interface AccountLabelProps {
   hideAvatar?: boolean;
   /** 커스텀 클래스 이름 */
   className?: string;
+  /** 아바타 컨테이너 클래스 이름 (기본값: "account-avatar") */
+  avatarClassName?: string;
+  /** 아바타 폴백 클래스 이름 (기본값: "account-avatar-fallback") */
+  avatarFallbackClassName?: string;
+  /** 텍스트 컨테이너 클래스 이름 (기본값: "account-text") */
+  textContainerClassName?: string;
+  /** 핸들 클래스 이름 (기본값: "account-handle") */
+  handleClassName?: string;
   /** 아바타 크기 (기본값: 32px) */
   avatarSize?: number;
   /** 아리아 레이블 */
   ariaLabel?: string;
   /** 커스텀 이름 렌더링 (이모지 등 HTML 포함) */
   customNameNode?: React.ReactNode;
+  /** 텍스트를 별도 div로 렌더링 (기본값: false, span 사용) */
+  textAsDiv?: boolean;
 }
 
 /**
@@ -47,16 +57,21 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
   avatarOnly = false,
   hideAvatar = false,
   className = "",
+  avatarClassName = "account-avatar",
+  avatarFallbackClassName = "account-avatar-fallback",
+  textContainerClassName = "account-text",
+  handleClassName = "account-handle",
   avatarSize = 32,
   ariaLabel,
-  customNameNode
+  customNameNode,
+  textAsDiv = false
 }) => {
   const effectiveDisplayName = displayName || name || instanceUrl || "알 수 없음";
   const isInteractive = !!(onClick || accountUrl);
 
   const avatarElement = !hideAvatar ? (
     <span
-      className="account-avatar"
+      className={avatarClassName}
       aria-hidden="true"
       style={
         avatarSize !== 32
@@ -70,7 +85,7 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
       {avatarUrl ? (
         <img src={avatarUrl} alt="" loading="lazy" />
       ) : (
-        <span className="account-avatar-fallback" />
+        <span className={avatarFallbackClassName} />
       )}
     </span>
   ) : null;
@@ -91,11 +106,12 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
     );
   }
 
+  const TextContainer = textAsDiv ? "div" : "span";
   const textContent = (
-    <span className="account-text">
-      <span>{customNameNode || effectiveDisplayName}</span>
-      {handle ? <span className="account-handle">@{handle}</span> : null}
-    </span>
+    <TextContainer className={textContainerClassName}>
+      <strong>{customNameNode || effectiveDisplayName}</strong>
+      {handle ? <span className={handleClassName}>@{handle}</span> : null}
+    </TextContainer>
   );
 
   return (
