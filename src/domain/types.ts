@@ -43,6 +43,13 @@ export type Reaction = {
   host: string | null;
 };
 
+export type ReactionInput = {
+  name: string;
+  url: string | null;
+  isCustom: boolean;
+  host: string | null;
+};
+
 export type NotificationActor = {
   name: string;
   handle: string;

@@ -254,6 +254,14 @@ export class MastodonHttpClient implements MastodonApi {
     return this.postAction(account, statusId, "unfavourite");
   }
 
+  async createReaction(_account: Account, _statusId: string, _reaction: string): Promise<Status> {
+    throw new Error("리액션은 미스키 계정에서만 사용할 수 있습니다.");
+  }
+
+  async deleteReaction(_account: Account, _statusId: string): Promise<Status> {
+    throw new Error("리액션은 미스키 계정에서만 사용할 수 있습니다.");
+  }
+
   async reblog(account: Account, statusId: string): Promise<Status> {
     return this.postAction(account, statusId, "reblog");
   }

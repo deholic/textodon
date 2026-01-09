@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { Account, Status, ThreadContext } from "../../domain/types";
+import type { MastodonApi } from "../../services/MastodonApi";
 import { TimelineItem } from "./TimelineItem";
 import boostIconUrl from "../assets/boost-icon.svg";
 
@@ -23,7 +24,7 @@ export const StatusModal = ({
   status: Status;
   account: Account | null;
   threadAccount: Account | null;
-  api: any; // UnifiedApiClient
+  api: MastodonApi;
   onClose: () => void;
   onReply: (status: Status) => void;
   onToggleFavourite: (status: Status) => void;
@@ -115,10 +116,13 @@ export const StatusModal = ({
                     activeHandle={activeHandle}
                     activeAccountHandle={activeAccountHandle}
                     activeAccountUrl={activeAccountUrl}
+                    account={account}
+                    api={api}
                     showProfileImage={showProfileImage}
                     showCustomEmojis={showCustomEmojis}
                     showReactions={showReactions}
                     disableActions={!account}
+                    enableReactionActions={false}
                   />
                 </div>
               ))}
@@ -141,10 +145,13 @@ export const StatusModal = ({
             activeHandle={activeHandle}
             activeAccountHandle={activeAccountHandle}
             activeAccountUrl={activeAccountUrl}
+            account={account}
+            api={api}
             showProfileImage={showProfileImage}
             showCustomEmojis={showCustomEmojis}
             showReactions={showReactions}
             disableActions={!account}
+            enableReactionActions={false}
           />
           
           {/* 스레드 컨텍스트 - 후손 게시물들 */}
@@ -166,10 +173,13 @@ export const StatusModal = ({
                     activeHandle={activeHandle}
                     activeAccountHandle={activeAccountHandle}
                     activeAccountUrl={activeAccountUrl}
+                    account={account}
+                    api={api}
                     showProfileImage={showProfileImage}
                     showCustomEmojis={showCustomEmojis}
                     showReactions={showReactions}
                     disableActions={!account}
+                    enableReactionActions={false}
                   />
                 </div>
               ))}
