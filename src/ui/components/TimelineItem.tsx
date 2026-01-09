@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CustomEmoji, Status } from "../../domain/types";
+import type { Account, CustomEmoji, ReactionInput, Status } from "../../domain/types";
+import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
+import { ReactionPicker } from "./ReactionPicker";
 
 export const TimelineItem = ({
   status,
@@ -11,21 +13,28 @@ export const TimelineItem = ({
   onToggleFavourite,
   onToggleReblog,
   onDelete,
+  onReact,
   onStatusClick,
+  account,
+  api,
   activeHandle,
   activeAccountHandle,
   activeAccountUrl,
   showProfileImage,
   showCustomEmojis,
   showReactions,
-  disableActions = false
+  disableActions = false,
+  enableReactionActions = true
 }: {
   status: Status;
   onReply: (status: Status) => void;
   onToggleFavourite: (status: Status) => void;
   onToggleReblog: (status: Status) => void;
   onDelete: (status: Status) => void;
+  onReact?: (status: Status, reaction: ReactionInput) => void;
   onStatusClick?: (status: Status) => void;
+  account: Account | null;
+  api: MastodonApi;
   activeHandle: string;
   activeAccountHandle: string;
   activeAccountUrl: string | null;
@@ -33,6 +42,7 @@ export const TimelineItem = ({
   showCustomEmojis: boolean;
   showReactions: boolean;
   disableActions?: boolean;
+  enableReactionActions?: boolean;
 }) => {
   const notification = status.notification;
   const displayStatus = notification?.target ?? status.reblog ?? status;
@@ -525,6 +535,12 @@ export const TimelineItem = ({
     !displayStatus.reblogged && (isOwnStatus || displayStatus.visibility === "private" || displayStatus.visibility === "direct");
   const shouldShowReactions = showReactions && displayStatus.reactions.length > 0;
   const actionsEnabled = !disableActions;
+  const canReact =
+    Boolean(onReact) &&
+    enableReactionActions &&
+    actionsEnabled &&
+    showReactions &&
+    account?.platform === "misskey";
   const hasAttachmentButtons = showContent && attachments.length > 0;
   const shouldRenderFooter = actionsEnabled || hasAttachmentButtons;
 
@@ -590,6 +606,16 @@ export const TimelineItem = ({
       window.removeEventListener("pointerup", handleUp);
     };
   }, [clampOffset, imageZoom, isDragging]);
+
+  const handleReactionSelect = useCallback(
+    (reaction: ReactionInput) => {
+      if (!canReact || !onReact) {
+        return;
+      }
+      onReact(displayStatus, reaction);
+    },
+    [canReact, displayStatus, onReact]
+  );
 
   return (
     <article className="status">
@@ -756,10 +782,21 @@ export const TimelineItem = ({
             const label = formatReactionLabel(reaction);
             const isMine = displayStatus.myReaction === reaction.name;
             return (
-              <span
+              <button
                 key={reaction.name}
+                type="button"
                 className={`status-reaction${isMine ? " is-active" : ""}`}
                 title={`${label} ${reaction.count}회`}
+                aria-label={`${label} 리액션 ${isMine ? "취소" : "추가"}`}
+                onClick={() =>
+                  handleReactionSelect({
+                    name: reaction.name,
+                    url: reaction.url,
+                    isCustom: reaction.isCustom,
+                    host: reaction.host
+                  })
+                }
+                disabled={!canReact}
               >
                 {reaction.url ? (
                   <img
@@ -774,7 +811,7 @@ export const TimelineItem = ({
                   </span>
                 )}
                 <span className="status-reaction-count">{reaction.count}</span>
-              </span>
+              </button>
             );
           })}
         </div>
@@ -787,14 +824,16 @@ export const TimelineItem = ({
                 <button type="button" onClick={() => onReply(displayStatus)}>
                   답글
                 </button>
-                <button
-                  type="button"
-                  className={displayStatus.favourited ? "is-active" : undefined}
-                  onClick={() => onToggleFavourite(displayStatus)}
-                >
-                  {displayStatus.favourited ? "좋아요 취소" : "좋아요"}
-                  {displayStatus.favouritesCount > 0 ? ` (${displayStatus.favouritesCount})` : ""}
-                </button>
+                {account?.platform !== "misskey" ? (
+                  <button
+                    type="button"
+                    className={displayStatus.favourited ? "is-active" : undefined}
+                    onClick={() => onToggleFavourite(displayStatus)}
+                  >
+                    {displayStatus.favourited ? "좋아요 취소" : "좋아요"}
+                    {displayStatus.favouritesCount > 0 ? ` (${displayStatus.favouritesCount})` : ""}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className={displayStatus.reblogged ? "is-active" : undefined}
@@ -805,6 +844,14 @@ export const TimelineItem = ({
                   {displayStatus.reblogged ? "부스트 취소" : "부스트"}
                   {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}
                 </button>
+                {canReact ? (
+                  <ReactionPicker
+                    account={account}
+                    api={api}
+                    onSelect={handleReactionSelect}
+                    disabled={Boolean(displayStatus.myReaction)}
+                  />
+                ) : null}
               </>
             ) : null}
             {showContent

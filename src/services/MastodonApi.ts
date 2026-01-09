@@ -19,6 +19,8 @@ export interface MastodonApi {
   deleteStatus(account: Account, statusId: string): Promise<void>;
   favourite(account: Account, statusId: string): Promise<Status>;
   unfavourite(account: Account, statusId: string): Promise<Status>;
+  createReaction(account: Account, statusId: string, reaction: string): Promise<Status>;
+  deleteReaction(account: Account, statusId: string): Promise<Status>;
   reblog(account: Account, statusId: string): Promise<Status>;
   unreblog(account: Account, statusId: string): Promise<Status>;
   fetchInstanceInfo(account: Account): Promise<InstanceInfo>;

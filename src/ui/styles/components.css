@@ -1220,12 +1220,20 @@ button.ghost {
   border: 1px solid var(--color-reaction-border);
   font-size: 13px;
   line-height: 1.2;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
 }
 
 .status-reaction.is-active {
   background: var(--color-reaction-active-bg);
   border-color: var(--color-reaction-active-border);
   color: var(--color-reaction-active-text);
+}
+
+.status-reaction:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 .status-reaction-emoji {
@@ -1359,6 +1367,22 @@ button.ghost {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.reaction-picker {
+  position: relative;
+}
+
+.reaction-picker-panel {
+  position: fixed;
+  z-index: 20;
+}
+
+.reaction-emoji-panel {
+  margin-top: 0;
+  width: min(320px, 85vw);
+  max-height: 320px;
+  box-shadow: var(--shadow-section-menu);
 }
 
 .delete-button {

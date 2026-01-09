@@ -277,6 +277,19 @@ export class MisskeyHttpClient implements MastodonApi {
     return this.fetchNote(account, statusId);
   }
 
+  async createReaction(account: Account, statusId: string, reaction: string): Promise<Status> {
+    await this.postSimple(account, "/api/notes/reactions/create", {
+      noteId: statusId,
+      reaction
+    });
+    return this.fetchNote(account, statusId);
+  }
+
+  async deleteReaction(account: Account, statusId: string): Promise<Status> {
+    await this.postSimple(account, "/api/notes/reactions/delete", { noteId: statusId });
+    return this.fetchNote(account, statusId);
+  }
+
   async reblog(account: Account, statusId: string): Promise<Status> {
     await this.postSimple(account, "/api/notes/create", { renoteId: statusId });
     return this.fetchNote(account, statusId);
