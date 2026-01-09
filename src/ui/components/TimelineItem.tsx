@@ -6,6 +6,7 @@ import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
 import { ReactionPicker } from "./ReactionPicker";
+import { useClickOutside } from "../hooks/useClickOutside";
 
 export const TimelineItem = ({
   status,
@@ -241,30 +242,7 @@ export const TimelineItem = ({
     [displayStatus.accountUrl]
   );
 
-  useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-    const handleClick = (event: MouseEvent) => {
-      if (!menuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (!menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("click", handleClick);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("click", handleClick);
-    };
-  }, [menuOpen]);
+  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   const handleOpenOrigin = useCallback(() => {
     if (!originUrl) {
@@ -703,7 +681,7 @@ export const TimelineItem = ({
             </span>
           </div>
         </div>
-        <div className="status-menu section-menu" ref={menuRef}>
+        <div className="status-menu section-menu">
           <button
             type="button"
             className="icon-button"
@@ -720,12 +698,8 @@ export const TimelineItem = ({
           </button>
           {menuOpen ? (
             <>
-              <div
-                className="overlay-backdrop"
-                onClick={() => setMenuOpen(false)}
-                aria-hidden="true"
-              />
-              <div className="section-menu-panel status-menu-panel" role="menu">
+              <div className="overlay-backdrop" aria-hidden="true" />
+              <div ref={menuRef} className="section-menu-panel status-menu-panel" role="menu">
                 <button type="button" onClick={handleOpenOrigin} disabled={!originUrl}>
                   원본 서버에서 보기
                 </button>

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Account, CustomEmoji, ReactionInput } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { getCachedEmojis, setCachedEmojis } from "../utils/emojiCache";
+import { useClickOutside } from "../hooks/useClickOutside";
 
 const RECENT_EMOJI_KEY_PREFIX = "textodon.compose.recentEmojis.";
 const RECENT_EMOJI_LIMIT = 24;
@@ -163,34 +164,7 @@ export const ReactionPicker = ({
     };
   }, [account, api, emojiState, open]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-    const handleClick = (event: MouseEvent) => {
-      if (!(event.target instanceof Node)) {
-        return;
-      }
-      if (buttonRef.current?.contains(event.target)) {
-        return;
-      }
-      if (panelRef.current?.contains(event.target)) {
-        return;
-      }
-      setOpen(false);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("mousedown", handleClick);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("mousedown", handleClick);
-    };
-  }, [open]);
+  useClickOutside(panelRef, open, () => setOpen(false), [buttonRef]);
 
   useEffect(() => {
     if (!open) {
@@ -313,7 +287,7 @@ export const ReactionPicker = ({
       </button>
       {open ? (
         <>
-          <div className="overlay-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
+          <div className="overlay-backdrop" aria-hidden="true" />
           <div
             className="reaction-picker-panel"
             role="dialog"

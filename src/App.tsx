@@ -6,6 +6,7 @@ import { ComposeBox } from "./ui/components/ComposeBox";
 import { StatusModal } from "./ui/components/StatusModal";
 import { TimelineItem } from "./ui/components/TimelineItem";
 import { useTimeline } from "./ui/hooks/useTimeline";
+import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle } from "./ui/utils/account";
@@ -349,80 +350,11 @@ const TimelineSection = ({
     };
   }, [account, registerTimelineListener, timeline.updateItem, timelineType, unregisterTimelineListener]);
 
-  useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (!menuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest(".overlay-backdrop")
-      ) {
-        setMenuOpen(false);
-        return;
-      }
-      if (!menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [menuOpen]);
+  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
-  useEffect(() => {
-    if (!timelineMenuOpen) {
-      return;
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (!timelineMenuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest(".overlay-backdrop")
-      ) {
-        setTimelineMenuOpen(false);
-        return;
-      }
-      if (!timelineMenuRef.current.contains(event.target)) {
-        setTimelineMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [timelineMenuOpen]);
+  useClickOutside(timelineMenuRef, timelineMenuOpen, () => setTimelineMenuOpen(false));
 
-  useEffect(() => {
-    if (!notificationsOpen) {
-      return;
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (!notificationMenuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest(".overlay-backdrop")
-      ) {
-        setNotificationsOpen(false);
-        return;
-      }
-      if (!notificationMenuRef.current.contains(event.target)) {
-        setNotificationsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [notificationsOpen]);
+  useClickOutside(notificationMenuRef, notificationsOpen, () => setNotificationsOpen(false));
 
   useEffect(() => {
     if (!notificationsOpen) {
@@ -542,7 +474,7 @@ const TimelineSection = ({
           variant="inline"
         />
         <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
-          <div className="timeline-selector" ref={timelineMenuRef}>
+          <div className="timeline-selector">
             <button
               type="button"
               className="timeline-selector-button"
@@ -566,12 +498,9 @@ const TimelineSection = ({
             </button>
             {timelineMenuOpen ? (
               <>
+                <div className="overlay-backdrop" aria-hidden="true" />
                 <div
-                  className="overlay-backdrop"
-                  onClick={() => setTimelineMenuOpen(false)}
-                  aria-hidden="true"
-                />
-                <div
+                  ref={timelineMenuRef}
                   className="section-menu-panel timeline-selector-panel"
                   role="menu"
                   aria-label="타임라인 선택"
@@ -598,7 +527,7 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
-          <div className="notification-menu" ref={notificationMenuRef}>
+          <div className="notification-menu">
             <button
               type="button"
               className={`icon-button${notificationsOpen ? " is-active" : ""}`}
@@ -628,12 +557,8 @@ const TimelineSection = ({
             </button>
             {notificationsOpen ? (
               <>
-                <div
-                  className="overlay-backdrop"
-                  onClick={() => setNotificationsOpen(false)}
-                  aria-hidden="true"
-                />
-                <div className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
+                <div className="overlay-backdrop" aria-hidden="true" />
+                <div ref={notificationMenuRef} className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
                   <div className="notification-popover-header">
                     <button
                       type="button"
@@ -685,7 +610,7 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
-          <div className="section-menu" ref={menuRef}>
+          <div className="section-menu">
             <button
               type="button"
               className="icon-button menu-button"
@@ -704,12 +629,8 @@ const TimelineSection = ({
             </button>
             {menuOpen ? (
               <>
-                <div
-                  className="overlay-backdrop"
-                  onClick={() => setMenuOpen(false)}
-                  aria-hidden="true"
-                />
-                <div className="section-menu-panel" role="menu">
+                <div className="overlay-backdrop" aria-hidden="true" />
+                <div ref={menuRef} className="section-menu-panel" role="menu">
                   <button
                     type="button"
                     onClick={() => {
