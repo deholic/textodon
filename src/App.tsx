@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Account, Status, TimelineType } from "./domain/types";
+import type { Account, Reaction, ReactionInput, Status, TimelineType } from "./domain/types";
 import { AccountAdd } from "./ui/components/AccountAdd";
 import { AccountSelector } from "./ui/components/AccountSelector";
 import { ComposeBox } from "./ui/components/ComposeBox";
@@ -43,6 +43,85 @@ const PageHeader = ({ title }: { title: string }) => (
     <h2>{title}</h2>
   </div>
 );
+
+const sortReactions = (reactions: Reaction[]) =>
+  [...reactions].sort((a, b) => {
+    if (a.count === b.count) {
+      return a.name.localeCompare(b.name);
+    }
+    return b.count - a.count;
+  });
+
+const buildReactionSignature = (reactions: Reaction[]) =>
+  sortReactions(reactions).map((reaction) =>
+    [reaction.name, reaction.count, reaction.url ?? "", reaction.isCustom ? "1" : "0", reaction.host ?? ""].join("|")
+  );
+
+const hasSameReactions = (left: Status, right: Status) => {
+  if (left.myReaction !== right.myReaction) {
+    return false;
+  }
+  const leftSig = buildReactionSignature(left.reactions);
+  const rightSig = buildReactionSignature(right.reactions);
+  if (leftSig.length !== rightSig.length) {
+    return false;
+  }
+  return leftSig.every((value, index) => value === rightSig[index]);
+};
+
+const adjustReactionCount = (
+  reactions: Reaction[],
+  name: string,
+  delta: number,
+  fallback?: ReactionInput
+) => {
+  let updated = false;
+  const next = reactions
+    .map((reaction) => {
+      if (reaction.name !== name) {
+        return reaction;
+      }
+      updated = true;
+      const count = reaction.count + delta;
+      if (count <= 0) {
+        return null;
+      }
+      return { ...reaction, count };
+    })
+    .filter((reaction): reaction is Reaction => reaction !== null);
+
+  if (!updated && delta > 0 && fallback) {
+    next.push({ ...fallback, count: delta });
+  }
+
+  return next;
+};
+
+const buildOptimisticReactionStatus = (
+  status: Status,
+  reaction: ReactionInput,
+  remove: boolean
+): Status => {
+  let nextReactions = status.reactions;
+  if (remove) {
+    nextReactions = adjustReactionCount(nextReactions, reaction.name, -1);
+  } else {
+    if (status.myReaction && status.myReaction !== reaction.name) {
+      nextReactions = adjustReactionCount(nextReactions, status.myReaction, -1);
+    }
+    nextReactions = adjustReactionCount(nextReactions, reaction.name, 1, reaction);
+  }
+  const sorted = sortReactions(nextReactions);
+  const favouritesCount = sorted.reduce((sum, item) => sum + item.count, 0);
+  const myReaction = remove ? null : reaction.name;
+  return {
+    ...status,
+    reactions: sorted,
+    myReaction,
+    favouritesCount,
+    favourited: Boolean(myReaction)
+  };
+};
 
 const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
   switch (timeline) {
@@ -151,6 +230,7 @@ const TimelineSection = ({
   onReply,
   onStatusClick,
   onCloseStatusModal,
+  onReact,
   onError,
   onMoveSection,
   canMoveLeft,
@@ -174,6 +254,7 @@ const TimelineSection = ({
   onRemoveSection: (sectionId: string) => void;
   onReply: (status: Status, account: Account | null) => void;
   onStatusClick: (status: Status, columnAccount: Account | null) => void;
+  onReact: (account: Account | null, status: Status, reaction: ReactionInput) => void;
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
@@ -420,6 +501,13 @@ const TimelineSection = ({
     }
   };
 
+  const handleReact = useCallback(
+    (status: Status, reaction: ReactionInput) => {
+      onReact(account, status, reaction);
+    },
+    [account, onReact]
+  );
+
   const handleDeleteStatus = async (status: Status) => {
     if (!account) {
       return;
@@ -575,11 +663,14 @@ const TimelineSection = ({
                              onToggleFavourite={handleToggleFavourite}
                             onToggleReblog={handleToggleReblog}
                             onDelete={handleDeleteStatus}
+                            onReact={handleReact}
                             activeHandle={
                               account?.handle ? formatHandle(account.handle, account.instanceUrl) : account?.instanceUrl ?? ""
                             }
                             activeAccountHandle={account?.handle ?? ""}
                             activeAccountUrl={account?.url ?? null}
+                            account={account}
+                            api={services.api}
                             showProfileImage={showProfileImage}
                             showCustomEmojis={showCustomEmojis}
                             showReactions={showReactions}
@@ -701,11 +792,14 @@ const TimelineSection = ({
                  onToggleFavourite={handleToggleFavourite}
                 onToggleReblog={handleToggleReblog}
                 onDelete={handleDeleteStatus}
+                onReact={handleReact}
                 activeHandle={
                   account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
                 }
                 activeAccountHandle={account.handle ?? ""}
                 activeAccountUrl={account.url ?? null}
+                account={account}
+                api={services.api}
                 showProfileImage={showProfileImage}
                 showCustomEmojis={showCustomEmojis}
                 showReactions={showReactions}
@@ -880,6 +974,14 @@ export const App = () => {
     }
     listeners.forEach((listener) => listener(status));
   }, []);
+
+  const updateStatusEverywhere = useCallback(
+    (accountId: string, status: Status) => {
+      broadcastStatusUpdate(accountId, status);
+      setSelectedStatus((current) => (current && current.id === status.id ? status : current));
+    },
+    [broadcastStatusUpdate]
+  );
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
@@ -1211,6 +1313,39 @@ export const App = () => {
     setSelectedStatus(null);
   };
 
+  const handleReaction = useCallback(
+    async (account: Account | null, status: Status, reaction: ReactionInput) => {
+      if (!account) {
+        setActionError("계정을 선택해주세요.");
+        return;
+      }
+      if (account.platform !== "misskey") {
+        setActionError("리액션은 미스키 계정에서만 사용할 수 있습니다.");
+        return;
+      }
+      if (status.myReaction && status.myReaction !== reaction.name) {
+        setActionError("이미 리액션을 남겼습니다. 먼저 취소해주세요.");
+        return;
+      }
+      setActionError(null);
+      const isRemoving = status.myReaction === reaction.name;
+      const optimistic = buildOptimisticReactionStatus(status, reaction, isRemoving);
+      updateStatusEverywhere(account.id, optimistic);
+      try {
+      const updated = isRemoving
+          ? await services.api.deleteReaction(account, status.id)
+          : await services.api.createReaction(account, status.id, reaction.name);
+        if (!hasSameReactions(updated, optimistic)) {
+          updateStatusEverywhere(account.id, updated);
+        }
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "리액션 처리에 실패했습니다.");
+        updateStatusEverywhere(account.id, status);
+      }
+    },
+    [services.api, updateStatusEverywhere]
+  );
+
   const composeAccountSelector = (
     <AccountSelector
       accounts={accountsState.accounts}
@@ -1439,8 +1574,9 @@ onAccountChange={setSectionAccount}
                            onAddSectionLeft={(id) => addSectionNear(id, "left")}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
-                           onReply={handleReply}
+                          onReply={handleReply}
                             onStatusClick={handleStatusClick}
+                           onReact={handleReaction}
                            columnAccount={sectionAccount}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}

@@ -53,6 +53,14 @@ export class UnifiedApiClient implements MastodonApi {
     return this.getClient(account).unfavourite(account, statusId);
   }
 
+  createReaction(account: Account, statusId: string, reaction: string) {
+    return this.getClient(account).createReaction(account, statusId, reaction);
+  }
+
+  deleteReaction(account: Account, statusId: string) {
+    return this.getClient(account).deleteReaction(account, statusId);
+  }
+
   reblog(account: Account, statusId: string) {
     return this.getClient(account).reblog(account, statusId);
   }

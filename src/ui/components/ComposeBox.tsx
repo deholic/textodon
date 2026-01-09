@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
+import { getCachedEmojis, setCachedEmojis } from "../utils/emojiCache";
 import { 
   calculateCharacterCount, 
   getCharacterLimit, 
@@ -300,6 +301,15 @@ export const ComposeBox = ({
     if (!activeInstanceUrl) {
       return;
     }
+    const cached = getCachedEmojis(activeInstanceUrl);
+    if (cached) {
+      setEmojiCatalogs((current) => ({
+        ...current,
+        [activeInstanceUrl]: cached
+      }));
+      setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loaded" }));
+      setEmojiErrors((current) => ({ ...current, [activeInstanceUrl]: null }));
+    }
     setRecentByInstance((current) => {
       if (current[activeInstanceUrl]) {
         return current;
@@ -321,11 +331,19 @@ export const ComposeBox = ({
     if (emojiStatus === "loaded") {
       return;
     }
+    const cached = getCachedEmojis(activeInstanceUrl);
+    if (cached) {
+      setEmojiCatalogs((current) => ({ ...current, [activeInstanceUrl]: cached }));
+      setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loaded" }));
+      setEmojiErrors((current) => ({ ...current, [activeInstanceUrl]: null }));
+      return;
+    }
     setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loading" }));
     setEmojiErrors((current) => ({ ...current, [activeInstanceUrl]: null }));
     const load = async () => {
       try {
         const emojis = await api.fetchCustomEmojis(account);
+        setCachedEmojis(activeInstanceUrl, emojis);
         setEmojiCatalogs((current) => ({ ...current, [activeInstanceUrl]: emojis }));
         setEmojiLoadState((current) => ({ ...current, [activeInstanceUrl]: "loaded" }));
       } catch (err) {
@@ -763,5 +781,4 @@ export const ComposeBox = ({
     </section>
   );
 };
-
 
