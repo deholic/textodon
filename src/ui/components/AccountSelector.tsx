@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Account } from "../../domain/types";
 import { formatHandle } from "../utils/account";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { AccountLabel } from "./AccountLabel";
 
 export const AccountSelector = ({
   accounts,
@@ -40,23 +41,13 @@ export const AccountSelector = ({
         >
           <summary className="account-selector-summary">
             {activeAccount ? (
-              <span className="account-label">
-                <span className="account-avatar" aria-hidden="true">
-                  {activeAccount.avatarUrl ? (
-                    <img src={activeAccount.avatarUrl} alt="" loading="lazy" />
-                  ) : (
-                    <span className="account-avatar-fallback" />
-                  )}
-                </span>
-                <span className="account-text">
-                  <span>{activeAccount.displayName || activeAccount.name || activeAccount.instanceUrl}</span>
-                  {activeAccount.handle ? (
-                    <span className="account-handle">
-                      @{formatHandle(activeAccount.handle, activeAccount.instanceUrl)}
-                    </span>
-                  ) : null}
-                </span>
-              </span>
+              <AccountLabel
+                avatarUrl={activeAccount.avatarUrl}
+                displayName={activeAccount.displayName}
+                name={activeAccount.name}
+                handle={activeAccount.handle ? formatHandle(activeAccount.handle, activeAccount.instanceUrl) : undefined}
+                instanceUrl={activeAccount.instanceUrl}
+              />
             ) : (
               <span className="account-selector-placeholder">계정을 선택하세요.</span>
             )}
@@ -79,23 +70,13 @@ export const AccountSelector = ({
                           setDropdownOpen(false);
                         }}
                       >
-                        <span className="account-label">
-                          <span className="account-avatar" aria-hidden="true">
-                            {account.avatarUrl ? (
-                              <img src={account.avatarUrl} alt="" loading="lazy" />
-                            ) : (
-                              <span className="account-avatar-fallback" />
-                            )}
-                          </span>
-                          <span className="account-text">
-                            <span>{account.displayName || account.name || account.instanceUrl}</span>
-                            {account.handle ? (
-                              <span className="account-handle">
-                                @{formatHandle(account.handle, account.instanceUrl)}
-                              </span>
-                            ) : null}
-                          </span>
-                        </span>
+                        <AccountLabel
+                          avatarUrl={account.avatarUrl}
+                          displayName={account.displayName}
+                          name={account.name}
+                          handle={account.handle ? formatHandle(account.handle, account.instanceUrl) : undefined}
+                          instanceUrl={account.instanceUrl}
+                        />
                       </button>
                       <button type="button" onClick={() => removeAccount(account.id)} className="ghost">
                         삭제
