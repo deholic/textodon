@@ -824,14 +824,16 @@ export const TimelineItem = ({
                 <button type="button" onClick={() => onReply(displayStatus)}>
                   답글
                 </button>
-                <button
-                  type="button"
-                  className={displayStatus.favourited ? "is-active" : undefined}
-                  onClick={() => onToggleFavourite(displayStatus)}
-                >
-                  {displayStatus.favourited ? "좋아요 취소" : "좋아요"}
-                  {displayStatus.favouritesCount > 0 ? ` (${displayStatus.favouritesCount})` : ""}
-                </button>
+                {account?.platform !== "misskey" ? (
+                  <button
+                    type="button"
+                    className={displayStatus.favourited ? "is-active" : undefined}
+                    onClick={() => onToggleFavourite(displayStatus)}
+                  >
+                    {displayStatus.favourited ? "좋아요 취소" : "좋아요"}
+                    {displayStatus.favouritesCount > 0 ? ` (${displayStatus.favouritesCount})` : ""}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className={displayStatus.reblogged ? "is-active" : undefined}
