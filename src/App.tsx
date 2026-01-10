@@ -18,7 +18,7 @@ import licenseText from "../LICENSE?raw";
 
 type Route = "home" | "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
-type ProfileTarget = { status: Status; account: Account | null };
+type ProfileTarget = { status: Status; account: Account | null; zIndex: number };
 
 const SECTION_STORAGE_KEY = "textodon.sections";
 const COMPOSE_ACCOUNT_KEY = "textodon.compose.accountId";
@@ -854,6 +854,8 @@ export const App = () => {
   const [replyTarget, setReplyTarget] = useState<Status | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
   const [profileTargets, setProfileTargets] = useState<ProfileTarget[]>([]);
+  const [statusModalZIndex, setStatusModalZIndex] = useState<number | null>(null);
+  const nextModalZIndexRef = useRef(70);
   const [actionError, setActionError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
@@ -1233,12 +1235,14 @@ export const App = () => {
 
   const handleStatusClick = (status: Status, columnAccount: Account | null) => {
     setSelectedStatus(status);
+    setStatusModalZIndex(nextModalZIndexRef.current++);
     // Status에 columnAccount 정보를 임시 저장
     (status as any).__columnAccount = columnAccount;
   };
 
   const handleProfileOpen = useCallback((target: Status, columnAccount: Account | null) => {
-    setProfileTargets((current) => [...current, { status: target, account: columnAccount }]);
+    const zIndex = nextModalZIndexRef.current++;
+    setProfileTargets((current) => [...current, { status: target, account: columnAccount, zIndex }]);
   }, []);
 
   const handleCloseProfileModal = useCallback((index?: number) => {
@@ -1255,6 +1259,7 @@ export const App = () => {
 
   const handleCloseStatusModal = () => {
     setSelectedStatus(null);
+    setStatusModalZIndex(null);
   };
 
   const handleReaction = useCallback(
@@ -1758,6 +1763,7 @@ onAccountChange={setSectionAccount}
           status={target.status}
           account={target.account}
           api={services.api}
+          zIndex={target.zIndex}
           isTopmost={index === profileTargets.length - 1}
           onClose={() => handleCloseProfileModal(index)}
           onReply={handleReply}
@@ -1775,7 +1781,9 @@ onAccountChange={setSectionAccount}
           account={composeAccount}
           threadAccount={(selectedStatus as any).__columnAccount || null}
           api={services.api}
+          zIndex={statusModalZIndex ?? undefined}
           onClose={handleCloseStatusModal}
+          onProfileClick={handleProfileOpen}
           onReply={(status) => {
             if (composeAccount) {
               handleReply(status, composeAccount);

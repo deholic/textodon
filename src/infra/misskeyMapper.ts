@@ -1,4 +1,14 @@
-import type { CustomEmoji, MediaAttachment, Mention, ProfileField, Reaction, Status, UserProfile, Visibility } from "../domain/types";
+import type {
+  AccountRelationship,
+  CustomEmoji,
+  MediaAttachment,
+  Mention,
+  ProfileField,
+  Reaction,
+  Status,
+  UserProfile,
+  Visibility
+} from "../domain/types";
 
 const mapVisibility = (visibility: string): Visibility => {
   switch (visibility) {
@@ -328,6 +338,7 @@ export const mapMisskeyUserProfile = (
   const avatarUrl = typeof value.avatarUrl === "string" ? value.avatarUrl : null;
   const headerUrl = typeof value.bannerUrl === "string" ? value.bannerUrl : null;
   const bio = typeof value.description === "string" ? value.description : "";
+  const locked = Boolean(value.isLocked ?? value.isPrivate ?? false);
   return {
     id,
     name,
@@ -335,8 +346,17 @@ export const mapMisskeyUserProfile = (
     url,
     avatarUrl,
     headerUrl,
+    locked,
     bio,
     fields: mapProfileFields(value.fields)
+  };
+};
+
+export const mapMisskeyRelationship = (raw: unknown): AccountRelationship => {
+  const value = raw as Record<string, unknown>;
+  return {
+    following: Boolean(value.isFollowing ?? false),
+    requested: Boolean(value.hasPendingFollowRequestFromYou ?? value.hasPendingFollowRequest ?? false)
   };
 };
 

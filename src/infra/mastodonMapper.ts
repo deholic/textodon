@@ -1,4 +1,4 @@
-import type { MediaAttachment, ProfileField, Reaction, Status, UserProfile } from "../domain/types";
+import type { AccountRelationship, MediaAttachment, ProfileField, Reaction, Status, UserProfile } from "../domain/types";
 
 const htmlToText = (html: string): string => {
   // Preserve links as "text (url)" format before DOM parsing
@@ -118,6 +118,7 @@ export const mapAccountProfile = (raw: unknown): UserProfile => {
         ? value.header_static
         : null;
   const bio = typeof value.note === "string" ? value.note : "";
+  const locked = Boolean(value.locked ?? false);
   return {
     id,
     name,
@@ -125,8 +126,17 @@ export const mapAccountProfile = (raw: unknown): UserProfile => {
     url,
     avatarUrl,
     headerUrl,
+    locked,
     bio,
     fields: mapProfileFields(value.fields)
+  };
+};
+
+export const mapAccountRelationship = (raw: unknown): AccountRelationship => {
+  const value = raw as Record<string, unknown>;
+  return {
+    following: Boolean(value.following ?? false),
+    requested: Boolean(value.requested ?? false)
   };
 };
 

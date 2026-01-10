@@ -1654,7 +1654,7 @@ button.ghost {
 .status-modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1818,7 +1818,100 @@ button.ghost {
   padding: 16px 16px 0;
   color: var(--color-status-modal-title);
   width: 100%;
-  transform: translateY(48px);
+  top: 48px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.profile-hero-main {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.profile-hero-actions {
+  display: flex;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.follow-action {
+  position: relative;
+}
+
+.profile-follow-button {
+  border: 1px solid transparent;
+  justify-content: flex-start;
+}
+
+.profile-follow-button.is-following,
+.profile-follow-button.is-requested {
+  background: var(--color-secondary-button-bg);
+  color: var(--color-secondary-button-text);
+  border-color: var(--color-secondary-button-border);
+}
+
+.follow-confirm {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.follow-confirm::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay-backdrop);
+}
+
+.follow-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+}
+
+.follow-confirm-tooltip {
+  position: relative;
+  z-index: 1;
+  background: var(--color-status-modal-bg);
+  border: 1px solid var(--color-status-modal-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-status-modal);
+  padding: 12px 14px;
+  width: min(300px, 84vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.follow-confirm-tooltip p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.follow-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.follow-confirm-actions button {
+  height: 32px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.follow-confirm-actions .delete-button {
+  width: auto;
+  height: auto;
+  padding: 6px 12px;
+  color: var(--color-delete-button-text);
 }
 
 .profile-avatar {
