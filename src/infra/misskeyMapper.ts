@@ -1,4 +1,4 @@
-import type { CustomEmoji, MediaAttachment, Mention, Reaction, Status, Visibility } from "../domain/types";
+import type { CustomEmoji, MediaAttachment, Mention, ProfileField, Reaction, Status, UserProfile, Visibility } from "../domain/types";
 
 const mapVisibility = (visibility: string): Visibility => {
   switch (visibility) {
@@ -294,11 +294,58 @@ const buildAccountUrl = (
   return `${base.replace(/\/$/, "")}/@${username}`;
 };
 
+const mapProfileFields = (fields: unknown): ProfileField[] => {
+  if (!Array.isArray(fields)) {
+    return [];
+  }
+  return fields
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const typed = item as Record<string, unknown>;
+      const label = typeof typed.name === "string" ? typed.name.trim() : "";
+      const value = typeof typed.value === "string" ? typed.value.trim() : "";
+      if (!label || !value) {
+        return null;
+      }
+      return { label, value };
+    })
+    .filter((item): item is ProfileField => item !== null);
+};
+
+export const mapMisskeyUserProfile = (
+  raw: unknown,
+  instanceUrl?: string
+): UserProfile => {
+  const value = raw as Record<string, unknown>;
+  const id = String(value.id ?? "");
+  const username = String(value.username ?? "");
+  const host = typeof value.host === "string" ? value.host : "";
+  const handle = host ? `${username}@${host}` : username;
+  const name = String(value.name ?? username ?? "");
+  const url = buildAccountUrl(value, instanceUrl);
+  const avatarUrl = typeof value.avatarUrl === "string" ? value.avatarUrl : null;
+  const headerUrl = typeof value.bannerUrl === "string" ? value.bannerUrl : null;
+  const bio = typeof value.description === "string" ? value.description : "";
+  return {
+    id,
+    name,
+    handle,
+    url,
+    avatarUrl,
+    headerUrl,
+    bio,
+    fields: mapProfileFields(value.fields)
+  };
+};
+
 export const mapMisskeyStatusWithInstance = (raw: unknown, instanceUrl?: string): Status => {
   const value = raw as Record<string, unknown>;
   const user = (value.user ?? {}) as Record<string, unknown>;
   const renoteValue = value.renote as Record<string, unknown> | null | undefined;
   const renote = renoteValue ? mapMisskeyStatusWithInstance(renoteValue, instanceUrl) : null;
+  const accountId = typeof user.id === "string" ? user.id : null;
   const accountName = String(user.name ?? user.username ?? "");
   const accountHandle = String(user.username ?? "");
   const accountUrl = buildAccountUrl(user, instanceUrl);
@@ -337,6 +384,7 @@ export const mapMisskeyStatusWithInstance = (raw: unknown, instanceUrl?: string)
   return {
     id: String(value.id ?? ""),
     createdAt: String(value.createdAt ?? ""),
+    accountId,
     accountName,
     accountHandle,
     accountUrl,
@@ -662,6 +710,7 @@ export const mapMisskeyNotification = (raw: unknown, instanceUrl?: string): Stat
     return null;
   }
   const user = (value.user ?? {}) as Record<string, unknown>;
+  const accountId = typeof user.id === "string" ? user.id : null;
   const accountName = String(user.name ?? user.username ?? "");
   const accountHandle = String(user.username ?? "");
   const accountUrl = buildAccountUrl(user, instanceUrl);
@@ -698,6 +747,7 @@ export const mapMisskeyNotification = (raw: unknown, instanceUrl?: string): Stat
   return {
     id: notificationId,
     createdAt: createdAt || noteStatus?.createdAt || "",
+    accountId,
     accountName: normalizedAccountName,
     accountHandle: normalizedAccountHandle,
     accountUrl: normalizedAccountUrl,
