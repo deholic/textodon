@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Account, CustomEmoji, ReactionInput, Status } from "../../domain/types";
+import type { Account, CustomEmoji, Mention, ReactionInput, Status } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
 import { renderTextWithLinks } from "../utils/linkify";
@@ -10,6 +10,19 @@ import { ReactionPicker } from "./ReactionPicker";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useImageZoom } from "../hooks/useImageZoom";
 import { AccountLabel } from "./AccountLabel";
+
+const normalizeMentionHandle = (handle: string): string =>
+  handle.replace(/^@/, "").trim().toLowerCase();
+
+const normalizeMentionUrl = (url: string): string | null => {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname.replace(/\/$/, "");
+    return `${parsed.protocol}//${parsed.hostname}${pathname}`;
+  } catch {
+    return null;
+  }
+};
 
 export const TimelineItem = ({
   status,
@@ -331,6 +344,113 @@ export const TimelineItem = ({
   const buildEmojiMap = useCallback((emojis: CustomEmoji[]) => {
     return new Map(emojis.map((emoji) => [emoji.shortcode, emoji.url]));
   }, []);
+  const mentionMap = useMemo(() => {
+    const map = new Map<string, Mention>();
+    displayStatus.mentions.forEach((mention) => {
+      const key = normalizeMentionHandle(mention.handle);
+      if (key) {
+        map.set(key, mention);
+      }
+    });
+    return map;
+  }, [displayStatus.mentions]);
+  const mentionUrlMap = useMemo(() => {
+    const map = new Map<string, Mention>();
+    displayStatus.mentions.forEach((mention) => {
+      if (!mention.url) {
+        return;
+      }
+      const normalized = normalizeMentionUrl(mention.url);
+      if (normalized) {
+        map.set(normalized, mention);
+      }
+    });
+    return map;
+  }, [displayStatus.mentions]);
+  const buildMentionStatus = useCallback(
+    (mention: Mention): Status => ({
+      id: mention.id ? `mention-${mention.id}` : `mention-${displayStatus.id}-${mention.handle}`,
+      createdAt: displayStatus.createdAt,
+      accountId: mention.id || null,
+      accountName: mention.displayName || mention.handle,
+      accountHandle: mention.handle,
+      accountUrl: mention.url,
+      accountAvatarUrl: null,
+      content: "",
+      htmlContent: "",
+      hasRichContent: false,
+      url: mention.url,
+      visibility: "public",
+      spoilerText: "",
+      sensitive: false,
+      card: null,
+      repliesCount: 0,
+      reblogsCount: 0,
+      favouritesCount: 0,
+      reactions: [],
+      reblogged: false,
+      favourited: false,
+      inReplyToId: null,
+      mentions: [],
+      mediaAttachments: [],
+      reblog: null,
+      boostedBy: null,
+      notification: null,
+      myReaction: null,
+      customEmojis: [],
+      accountEmojis: []
+    }),
+    [displayStatus.createdAt, displayStatus.id]
+  );
+  const handleMentionClick = useCallback(
+    (mention: Mention) => {
+      if (!onProfileClick || !mention.id) {
+        return;
+      }
+      onProfileClick(buildMentionStatus(mention));
+    },
+    [buildMentionStatus, onProfileClick]
+  );
+  const resolveMention = useCallback(
+    (handle: string) => {
+      const mention = mentionMap.get(handle.toLowerCase()) ?? null;
+      return mention?.id ? mention : null;
+    },
+    [mentionMap]
+  );
+  const handleRichContentClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!onProfileClick || !(event.target instanceof Element)) {
+        return;
+      }
+      const anchor = event.target.closest("a");
+      if (!anchor) {
+        return;
+      }
+      const href = anchor.getAttribute("href");
+      if (!href) {
+        return;
+      }
+      const hasMentionClass = anchor.classList.contains("mention");
+      const looksLikeMention = hasMentionClass || href.includes("/@");
+      if (!looksLikeMention) {
+        return;
+      }
+      const normalizedHref = normalizeMentionUrl(href);
+      let mention = normalizedHref ? mentionUrlMap.get(normalizedHref) ?? null : null;
+      if (!mention) {
+        const text = anchor.textContent ?? "";
+        const normalizedHandle = normalizeMentionHandle(text);
+        mention = normalizedHandle ? mentionMap.get(normalizedHandle) ?? null : null;
+      }
+      if (!mention?.id) {
+        return;
+      }
+      event.preventDefault();
+      onProfileClick(buildMentionStatus(mention));
+    },
+    [buildMentionStatus, mentionMap, mentionUrlMap, onProfileClick]
+  );
 
   const tokenizeWithEmojis = useCallback((text: string, emojiMap: Map<string, string>) => {
     const regex = /:([a-zA-Z0-9_]+):/g;
@@ -383,6 +503,7 @@ export const TimelineItem = ({
         <div 
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedHtml) }}
           className="rich-content"
+          onClick={handleRichContentClick}
         />
       );
     }
@@ -390,14 +511,22 @@ export const TimelineItem = ({
     // Fallback to plain text with link detection
     const text = displayStatus.content;
     if (!showCustomEmojis || displayStatus.customEmojis.length === 0) {
-      return renderTextWithLinks(text, "content");
+      return renderTextWithLinks(text, "content", {
+        mentionResolver: resolveMention,
+        onMentionClick: handleMentionClick
+      });
     }
     const emojiMap = buildEmojiMap(displayStatus.customEmojis);
     const tokens = tokenizeWithEmojis(text, emojiMap);
     const parts: React.ReactNode[] = [];
     tokens.forEach((token, index) => {
       if (token.type === "text") {
-        parts.push(...renderTextWithLinks(token.value, `content-${index}`));
+        parts.push(
+          ...renderTextWithLinks(token.value, `content-${index}`, {
+            mentionResolver: resolveMention,
+            onMentionClick: handleMentionClick
+          })
+        );
       } else {
         parts.push(
           <img
