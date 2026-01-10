@@ -1,6 +1,6 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo, UserProfile } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapNotificationToStatus, mapStatus } from "./mastodonMapper";
+import { mapAccountProfile, mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
 const buildHeaders = (account: Account): HeadersInit => ({
   Authorization: `Bearer ${account.accessToken}`,
@@ -170,6 +170,38 @@ export class MastodonHttpClient implements MastodonApi {
       max_toot_chars: maxChars,
       platform: "mastodon"
     };
+  }
+
+  async fetchAccountProfile(account: Account, accountId: string): Promise<UserProfile> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}`, {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("?„ë¡œ???•ë³´ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountProfile(data);
+  }
+
+  async fetchAccountStatuses(
+    account: Account,
+    accountId: string,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    const url = new URL(`${account.instanceUrl}/api/v1/accounts/${accountId}/statuses`);
+    url.searchParams.set("limit", String(limit));
+    if (maxId) {
+      url.searchParams.set("max_id", maxId);
+    }
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("?„ë¡œ???ê¸€?„ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+    }
+    const data = (await response.json()) as unknown[];
+    return data.map(mapStatus);
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {

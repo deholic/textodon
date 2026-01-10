@@ -1,6 +1,6 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
+import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo, UserProfile } from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapMisskeyNotification, mapMisskeyStatusWithInstance } from "./misskeyMapper";
+import { mapMisskeyNotification, mapMisskeyStatusWithInstance, mapMisskeyUserProfile } from "./misskeyMapper";
 
 const normalizeInstanceUrl = (instanceUrl: string): string => instanceUrl.replace(/\/$/, "");
 
@@ -208,6 +208,47 @@ export class MisskeyHttpClient implements MastodonApi {
       maxNoteLength: typeof data.maxNoteLength === "number" ? data.maxNoteLength : 3000,
       platform: "misskey"
     };
+  }
+
+  async fetchAccountProfile(account: Account, accountId: string): Promise<UserProfile> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/users/show`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(buildBody(account, { userId: accountId }))
+    });
+    if (!response.ok) {
+      throw new Error("?„ë¡œ???•ë³´ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+    }
+    const data = (await response.json()) as unknown;
+    return mapMisskeyUserProfile(data, account.instanceUrl);
+  }
+
+  async fetchAccountStatuses(
+    account: Account,
+    accountId: string,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/users/notes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(
+        buildBody(account, {
+          userId: accountId,
+          limit,
+          untilId: maxId
+        })
+      )
+    });
+    if (!response.ok) {
+      throw new Error("?„ë¡œ???ê¸€?„ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+    }
+    const data = (await response.json()) as unknown[];
+    return data.map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl));
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {

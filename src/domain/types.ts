@@ -74,6 +74,7 @@ export type LinkCard = {
 export type Status = {
   id: string;
   createdAt: string;
+  accountId: string | null;
   accountName: string;
   accountHandle: string;
   accountUrl: string | null;
@@ -101,6 +102,22 @@ export type Status = {
   myReaction: string | null;
   customEmojis: CustomEmoji[];
   accountEmojis: CustomEmoji[];
+};
+
+export type ProfileField = {
+  label: string;
+  value: string;
+};
+
+export type UserProfile = {
+  id: string;
+  name: string;
+  handle: string;
+  url: string | null;
+  avatarUrl: string | null;
+  headerUrl: string | null;
+  bio: string;
+  fields: ProfileField[];
 };
 
 export type ThreadContext = {

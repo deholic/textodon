@@ -3,6 +3,7 @@ import type { Account, Reaction, ReactionInput, Status, TimelineType } from "./d
 import { AccountAdd } from "./ui/components/AccountAdd";
 import { AccountSelector } from "./ui/components/AccountSelector";
 import { ComposeBox } from "./ui/components/ComposeBox";
+import { ProfileModal } from "./ui/components/ProfileModal";
 import { StatusModal } from "./ui/components/StatusModal";
 import { TimelineItem } from "./ui/components/TimelineItem";
 import { useTimeline } from "./ui/hooks/useTimeline";
@@ -17,6 +18,7 @@ import licenseText from "../LICENSE?raw";
 
 type Route = "home" | "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
+type ProfileTarget = { status: Status; account: Account | null };
 
 const SECTION_STORAGE_KEY = "textodon.sections";
 const COMPOSE_ACCOUNT_KEY = "textodon.compose.accountId";
@@ -232,6 +234,7 @@ const TimelineSection = ({
   onStatusClick,
   onCloseStatusModal,
   onReact,
+  onProfileClick,
   onError,
   onMoveSection,
   canMoveLeft,
@@ -256,6 +259,7 @@ const TimelineSection = ({
   onReply: (status: Status, account: Account | null) => void;
   onStatusClick: (status: Status, columnAccount: Account | null) => void;
   onReact: (account: Account | null, status: Status, reaction: ReactionInput) => void;
+  onProfileClick: (status: Status, account: Account | null) => void;
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
@@ -589,6 +593,7 @@ const TimelineSection = ({
                             onToggleReblog={handleToggleReblog}
                             onDelete={handleDeleteStatus}
                             onReact={handleReact}
+                            onProfileClick={(item) => onProfileClick(item, account)}
                             activeHandle={
                               account?.handle ? formatHandle(account.handle, account.instanceUrl) : account?.instanceUrl ?? ""
                             }
@@ -714,6 +719,7 @@ const TimelineSection = ({
                 onToggleReblog={handleToggleReblog}
                 onDelete={handleDeleteStatus}
                 onReact={handleReact}
+                onProfileClick={(item) => onProfileClick(item, account)}
                 activeHandle={
                   account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
                 }
@@ -847,6 +853,7 @@ export const App = () => {
   );
   const [replyTarget, setReplyTarget] = useState<Status | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
+  const [profileTargets, setProfileTargets] = useState<ProfileTarget[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
@@ -1230,6 +1237,22 @@ export const App = () => {
     (status as any).__columnAccount = columnAccount;
   };
 
+  const handleProfileOpen = useCallback((target: Status, columnAccount: Account | null) => {
+    setProfileTargets((current) => [...current, { status: target, account: columnAccount }]);
+  }, []);
+
+  const handleCloseProfileModal = useCallback((index?: number) => {
+    setProfileTargets((current) => {
+      if (current.length === 0) {
+        return current;
+      }
+      if (typeof index !== "number") {
+        return current.slice(0, -1);
+      }
+      return current.filter((_, currentIndex) => currentIndex !== index);
+    });
+  }, []);
+
   const handleCloseStatusModal = () => {
     setSelectedStatus(null);
   };
@@ -1496,8 +1519,9 @@ onAccountChange={setSectionAccount}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
                           onReply={handleReply}
-                            onStatusClick={handleStatusClick}
+                           onStatusClick={handleStatusClick}
                            onReact={handleReaction}
+                           onProfileClick={handleProfileOpen}
                            columnAccount={sectionAccount}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}
@@ -1728,6 +1752,23 @@ onAccountChange={setSectionAccount}
         </div>
       ) : null}
       
+      {profileTargets.map((target, index) => (
+        <ProfileModal
+          key={`${target.status.id}-${index}`}
+          status={target.status}
+          account={target.account}
+          api={services.api}
+          isTopmost={index === profileTargets.length - 1}
+          onClose={() => handleCloseProfileModal(index)}
+          onReply={handleReply}
+          onStatusClick={(status) => handleStatusClick(status, target.account)}
+          onProfileClick={handleProfileOpen}
+          showProfileImage={showProfileImages}
+          showCustomEmojis={showCustomEmojis}
+          showReactions={showMisskeyReactions}
+        />
+      ))}
+
       {selectedStatus ? (
         <StatusModal
           status={selectedStatus}

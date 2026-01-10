@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, ReactionInput, Status } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
+import { renderTextWithLinks } from "../utils/linkify";
 import boostIconUrl from "../assets/boost-icon.svg";
 import replyIconUrl from "../assets/reply-icon.svg";
 import trashIconUrl from "../assets/trash-icon.svg";
@@ -17,6 +18,7 @@ export const TimelineItem = ({
   onToggleReblog,
   onDelete,
   onReact,
+  onProfileClick,
   onStatusClick,
   account,
   api,
@@ -35,6 +37,7 @@ export const TimelineItem = ({
   onToggleReblog: (status: Status) => void;
   onDelete: (status: Status) => void;
   onReact?: (status: Status, reaction: ReactionInput) => void;
+  onProfileClick?: (status: Status) => void;
   onStatusClick?: (status: Status) => void;
   account: Account | null;
   api: MastodonApi;
@@ -58,7 +61,7 @@ export const TimelineItem = ({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // useImageZoom 훅 사용
+  // useImageZoom ???ъ슜
   const {
     zoom: imageZoom,
     offset: imageOffset,
@@ -152,13 +155,15 @@ export const TimelineItem = ({
     }
     if (boostedBy) {
       const label = boostedBy.name || boostedHandle || boostedBy.handle;
-      return `${label} 님이 부스트함`;
+      return `${label}이 부스트함`;
     }
     if (displayStatus.reblogged) {
       return "내가 부스트함";
     }
     return null;
   }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle, notification]);
+  const canOpenProfile = Boolean(onProfileClick);
+  const profileLabel = `${displayStatus.accountName || displayStatus.accountHandle} 프로필 보기`;
   const notificationActorHandle = useMemo(() => {
     if (!notification) {
       return "";
@@ -185,8 +190,8 @@ export const TimelineItem = ({
       return null;
     }
     const actorName =
-      notification.actor.name || notificationActorHandle || notification.actor.handle || "알 수 없음";
-    return `${actorName} 님이 ${notification.label}`;
+      notification.actor.name || notificationActorHandle || notification.actor.handle || "?????놁쓬";
+    return `${actorName} ?섏씠 ${notification.label}`;
   }, [notification, notificationActorHandle]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
@@ -216,6 +221,13 @@ export const TimelineItem = ({
   }, [activeAccountUrl, activeHandle, displayStatus.id, displayStatus.url]);
   const handleHeaderClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
+      if (onProfileClick) {
+        if (event.target instanceof Element && event.target.closest("a")) {
+          return;
+        }
+        onProfileClick(displayStatus);
+        return;
+      }
       if (!displayStatus.accountUrl) {
         return;
       }
@@ -230,20 +242,24 @@ export const TimelineItem = ({
       }
       window.open(displayStatus.accountUrl, "_blank", "noopener,noreferrer");
     },
-    [displayStatus.accountUrl]
+    [displayStatus, displayStatus.accountUrl, onProfileClick]
   );
   const handleHeaderKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
-      if (!displayStatus.accountUrl) {
-        return;
-      }
       if (event.key !== "Enter" && event.key !== " ") {
         return;
       }
       event.preventDefault();
+      if (onProfileClick) {
+        onProfileClick(displayStatus);
+        return;
+      }
+      if (!displayStatus.accountUrl) {
+        return;
+      }
       window.open(displayStatus.accountUrl, "_blank", "noopener,noreferrer");
     },
-    [displayStatus.accountUrl]
+    [displayStatus, displayStatus.accountUrl, onProfileClick]
   );
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
@@ -340,36 +356,6 @@ export const TimelineItem = ({
     return tokens;
   }, []);
 
-  const renderTextWithLinks = useCallback((text: string, keyPrefix: string) => {
-    const regex = /(https?:\/\/[^\s)\]]+|www\.[^\s)\]]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]]*)?)(?=[^\w@]|$)/g;
-    const parts: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    let key = 0;
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(text.slice(lastIndex, match.index));
-      }
-      const url = match[0];
-      // Skip email addresses
-      if (url.includes('@')) {
-        parts.push(url);
-      } else {
-        const normalizedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
-        parts.push(
-          <a key={`${keyPrefix}-link-${key}`} href={normalizedUrl} target="_blank" rel="noreferrer">
-            {url}
-          </a>
-        );
-      }
-      key += 1;
-      lastIndex = match.index + url.length;
-    }
-    if (lastIndex < text.length) {
-      parts.push(text.slice(lastIndex));
-    }
-    return parts;
-  }, []);
 
   const contentParts = useMemo(() => {
     // Check if content actually contains HTML tags before rendering as HTML
@@ -431,7 +417,6 @@ export const TimelineItem = ({
     displayStatus.customEmojis,
     displayStatus.htmlContent,
     displayStatus.hasRichContent,
-    renderTextWithLinks,
     showCustomEmojis,
     tokenizeWithEmojis
   ]);
@@ -575,7 +560,7 @@ export const TimelineItem = ({
       {mentionNames ? (
         <div className="reply-info">
           <img src={replyIconUrl} alt="" aria-hidden="true" />
-          <span>{mentionNames}에게 보낸 답글</span>
+          <span>{mentionNames}?먭쾶 蹂대궦 ?듦?</span>
         </div>
       ) : null}
       <header className="status-header-main">
@@ -585,14 +570,10 @@ export const TimelineItem = ({
               className="status-avatar"
               onClick={handleHeaderClick}
               onKeyDown={handleHeaderKeyDown}
-              role={displayStatus.accountUrl ? "link" : undefined}
-              tabIndex={displayStatus.accountUrl ? 0 : undefined}
-              aria-label={
-                displayStatus.accountUrl
-                  ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
-                  : undefined
-              }
-              data-interactive={displayStatus.accountUrl ? "true" : undefined}
+              role={canOpenProfile ? "button" : displayStatus.accountUrl ? "link" : undefined}
+              tabIndex={canOpenProfile || displayStatus.accountUrl ? 0 : undefined}
+              aria-label={canOpenProfile ? profileLabel : displayStatus.accountUrl ? profileLabel : undefined}
+              data-interactive={canOpenProfile || displayStatus.accountUrl ? "true" : undefined}
             >
               {displayStatus.accountAvatarUrl ? (
                 <img
@@ -609,17 +590,13 @@ export const TimelineItem = ({
             className="status-account"
             onClick={handleHeaderClick}
             onKeyDown={handleHeaderKeyDown}
-            role={displayStatus.accountUrl ? "link" : undefined}
-            tabIndex={displayStatus.accountUrl ? 0 : undefined}
-            aria-label={
-              displayStatus.accountUrl
-                ? `${displayStatus.accountName || displayStatus.accountHandle} 프로필 열기`
-                : undefined
-            }
-            data-interactive={displayStatus.accountUrl ? "true" : undefined}
+            role={canOpenProfile ? "button" : displayStatus.accountUrl ? "link" : undefined}
+            tabIndex={canOpenProfile || displayStatus.accountUrl ? 0 : undefined}
+            aria-label={canOpenProfile ? profileLabel : displayStatus.accountUrl ? profileLabel : undefined}
+            data-interactive={canOpenProfile || displayStatus.accountUrl ? "true" : undefined}
           >
             <strong>
-              {displayStatus.accountUrl ? (
+              {displayStatus.accountUrl && !canOpenProfile ? (
                 <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
                   {accountNameNode}
                 </a>
@@ -628,7 +605,7 @@ export const TimelineItem = ({
               )}
             </strong>
             <span>
-              {displayStatus.accountUrl ? (
+              {displayStatus.accountUrl && !canOpenProfile ? (
                 <a href={displayStatus.accountUrl} target="_blank" rel="noreferrer">
                   @{displayHandle}
                 </a>
@@ -642,8 +619,7 @@ export const TimelineItem = ({
           <button
             type="button"
             className="icon-button"
-            aria-label="게시글 메뉴 열기"
-            aria-haspopup="menu"
+            aria-label="게시글 메뉴 열기" aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((current) => !current)}
           >
@@ -677,25 +653,25 @@ export const TimelineItem = ({
         <>
           <p className="status-text">{displayStatus.content ? contentParts : "(내용 없음)"}</p>
           {previewCard ? (
-        <a
-          className={`link-preview${previewCard.image ? "" : " no-image"}`}
-          href={previewCard.url}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {previewCard.image ? (
-            <img src={previewCard.image} alt="" loading="lazy" />
-          ) : null}
-          <div className="link-preview-body">
-            <strong>{previewCard.title}</strong>
-            {previewCard.description ? <span>{previewCard.description}</span> : null}
-            <span className="link-preview-url">{previewCard.url}</span>
-          </div>
-        </a>
+            <a
+              className={`link-preview${previewCard.image ? "" : " no-image"}`}
+              href={previewCard.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {previewCard.image ? (
+                <img src={previewCard.image} alt="" loading="lazy" />
+              ) : null}
+              <div className="link-preview-body">
+                <strong>{previewCard.title}</strong>
+                {previewCard.description ? <span>{previewCard.description}</span> : null}
+                <span className="link-preview-url">{previewCard.url}</span>
+              </div>
+            </a>
           ) : null}
         </>
       ) : null}
-      <div 
+      <div
         className="status-time"
         onClick={handleStatusClick}
         role={onStatusClick ? "button" : undefined}
@@ -717,7 +693,7 @@ export const TimelineItem = ({
                 key={reaction.name}
                 type="button"
                 className={`status-reaction${isMine ? " is-active" : ""}`}
-                title={`${label} ${reaction.count}회`}
+                title={`${label} ${reaction.count}개`}
                 aria-label={`${label} 리액션 ${isMine ? "취소" : "추가"}`}
                 onClick={() =>
                   handleReactionSelect({
@@ -770,7 +746,7 @@ export const TimelineItem = ({
                   className={displayStatus.reblogged ? "is-active" : undefined}
                   onClick={() => onToggleReblog(displayStatus)}
                   disabled={boostDisabled}
-                  title={boostDisabled ? "내 글은 부스트할 수 없습니다." : undefined}
+                  title={boostDisabled ? "비공개 글은 부스트할 수 없습니다." : undefined}
                 >
                   {displayStatus.reblogged ? "부스트 취소" : "부스트"}
                   {displayStatus.reblogsCount > 0 ? ` (${displayStatus.reblogsCount})` : ""}
@@ -883,14 +859,14 @@ export const TimelineItem = ({
               className="image-modal-close"
               onClick={() => setActiveImageIndex(null)}
             >
-              닫기
+              ?リ린
             </button>
             {attachments.length > 1 ? (
               <button
                 type="button"
                 className="image-modal-nav image-modal-nav-prev"
                 onClick={goToPrevImage}
-                aria-label="이전 이미지"
+                aria-label="?댁쟾 ?대?吏"
               >
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -902,7 +878,7 @@ export const TimelineItem = ({
                 type="button"
                 className="image-modal-nav image-modal-nav-next"
                 onClick={goToNextImage}
-                aria-label="다음 이미지"
+                aria-label="?ㅼ쓬 ?대?吏"
               >
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -911,7 +887,7 @@ export const TimelineItem = ({
             ) : null}
             <img
               src={activeImageUrl}
-              alt="첨부 이미지 원본"
+              alt="泥⑤? ?대?吏 ?먮낯"
               ref={imageRef}
               draggable={false}
               className={isDragging ? "is-dragging" : undefined}
@@ -933,3 +909,15 @@ export const TimelineItem = ({
     </article>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+

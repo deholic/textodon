@@ -33,6 +33,14 @@ export class UnifiedApiClient implements MastodonApi {
     return client.fetchInstanceInfo(account);
   }
 
+  fetchAccountProfile(account: Account, accountId: string) {
+    return this.getClient(account).fetchAccountProfile(account, accountId);
+  }
+
+  fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string) {
+    return this.getClient(account).fetchAccountStatuses(account, accountId, limit, maxId);
+  }
+
   uploadMedia(account: Account, file: File) {
     return this.getClient(account).uploadMedia(account, file);
   }
