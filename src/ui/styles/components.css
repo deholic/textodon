@@ -1855,7 +1855,7 @@ button.ghost {
 .profile-title span {
   display: block;
   font-size: 13px;
-  color: var(--color-text-subtle);
+  color: var(--color-status-meta);
 }
 
 
