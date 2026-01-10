@@ -1453,7 +1453,7 @@ button.ghost {
 /* 첨부 영역 내의 이미지 추가 버튼 */
 .compose-attachments .file-button.attachment-thumb {
   background: transparent;
-  border: 2px dashed var(--color-attachment-add-border);
+  border: 1px dashed var(--color-attachment-add-border);
   color: var(--color-attachment-add-text);
   flex-shrink: 0;
 }
@@ -1654,7 +1654,7 @@ button.ghost {
 .status-modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1730,6 +1730,285 @@ button.ghost {
   padding: 16px;
   overflow-y: auto;
   max-height: calc(80vh - 100px);
+}
+
+.profile-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--color-status-backdrop);
+}
+
+.profile-modal-content {
+  position: relative;
+  z-index: 1;
+  width: min(94vw, 640px);
+  max-height: 82vh;
+  overflow-y: auto;
+  background: var(--color-status-modal-bg);
+  border: 1px solid var(--color-status-modal-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-status-modal);
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 0;
+}
+
+.profile-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-status-modal-title);
+}
+
+.profile-info {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-hero {
+  position: relative;
+  border-radius: 14px;
+  overflow: visible;
+  min-height: 140px;
+  margin-bottom: 48px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.profile-hero-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--color-panel-bg), var(--color-status-modal-border));
+  background-size: cover;
+  background-position: center;
+}
+
+.profile-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 12%, var(--color-status-backdrop) 100%);
+  border-radius: 14px;
+}
+
+.profile-hero-content {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 16px 16px 0;
+  color: var(--color-status-modal-title);
+  width: 100%;
+  top: 48px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.profile-hero-main {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.profile-hero-actions {
+  display: flex;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.follow-action {
+  position: relative;
+}
+
+.profile-follow-button {
+  border: 1px solid transparent;
+  justify-content: flex-start;
+}
+
+.profile-follow-button.is-following,
+.profile-follow-button.is-requested {
+  background: var(--color-secondary-button-bg);
+  color: var(--color-secondary-button-text);
+  border-color: var(--color-secondary-button-border);
+}
+
+.follow-confirm {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.follow-confirm::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay-backdrop);
+}
+
+.follow-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+}
+
+.follow-confirm-tooltip {
+  position: relative;
+  z-index: 1;
+  background: var(--color-status-modal-bg);
+  border: 1px solid var(--color-status-modal-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-status-modal);
+  padding: 12px 14px;
+  width: min(300px, 84vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.follow-confirm-tooltip p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.follow-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.follow-confirm-actions button {
+  height: 32px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.follow-confirm-actions .delete-button {
+  width: auto;
+  height: auto;
+  padding: 6px 12px;
+  color: var(--color-delete-button-text);
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--color-status-modal-bg);
+  background: var(--color-panel-bg);
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--color-panel-border);
+}
+
+.profile-title strong {
+  display: block;
+  font-size: 18px;
+  color: var(--color-status-modal-title);
+}
+
+.profile-title span {
+  display: block;
+  font-size: 13px;
+  color: var(--color-status-meta);
+}
+
+
+.profile-bio {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+
+.profile-fields {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.profile-field {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-status-modal-border);
+  border-radius: 12px;
+  background: var(--color-panel-bg);
+}
+
+.profile-field dt {
+  font-size: 12px;
+  color: var(--color-text-primary);
+}
+
+.profile-field dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.profile-field dd a {
+  color: var(--color-action-bg);
+}
+
+.profile-field-link a {
+  color: var(--color-action-bg);
+}
+
+.profile-posts {
+  padding: 0 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-posts h4 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.profile-posts .timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .boosted-by {

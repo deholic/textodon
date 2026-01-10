@@ -1,6 +1,15 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo } from "../domain/types";
+import type {
+  Account,
+  AccountRelationship,
+  CustomEmoji,
+  Status,
+  ThreadContext,
+  TimelineType,
+  InstanceInfo,
+  UserProfile
+} from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapNotificationToStatus, mapStatus } from "./mastodonMapper";
+import { mapAccountProfile, mapAccountRelationship, mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
 const buildHeaders = (account: Account): HeadersInit => ({
   Authorization: `Bearer ${account.accessToken}`,
@@ -170,6 +179,80 @@ export class MastodonHttpClient implements MastodonApi {
       max_toot_chars: maxChars,
       platform: "mastodon"
     };
+  }
+
+  async fetchAccountProfile(account: Account, accountId: string): Promise<UserProfile> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}`, {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("?„ë¡œ???•ë³´ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountProfile(data);
+  }
+
+  async fetchAccountRelationship(account: Account, accountId: string): Promise<AccountRelationship> {
+    const url = new URL(`${account.instanceUrl}/api/v1/accounts/relationships`);
+    url.searchParams.append("id[]", accountId);
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("관계 정보를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    const relationship = data[0];
+    return mapAccountRelationship(relationship);
+  }
+
+  async followAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/follow`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("팔로우에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async unfollowAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/unfollow`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("언팔로우에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async cancelFollowRequest(account: Account, accountId: string): Promise<AccountRelationship> {
+    return this.unfollowAccount(account, accountId);
+  }
+
+  async fetchAccountStatuses(
+    account: Account,
+    accountId: string,
+    limit: number,
+    maxId?: string
+  ): Promise<Status[]> {
+    const url = new URL(`${account.instanceUrl}/api/v1/accounts/${accountId}/statuses`);
+    url.searchParams.set("limit", String(limit));
+    if (maxId) {
+      url.searchParams.set("max_id", maxId);
+    }
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("?„ë¡œ???ê¸€?„ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+    }
+    const data = (await response.json()) as unknown[];
+    return data.map(mapStatus);
   }
 
   async uploadMedia(account: Account, file: File): Promise<string> {

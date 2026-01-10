@@ -1,4 +1,4 @@
-import type { MediaAttachment, Reaction, Status } from "../domain/types";
+import type { AccountRelationship, MediaAttachment, ProfileField, Reaction, Status, UserProfile } from "../domain/types";
 
 const htmlToText = (html: string): string => {
   // Preserve links as "text (url)" format before DOM parsing
@@ -84,6 +84,62 @@ const mapCustomEmojis = (emojis: unknown): { shortcode: string; url: string }[] 
     .filter((item): item is { shortcode: string; url: string } => item !== null);
 };
 
+const mapProfileFields = (fields: unknown): ProfileField[] => {
+  if (!Array.isArray(fields)) {
+    return [];
+  }
+  return fields
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const typed = item as Record<string, unknown>;
+      const label = typeof typed.name === "string" ? typed.name.trim() : "";
+      const value = typeof typed.value === "string" ? typed.value.trim() : "";
+      if (!label || !value) {
+        return null;
+      }
+      return { label, value };
+    })
+    .filter((item): item is ProfileField => item !== null);
+};
+
+export const mapAccountProfile = (raw: unknown): UserProfile => {
+  const value = raw as Record<string, unknown>;
+  const id = String(value.id ?? "");
+  const name = String(value.display_name ?? value.username ?? "");
+  const handle = String(value.acct ?? value.username ?? "");
+  const url = typeof value.url === "string" ? value.url : null;
+  const avatarUrl = typeof value.avatar === "string" ? value.avatar : null;
+  const headerUrl =
+    typeof value.header === "string"
+      ? value.header
+      : typeof value.header_static === "string"
+        ? value.header_static
+        : null;
+  const bio = typeof value.note === "string" ? value.note : "";
+  const locked = Boolean(value.locked ?? false);
+  return {
+    id,
+    name,
+    handle,
+    url,
+    avatarUrl,
+    headerUrl,
+    locked,
+    bio,
+    fields: mapProfileFields(value.fields)
+  };
+};
+
+export const mapAccountRelationship = (raw: unknown): AccountRelationship => {
+  const value = raw as Record<string, unknown>;
+  return {
+    following: Boolean(value.following ?? false),
+    requested: Boolean(value.requested ?? false)
+  };
+};
+
 const getHostFromUrl = (url: string | null): string | null => {
   if (!url) {
     return null;
@@ -149,6 +205,7 @@ export const mapStatus = (raw: unknown): Status => {
   const account = (value.account ?? {}) as Record<string, unknown>;
   const reblogValue = value.reblog as Record<string, unknown> | null | undefined;
   const reblog = reblogValue ? mapStatus(reblogValue) : null;
+  const accountId = typeof account.id === "string" ? account.id : null;
   const accountName = String(account.display_name ?? account.username ?? "");
   const accountHandle = String(account.acct ?? "");
   const accountUrl = typeof account.url === "string" ? account.url : null;
@@ -168,6 +225,7 @@ export const mapStatus = (raw: unknown): Status => {
   return {
     id: String(value.id ?? ""),
     createdAt: String(value.created_at ?? ""),
+    accountId,
     accountName,
     accountHandle,
     accountUrl,
@@ -249,6 +307,7 @@ export const mapNotificationToStatus = (raw: unknown): Status | null => {
     return null;
   }
   const account = (value.account ?? {}) as Record<string, unknown>;
+  const accountId = typeof account.id === "string" ? account.id : null;
   const accountName = String(account.display_name ?? account.username ?? "");
   const accountHandle = String(account.acct ?? account.username ?? "");
   const accountUrl = typeof account.url === "string" ? account.url : null;
@@ -259,6 +318,7 @@ export const mapNotificationToStatus = (raw: unknown): Status | null => {
   return {
     id: notificationId,
     createdAt: createdAt || status?.createdAt || "",
+    accountId,
     accountName,
     accountHandle,
     accountUrl,

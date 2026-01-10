@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import type { Account, Status, ThreadContext } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { TimelineItem } from "./TimelineItem";
@@ -9,11 +9,13 @@ export const StatusModal = ({
   account,
   threadAccount,
   api,
+  zIndex,
   onClose,
   onReply,
   onToggleFavourite,
   onToggleReblog,
   onDelete,
+  onProfileClick,
   activeHandle,
   activeAccountHandle,
   activeAccountUrl,
@@ -25,11 +27,13 @@ export const StatusModal = ({
   account: Account | null;
   threadAccount: Account | null;
   api: MastodonApi;
+  zIndex?: number;
   onClose: () => void;
   onReply: (status: Status) => void;
   onToggleFavourite: (status: Status) => void;
   onToggleReblog: (status: Status) => void;
   onDelete?: (status: Status) => void;
+  onProfileClick?: (status: Status, account: Account | null) => void;
   activeHandle: string;
   activeAccountHandle: string;
   activeAccountUrl: string | null;
@@ -39,6 +43,15 @@ export const StatusModal = ({
 }) => {
   const displayStatus = status.reblog ?? status;
   const boostedBy = status.reblog ? status.boostedBy : null;
+  const handleProfileClick = useCallback(
+    (target: Status) => {
+      if (!onProfileClick) {
+        return;
+      }
+      onProfileClick(target, threadAccount ?? account ?? null);
+    },
+    [account, onProfileClick, threadAccount]
+  );
   
   // 스레드 컨텍스트 상태
   const [threadContext, setThreadContext] = useState<ThreadContext | null>(null);
@@ -75,6 +88,7 @@ export const StatusModal = ({
       role="dialog"
       aria-modal="true"
       aria-label="글 보기"
+      style={zIndex ? { zIndex } : undefined}
     >
       <div className="status-modal-backdrop" onClick={onClose} />
       <div className="status-modal-content">
@@ -113,6 +127,7 @@ export const StatusModal = ({
                     onToggleFavourite={onToggleFavourite}
                     onToggleReblog={onToggleReblog}
                     onDelete={onDelete || (() => {})}
+                    onProfileClick={handleProfileClick}
                     activeHandle={activeHandle}
                     activeAccountHandle={activeAccountHandle}
                     activeAccountUrl={activeAccountUrl}
@@ -142,6 +157,7 @@ export const StatusModal = ({
             onToggleFavourite={onToggleFavourite}
             onToggleReblog={onToggleReblog}
             onDelete={onDelete || (() => {})}
+            onProfileClick={handleProfileClick}
             activeHandle={activeHandle}
             activeAccountHandle={activeAccountHandle}
             activeAccountUrl={activeAccountUrl}
@@ -170,6 +186,7 @@ export const StatusModal = ({
                     onToggleFavourite={onToggleFavourite}
                     onToggleReblog={onToggleReblog}
                     onDelete={onDelete || (() => {})}
+                    onProfileClick={handleProfileClick}
                     activeHandle={activeHandle}
                     activeAccountHandle={activeAccountHandle}
                     activeAccountUrl={activeAccountUrl}

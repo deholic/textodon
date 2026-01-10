@@ -3,9 +3,11 @@ import type { Account, Reaction, ReactionInput, Status, TimelineType } from "./d
 import { AccountAdd } from "./ui/components/AccountAdd";
 import { AccountSelector } from "./ui/components/AccountSelector";
 import { ComposeBox } from "./ui/components/ComposeBox";
+import { ProfileModal } from "./ui/components/ProfileModal";
 import { StatusModal } from "./ui/components/StatusModal";
 import { TimelineItem } from "./ui/components/TimelineItem";
 import { useTimeline } from "./ui/hooks/useTimeline";
+import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle } from "./ui/utils/account";
@@ -16,6 +18,7 @@ import licenseText from "../LICENSE?raw";
 
 type Route = "home" | "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
+type ProfileTarget = { status: Status; account: Account | null; zIndex: number };
 
 const SECTION_STORAGE_KEY = "textodon.sections";
 const COMPOSE_ACCOUNT_KEY = "textodon.compose.accountId";
@@ -231,6 +234,7 @@ const TimelineSection = ({
   onStatusClick,
   onCloseStatusModal,
   onReact,
+  onProfileClick,
   onError,
   onMoveSection,
   canMoveLeft,
@@ -255,6 +259,7 @@ const TimelineSection = ({
   onReply: (status: Status, account: Account | null) => void;
   onStatusClick: (status: Status, columnAccount: Account | null) => void;
   onReact: (account: Account | null, status: Status, reaction: ReactionInput) => void;
+  onProfileClick: (status: Status, account: Account | null) => void;
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
@@ -349,80 +354,11 @@ const TimelineSection = ({
     };
   }, [account, registerTimelineListener, timeline.updateItem, timelineType, unregisterTimelineListener]);
 
-  useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (!menuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest(".overlay-backdrop")
-      ) {
-        setMenuOpen(false);
-        return;
-      }
-      if (!menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [menuOpen]);
+  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
-  useEffect(() => {
-    if (!timelineMenuOpen) {
-      return;
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (!timelineMenuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest(".overlay-backdrop")
-      ) {
-        setTimelineMenuOpen(false);
-        return;
-      }
-      if (!timelineMenuRef.current.contains(event.target)) {
-        setTimelineMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [timelineMenuOpen]);
+  useClickOutside(timelineMenuRef, timelineMenuOpen, () => setTimelineMenuOpen(false));
 
-  useEffect(() => {
-    if (!notificationsOpen) {
-      return;
-    }
-    const handleClick = (event: MouseEvent) => {
-      if (!notificationMenuRef.current || !(event.target instanceof Node)) {
-        return;
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest(".overlay-backdrop")
-      ) {
-        setNotificationsOpen(false);
-        return;
-      }
-      if (!notificationMenuRef.current.contains(event.target)) {
-        setNotificationsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [notificationsOpen]);
+  useClickOutside(notificationMenuRef, notificationsOpen, () => setNotificationsOpen(false));
 
   useEffect(() => {
     if (!notificationsOpen) {
@@ -542,7 +478,7 @@ const TimelineSection = ({
           variant="inline"
         />
         <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
-          <div className="timeline-selector" ref={timelineMenuRef}>
+          <div className="timeline-selector">
             <button
               type="button"
               className="timeline-selector-button"
@@ -566,12 +502,9 @@ const TimelineSection = ({
             </button>
             {timelineMenuOpen ? (
               <>
+                <div className="overlay-backdrop" aria-hidden="true" />
                 <div
-                  className="overlay-backdrop"
-                  onClick={() => setTimelineMenuOpen(false)}
-                  aria-hidden="true"
-                />
-                <div
+                  ref={timelineMenuRef}
                   className="section-menu-panel timeline-selector-panel"
                   role="menu"
                   aria-label="타임라인 선택"
@@ -598,7 +531,7 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
-          <div className="notification-menu" ref={notificationMenuRef}>
+          <div className="notification-menu">
             <button
               type="button"
               className={`icon-button${notificationsOpen ? " is-active" : ""}`}
@@ -628,12 +561,8 @@ const TimelineSection = ({
             </button>
             {notificationsOpen ? (
               <>
-                <div
-                  className="overlay-backdrop"
-                  onClick={() => setNotificationsOpen(false)}
-                  aria-hidden="true"
-                />
-                <div className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
+                <div className="overlay-backdrop" aria-hidden="true" />
+                <div ref={notificationMenuRef} className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
                   <div className="notification-popover-header">
                     <button
                       type="button"
@@ -664,6 +593,7 @@ const TimelineSection = ({
                             onToggleReblog={handleToggleReblog}
                             onDelete={handleDeleteStatus}
                             onReact={handleReact}
+                            onProfileClick={(item) => onProfileClick(item, account)}
                             activeHandle={
                               account?.handle ? formatHandle(account.handle, account.instanceUrl) : account?.instanceUrl ?? ""
                             }
@@ -685,7 +615,7 @@ const TimelineSection = ({
               </>
             ) : null}
           </div>
-          <div className="section-menu" ref={menuRef}>
+          <div className="section-menu">
             <button
               type="button"
               className="icon-button menu-button"
@@ -704,12 +634,8 @@ const TimelineSection = ({
             </button>
             {menuOpen ? (
               <>
-                <div
-                  className="overlay-backdrop"
-                  onClick={() => setMenuOpen(false)}
-                  aria-hidden="true"
-                />
-                <div className="section-menu-panel" role="menu">
+                <div className="overlay-backdrop" aria-hidden="true" />
+                <div ref={menuRef} className="section-menu-panel" role="menu">
                   <button
                     type="button"
                     onClick={() => {
@@ -793,6 +719,7 @@ const TimelineSection = ({
                 onToggleReblog={handleToggleReblog}
                 onDelete={handleDeleteStatus}
                 onReact={handleReact}
+                onProfileClick={(item) => onProfileClick(item, account)}
                 activeHandle={
                   account.handle ? formatHandle(account.handle, account.instanceUrl) : account.instanceUrl
                 }
@@ -926,6 +853,9 @@ export const App = () => {
   );
   const [replyTarget, setReplyTarget] = useState<Status | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
+  const [profileTargets, setProfileTargets] = useState<ProfileTarget[]>([]);
+  const [statusModalZIndex, setStatusModalZIndex] = useState<number | null>(null);
+  const nextModalZIndexRef = useRef(70);
   const [actionError, setActionError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
@@ -1305,12 +1235,31 @@ export const App = () => {
 
   const handleStatusClick = (status: Status, columnAccount: Account | null) => {
     setSelectedStatus(status);
+    setStatusModalZIndex(nextModalZIndexRef.current++);
     // Status에 columnAccount 정보를 임시 저장
     (status as any).__columnAccount = columnAccount;
   };
 
+  const handleProfileOpen = useCallback((target: Status, columnAccount: Account | null) => {
+    const zIndex = nextModalZIndexRef.current++;
+    setProfileTargets((current) => [...current, { status: target, account: columnAccount, zIndex }]);
+  }, []);
+
+  const handleCloseProfileModal = useCallback((index?: number) => {
+    setProfileTargets((current) => {
+      if (current.length === 0) {
+        return current;
+      }
+      if (typeof index !== "number") {
+        return current.slice(0, -1);
+      }
+      return current.filter((_, currentIndex) => currentIndex !== index);
+    });
+  }, []);
+
   const handleCloseStatusModal = () => {
     setSelectedStatus(null);
+    setStatusModalZIndex(null);
   };
 
   const handleReaction = useCallback(
@@ -1575,8 +1524,9 @@ onAccountChange={setSectionAccount}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
                           onReply={handleReply}
-                            onStatusClick={handleStatusClick}
+                           onStatusClick={handleStatusClick}
                            onReact={handleReaction}
+                           onProfileClick={handleProfileOpen}
                            columnAccount={sectionAccount}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}
@@ -1807,13 +1757,33 @@ onAccountChange={setSectionAccount}
         </div>
       ) : null}
       
+      {profileTargets.map((target, index) => (
+        <ProfileModal
+          key={`${target.status.id}-${index}`}
+          status={target.status}
+          account={target.account}
+          api={services.api}
+          zIndex={target.zIndex}
+          isTopmost={index === profileTargets.length - 1}
+          onClose={() => handleCloseProfileModal(index)}
+          onReply={handleReply}
+          onStatusClick={(status) => handleStatusClick(status, target.account)}
+          onProfileClick={handleProfileOpen}
+          showProfileImage={showProfileImages}
+          showCustomEmojis={showCustomEmojis}
+          showReactions={showMisskeyReactions}
+        />
+      ))}
+
       {selectedStatus ? (
         <StatusModal
           status={selectedStatus}
           account={composeAccount}
           threadAccount={(selectedStatus as any).__columnAccount || null}
           api={services.api}
+          zIndex={statusModalZIndex ?? undefined}
           onClose={handleCloseStatusModal}
+          onProfileClick={handleProfileOpen}
           onReply={(status) => {
             if (composeAccount) {
               handleReply(status, composeAccount);

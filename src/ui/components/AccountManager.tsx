@@ -3,6 +3,7 @@ import type { Account } from "../../domain/types";
 import type { OAuthClient } from "../../services/OAuthClient";
 import { formatHandle, normalizeInstanceUrl } from "../utils/account";
 import { createOauthState, loadRegisteredApp, saveRegisteredApp, storePendingOAuth } from "../utils/oauth";
+import { AccountLabel } from "./AccountLabel";
 
 export const AccountManager = ({
   accounts,
@@ -67,23 +68,13 @@ export const AccountManager = ({
         {accounts.map((account) => (
           <li key={account.id} className={account.id === activeAccountId ? "active" : ""}>
             <button type="button" onClick={() => setActiveAccount(account.id)}>
-              <span className="account-label">
-                <span className="account-avatar" aria-hidden="true">
-                  {account.avatarUrl ? (
-                    <img src={account.avatarUrl} alt="" loading="lazy" />
-                  ) : (
-                    <span className="account-avatar-fallback" />
-                  )}
-                </span>
-                <span className="account-text">
-                  <span>{account.displayName || account.name || account.instanceUrl}</span>
-                  {account.handle ? (
-                    <span className="account-handle">
-                      @{formatHandle(account.handle, account.instanceUrl)}
-                    </span>
-                  ) : null}
-                </span>
-              </span>
+              <AccountLabel
+                avatarUrl={account.avatarUrl}
+                displayName={account.displayName}
+                name={account.name}
+                handle={account.handle ? formatHandle(account.handle, account.instanceUrl) : undefined}
+                instanceUrl={account.instanceUrl}
+              />
             </button>
             <button type="button" onClick={() => removeAccount(account.id)} className="ghost">
               삭제
