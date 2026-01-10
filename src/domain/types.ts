@@ -116,8 +116,14 @@ export type UserProfile = {
   url: string | null;
   avatarUrl: string | null;
   headerUrl: string | null;
+  locked: boolean;
   bio: string;
   fields: ProfileField[];
+};
+
+export type AccountRelationship = {
+  following: boolean;
+  requested: boolean;
 };
 
 export type ThreadContext = {

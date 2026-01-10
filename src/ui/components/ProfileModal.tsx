@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Account, CustomEmoji, ReactionInput, Status, UserProfile } from "../../domain/types";
+import type {
+  Account,
+  AccountRelationship,
+  CustomEmoji,
+  ReactionInput,
+  Status,
+  UserProfile
+} from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
 import { formatHandle } from "../utils/account";
@@ -16,6 +23,7 @@ const buildFallbackProfile = (status: Status): UserProfile => ({
   url: status.accountUrl,
   avatarUrl: status.accountAvatarUrl,
   headerUrl: null,
+  locked: false,
   bio: "",
   fields: []
 });
@@ -56,6 +64,7 @@ export const ProfileModal = ({
   status,
   account,
   api,
+  zIndex,
   isTopmost,
   onClose,
   onReply,
@@ -68,6 +77,7 @@ export const ProfileModal = ({
   status: Status;
   account: Account | null;
   api: MastodonApi;
+  zIndex?: number;
   isTopmost: boolean;
   onClose: () => void;
   onReply: (status: Status, account: Account | null) => void;
@@ -80,6 +90,10 @@ export const ProfileModal = ({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [relationship, setRelationship] = useState<AccountRelationship | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followError, setFollowError] = useState<string | null>(null);
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
   const [items, setItems] = useState<Status[]>([]);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [itemsLoading, setItemsLoading] = useState(false);
@@ -126,6 +140,32 @@ export const ProfileModal = ({
       .finally(() => {
         if (cancelled) return;
         setProfileLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [account, api, targetAccountId]);
+
+  useEffect(() => {
+    if (!account || !targetAccountId || account.id === targetAccountId) {
+      setRelationship(null);
+      setFollowError(null);
+      setFollowLoading(false);
+      setShowUnfollowConfirm(false);
+      return;
+    }
+    let cancelled = false;
+    setFollowError(null);
+    api
+      .fetchAccountRelationship(account, targetAccountId)
+      .then((data) => {
+        if (cancelled) return;
+        setRelationship(data);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setRelationship(null);
+        setFollowError(error instanceof Error ? error.message : "관계 정보를 불러오지 못했습니다.");
       });
     return () => {
       cancelled = true;
@@ -386,8 +426,130 @@ export const ProfileModal = ({
     [renderTextWithEmojis]
   );
 
+  const normalizedAccountHandle = account?.handle ? formatHandle(account.handle, account.instanceUrl) : "";
+  const normalizedTargetHandle = rawHandle && account ? formatHandle(rawHandle, account.instanceUrl) : rawHandle;
+  const isSelfById = account?.id && targetAccountId ? account.id === targetAccountId : false;
+  const isSelfByHandle =
+    Boolean(normalizedAccountHandle && normalizedTargetHandle) &&
+    normalizedAccountHandle === normalizedTargetHandle;
+  const isSelf = Boolean(isSelfById || isSelfByHandle);
+  const isFollowing = relationship?.following ?? false;
+  const isRequested = relationship?.requested ?? false;
+  const followState = isFollowing ? "following" : isRequested ? "requested" : "follow";
+  const canFollow = Boolean(account && targetAccountId && !isSelf);
+  const canInteractFollow = canFollow && !followLoading;
+  const followLabel =
+    followState === "following"
+      ? "팔로잉"
+      : followState === "requested"
+        ? "요청됨"
+        : displayProfile.locked
+          ? "팔로우 요청"
+          : "팔로우";
+  const followAriaLabel =
+    followState === "requested"
+      ? "팔로우 요청됨"
+      : followState === "following"
+        ? "언팔로우"
+        : displayProfile.locked
+          ? "팔로우 요청 보내기"
+          : "팔로우하기";
+
+
+
+  const updateRelationshipOptimistically = useCallback(
+    async (
+      next: AccountRelationship,
+      action: () => Promise<AccountRelationship>,
+      fallbackMessage: string
+    ) => {
+      if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+        return;
+      }
+      const previous = relationship;
+      setRelationship(next);
+      setFollowLoading(true);
+      setFollowError(null);
+      try {
+        const updated = await action();
+        setRelationship(updated);
+        setShowUnfollowConfirm(false);
+      } catch (error) {
+        setRelationship(previous);
+        setFollowError(error instanceof Error ? error.message : fallbackMessage);
+      } finally {
+        setFollowLoading(false);
+      }
+    },
+    [account, relationship, targetAccountId]
+  );
+
+  const handleFollowClick = useCallback(() => {
+    if (!canInteractFollow) {
+      return;
+    }
+    if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+      return;
+    }
+    if (followState === "following") {
+      setShowUnfollowConfirm(true);
+      return;
+    }
+    if (followState === "requested") {
+      updateRelationshipOptimistically(
+        { following: false, requested: false },
+        () => api.cancelFollowRequest(account, targetAccountId),
+        "팔로우 요청을 취소하지 못했습니다."
+      );
+      return;
+    }
+    const shouldRequest = displayProfile.locked;
+    updateRelationshipOptimistically(
+      { following: !shouldRequest, requested: shouldRequest },
+      () => api.followAccount(account, targetAccountId),
+      "팔로우에 실패했습니다."
+    );
+  }, [
+    account,
+    api,
+    canInteractFollow,
+    displayProfile.locked,
+    followState,
+    targetAccountId,
+    updateRelationshipOptimistically
+  ]);
+
+  const handleUnfollowConfirmed = useCallback(() => {
+    if (!canInteractFollow) {
+      return;
+    }
+    if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+      return;
+    }
+    updateRelationshipOptimistically(
+      { following: false, requested: false },
+      () => api.unfollowAccount(account, targetAccountId),
+      "언팔로우에 실패했습니다."
+    );
+  }, [account, api, canInteractFollow, targetAccountId, updateRelationshipOptimistically]);
+
+  useEffect(() => {
+    if (!isFollowing) {
+      setShowUnfollowConfirm(false);
+    }
+  }, [isFollowing]);
+
   return (
-    <div className="profile-modal" role="dialog" aria-modal="true" aria-label="사용자 프로필">
+    <div
+      className="profile-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="사용자 프로필"
+      style={zIndex ? { zIndex } : undefined}
+    >
       <div className="profile-modal-backdrop" onClick={onClose} />
       <div className="profile-modal-content" ref={scrollRef} onScroll={handleScroll}>
         <div className="profile-modal-header">
@@ -412,19 +574,89 @@ export const ProfileModal = ({
             />
             <div className="profile-hero-overlay" />
             <div className="profile-hero-content">
-              <div className="profile-avatar">
-                {displayProfile.avatarUrl ? (
-                  <img src={displayProfile.avatarUrl} alt={`${displayName} 프로필 이미지`} loading="lazy" />
-                ) : (
-                  <span className="profile-avatar-fallback" aria-hidden="true" />
-                )}
+              <div className="profile-hero-main">
+                <div className="profile-avatar">
+                  {displayProfile.avatarUrl ? (
+                    <img src={displayProfile.avatarUrl} alt={`${displayName} 프로필 이미지`} loading="lazy" />
+                  ) : (
+                    <span className="profile-avatar-fallback" aria-hidden="true" />
+                  )}
+                </div>
+                <div className="profile-title">
+                  <strong>{renderTextWithEmojis(displayName, "profile-name", false)}</strong>
+                  {handleText ? <span>{handleText}</span> : null}
+                </div>
               </div>
-              <div className="profile-title">
-                <strong>{renderTextWithEmojis(displayName, "profile-name", false)}</strong>
-                {handleText ? <span>{handleText}</span> : null}
-              </div>
+              {canFollow ? (
+                <div className="profile-hero-actions">
+                  <div className="follow-action">
+                    <button
+                      type="button"
+                      className={`button-with-icon profile-follow-button${
+                        followState === "following" ? " is-following" : ""
+                      }${followState === "requested" ? " is-requested" : ""}`}
+                      onClick={handleFollowClick}
+                      disabled={!canInteractFollow}
+                      aria-label={followAriaLabel}
+                    >
+                      {followState === "following" ? (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <polyline points="5 13 9 17 19 7" />
+                        </svg>
+                      ) : followState === "requested" ? (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="12" x2="15" y2="13.5" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      )}
+                      <span>{followLabel}</span>
+                    </button>
+                    {showUnfollowConfirm ? (
+                      <div className="follow-confirm">
+                        <div
+                          className="follow-confirm-backdrop"
+                          onClick={() => setShowUnfollowConfirm(false)}
+                        />
+                                                        <div
+                          className="follow-confirm-tooltip"
+                          role="dialog"
+                          aria-modal="true"
+                          aria-label="언팔로우 확인"
+                        >
+                          <p>정말 언팔로우할까요?</p>
+                          <div className="follow-confirm-actions">
+                            <button
+                              type="button"
+                              className="ghost"
+                              onClick={() => setShowUnfollowConfirm(false)}
+                              disabled={followLoading}
+                            >
+                              취소
+                            </button>
+                            <button
+                              type="button"
+                              className="delete-button"
+                              onClick={handleUnfollowConfirmed}
+                              disabled={followLoading}
+                            >
+                              언팔로우
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
+          {followError ? <p className="error">{followError}</p> : null}
           {profileLoading ? <p className="empty">프로필을 불러오는 중...</p> : null}
           {profileError ? <p className="error">{profileError}</p> : null}
           {bioContent

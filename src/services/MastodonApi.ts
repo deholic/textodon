@@ -1,4 +1,4 @@
-import type { Account, Status, TimelineType, Visibility, InstanceInfo, UserProfile } from "../domain/types";
+import type { Account, AccountRelationship, Status, TimelineType, Visibility, InstanceInfo, UserProfile } from "../domain/types";
 import type { CustomEmoji } from "../domain/types";
 
 export type CreateStatusInput = {
@@ -25,5 +25,9 @@ export interface MastodonApi {
   unreblog(account: Account, statusId: string): Promise<Status>;
   fetchInstanceInfo(account: Account): Promise<InstanceInfo>;
   fetchAccountProfile(account: Account, accountId: string): Promise<UserProfile>;
+  fetchAccountRelationship(account: Account, accountId: string): Promise<AccountRelationship>;
+  followAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  unfollowAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  cancelFollowRequest(account: Account, accountId: string): Promise<AccountRelationship>;
   fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string): Promise<Status[]>;
 }

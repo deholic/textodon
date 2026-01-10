@@ -1,6 +1,15 @@
-import type { Account, CustomEmoji, Status, ThreadContext, TimelineType, InstanceInfo, UserProfile } from "../domain/types";
+import type {
+  Account,
+  AccountRelationship,
+  CustomEmoji,
+  Status,
+  ThreadContext,
+  TimelineType,
+  InstanceInfo,
+  UserProfile
+} from "../domain/types";
 import type { CreateStatusInput, MastodonApi } from "../services/MastodonApi";
-import { mapAccountProfile, mapNotificationToStatus, mapStatus } from "./mastodonMapper";
+import { mapAccountProfile, mapAccountRelationship, mapNotificationToStatus, mapStatus } from "./mastodonMapper";
 
 const buildHeaders = (account: Account): HeadersInit => ({
   Authorization: `Bearer ${account.accessToken}`,
@@ -181,6 +190,48 @@ export class MastodonHttpClient implements MastodonApi {
     }
     const data = (await response.json()) as unknown;
     return mapAccountProfile(data);
+  }
+
+  async fetchAccountRelationship(account: Account, accountId: string): Promise<AccountRelationship> {
+    const url = new URL(`${account.instanceUrl}/api/v1/accounts/relationships`);
+    url.searchParams.append("id[]", accountId);
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("관계 정보를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    const relationship = data[0];
+    return mapAccountRelationship(relationship);
+  }
+
+  async followAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/follow`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("팔로우에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async unfollowAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/unfollow`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("언팔로우에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async cancelFollowRequest(account: Account, accountId: string): Promise<AccountRelationship> {
+    return this.unfollowAccount(account, accountId);
   }
 
   async fetchAccountStatuses(
