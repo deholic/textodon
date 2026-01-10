@@ -560,7 +560,7 @@ export const TimelineItem = ({
       {mentionNames ? (
         <div className="reply-info">
           <img src={replyIconUrl} alt="" aria-hidden="true" />
-          <span>{mentionNames}?먭쾶 蹂대궦 ?듦?</span>
+          <span>{mentionNames}에게 보낸 답글</span>
         </div>
       ) : null}
       <header className="status-header-main">
@@ -909,6 +909,7 @@ export const TimelineItem = ({
     </article>
   );
 };
+
 
 
 
