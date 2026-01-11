@@ -233,7 +233,7 @@ export class MisskeyHttpClient implements MastodonApi {
       body: JSON.stringify(buildBody(account, { userId: accountId }))
     });
     if (!response.ok) {
-      throw new Error("?„ë¡œ???•ë³´ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+      throw new Error("프로필 정보를 불러오지 못했습니다.");
     }
     const data = (await response.json()) as unknown;
     return mapMisskeyUserProfile(data, account.instanceUrl);
@@ -289,7 +289,7 @@ export class MisskeyHttpClient implements MastodonApi {
       )
     });
     if (!response.ok) {
-      throw new Error("?„ë¡œ???ê¸€?„ë¥?ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??");
+      throw new Error("게시글을 불러오지 못했습니다.");
     }
     const data = (await response.json()) as unknown[];
     return data.map((item) => mapMisskeyStatusWithInstance(item, account.instanceUrl));
