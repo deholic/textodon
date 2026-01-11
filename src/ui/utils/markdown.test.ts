@@ -31,4 +31,14 @@ describe("renderMarkdown", () => {
       '<p><a href="https://example.com/a%28b" target="_blank" rel="noreferrer">go</a>)</p>'
     );
   });
+
+  it("renders custom emojis outside inline code", () => {
+    const input = "hi :wave: `:wave:`";
+    const emojiMap = new Map([["wave", "https://example.com/wave.png"]]);
+    const output = renderMarkdown(input, emojiMap);
+
+    expect(output).toBe(
+      '<p>hi <img src="https://example.com/wave.png" alt=":wave:" class="custom-emoji" loading="lazy" /> <code>:wave:</code></p>'
+    );
+  });
 });

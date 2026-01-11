@@ -26,26 +26,54 @@ const renderImageTag = (alt: string, url: string): string => {
   return `<img src="${safeUrl}" alt="${safeAlt}" loading="lazy" />`;
 };
 
-const formatInline = (text: string): string => {
+const renderEmojiTag = (shortcode: string, url: string): string => {
+  if (!isSafeUrl(url)) {
+    return escapeHtml(`:${shortcode}:`);
+  }
+  const safeUrl = escapeAttr(url.trim());
+  const safeAlt = escapeHtml(`:${shortcode}:`);
+  return `<img src="${safeUrl}" alt="${safeAlt}" class="custom-emoji" loading="lazy" />`;
+};
+
+const formatInline = (text: string, emojiMap?: Map<string, string>): string => {
+  const codeSpans: string[] = [];
+  let tokenized = text.replace(/`([^`]+)`/g, (_match, code) => {
+    const safeCode = escapeHtml(code);
+    codeSpans.push(`<code>${safeCode}</code>`);
+    return `\u0001${codeSpans.length - 1}\u0001`;
+  });
   const images: string[] = [];
-  const tokenized = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, url) => {
+  tokenized = tokenized.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, url) => {
     const imageTag = renderImageTag(alt, url);
     images.push(imageTag);
     return `\u0000${images.length - 1}\u0000`;
   });
+  const emojis: string[] = [];
+  if (emojiMap && emojiMap.size > 0) {
+    tokenized = tokenized.replace(/:([a-zA-Z0-9_]+):/g, (_match, shortcode) => {
+      const url = emojiMap.get(shortcode);
+      if (!url) {
+        return `:${shortcode}:`;
+      }
+      const emojiTag = renderEmojiTag(shortcode, url);
+      emojis.push(emojiTag);
+      return `\u0002${emojis.length - 1}\u0002`;
+    });
+  }
   let out = escapeHtml(tokenized);
-  out = out.replace(/\u0000(\d+)\u0000/g, (_match, index) => images[Number(index)] ?? "");
-  out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
   out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   out = out.replace(/\*([^*]+)\*/g, "<em>$1</em>");
   out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_match, label, url) => {
     const safeUrl = escapeAttr(url);
     return `<a href=\"${safeUrl}\" target=\"_blank\" rel=\"noreferrer\">${label}</a>`;
   });
+  out = out.replace(/\u0000(\d+)\u0000/g, (_match, index) => images[Number(index)] ?? "");
+  out = out.replace(/\u0002(\d+)\u0002/g, (_match, index) => emojis[Number(index)] ?? "");
+  out = out.replace(/\u0001(\d+)\u0001/g, (_match, index) => codeSpans[Number(index)] ?? "");
   return out;
 };
 
-export const renderMarkdown = (markdown: string): string => {
+export const renderMarkdown = (markdown: string, emojiMap?: Map<string, string>): string => {
   const lines = markdown.split(/\r?\n/);
   const blocks: string[] = [];
   let inCode = false;
@@ -56,14 +84,14 @@ export const renderMarkdown = (markdown: string): string => {
 
   const flushParagraph = () => {
     if (paragraphBuffer.length === 0) return;
-    const content = paragraphBuffer.map(formatInline).join("<br />");
+    const content = paragraphBuffer.map((line) => formatInline(line, emojiMap)).join("<br />");
     blocks.push(`<p>${content}</p>`);
     paragraphBuffer = [];
   };
 
   const flushList = () => {
     if (listBuffer.length === 0) return;
-    const items = listBuffer.map((item) => `<li>${formatInline(item)}</li>`).join("");
+    const items = listBuffer.map((item) => `<li>${formatInline(item, emojiMap)}</li>`).join("");
     blocks.push(`<ul>${items}</ul>`);
     listBuffer = [];
   };
@@ -113,7 +141,7 @@ export const renderMarkdown = (markdown: string): string => {
       flushParagraph();
       flushList();
       const level = headingMatch[1].length;
-      blocks.push(`<h${level}>${formatInline(headingMatch[2])}</h${level}>`);
+      blocks.push(`<h${level}>${formatInline(headingMatch[2], emojiMap)}</h${level}>`);
       continue;
     }
 
