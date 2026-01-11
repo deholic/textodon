@@ -128,7 +128,8 @@ export const mapAccountProfile = (raw: unknown): UserProfile => {
     headerUrl,
     locked,
     bio,
-    fields: mapProfileFields(value.fields)
+    fields: mapProfileFields(value.fields),
+    emojis: mapCustomEmojis(value.emojis)
   };
 };
 
