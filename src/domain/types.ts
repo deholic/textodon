@@ -119,6 +119,7 @@ export type UserProfile = {
   locked: boolean;
   bio: string;
   fields: ProfileField[];
+  emojis?: CustomEmoji[];
 };
 
 export type AccountRelationship = {

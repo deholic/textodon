@@ -117,9 +117,18 @@ export const ProfileModal = ({
   const [hasMore, setHasMore] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const targetAccountId = status.accountId;
+  const profileEmojis = useMemo(() => {
+    if (!showCustomEmojis) {
+      return [];
+    }
+    if (profile?.emojis && profile.emojis.length > 0) {
+      return profile.emojis;
+    }
+    return status.accountEmojis;
+  }, [profile?.emojis, showCustomEmojis, status.accountEmojis]);
   const emojiMap = useMemo(
-    () => (showCustomEmojis ? buildEmojiMap(status.accountEmojis) : new Map()),
-    [showCustomEmojis, status.accountEmojis]
+    () => (profileEmojis.length > 0 ? buildEmojiMap(profileEmojis) : new Map()),
+    [profileEmojis]
   );
 
   useClickOutside(scrollRef, isTopmost, onClose);

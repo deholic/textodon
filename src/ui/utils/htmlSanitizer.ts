@@ -5,25 +5,29 @@ import DOMPurify from 'dompurify';
  * Allows basic formatting tags for rich content display
  */
 export const sanitizeHtml = (html: string): string => {
-  // Pre-process HTML to add target="_blank" to all external links
-  const processedHtml = html.replace(/<a\s+([^>]*)href="([^"]*)"([^>]*)>/gi, (match, attrs, href, rest) => {
-    // Check if it's an external link (starts with http)
-    if (href.startsWith('http://') || href.startsWith('https://')) {
-      // Add target="_blank" and rel="noreferrer" if not already present
-      const hasTarget = /target\s*=\s*["'][^"']*["']/.test(attrs + rest);
-      const hasRel = /rel\s*=\s*["'][^"']*["']/.test(attrs + rest);
-      
-      let newAttrs = attrs + rest;
-      if (!hasTarget) {
-        newAttrs += ' target="_blank"';
-      }
-      if (!hasRel) {
-        newAttrs += ' rel="noreferrer"';
-      }
-      return `<a ${newAttrs}href="${href}">`;
+  const processedHtml = (() => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      doc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((anchor) => {
+        const href = anchor.getAttribute("href");
+        if (!href) {
+          return;
+        }
+        if (href.startsWith("http://") || href.startsWith("https://")) {
+          if (!anchor.hasAttribute("target")) {
+            anchor.setAttribute("target", "_blank");
+          }
+          if (!anchor.hasAttribute("rel")) {
+            anchor.setAttribute("rel", "noreferrer");
+          }
+        }
+      });
+      return doc.body.innerHTML;
+    } catch {
+      return html;
     }
-    return match;
-  });
+  })();
 
   return DOMPurify.sanitize(processedHtml, {
     ALLOWED_TAGS: [
