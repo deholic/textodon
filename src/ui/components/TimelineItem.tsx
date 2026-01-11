@@ -1,11 +1,11 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, CustomEmoji, Mention, ReactionInput, Status } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
 import { renderTextWithLinks } from "../utils/linkify";
-import boostIconUrl from "../assets/boost-icon.svg";
-import replyIconUrl from "../assets/reply-icon.svg";
-import trashIconUrl from "../assets/trash-icon.svg";
+import BoostIcon from "../assets/boost-icon.svg?react";
+import ReplyIcon from "../assets/reply-icon.svg?react";
+import TrashIcon from "../assets/trash-icon.svg?react";
 import { ReactionPicker } from "./ReactionPicker";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useImageZoom } from "../hooks/useImageZoom";
@@ -74,7 +74,7 @@ export const TimelineItem = ({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // useImageZoom ???ъ슜
+  // useImageZoom 사용
   const {
     zoom: imageZoom,
     offset: imageOffset,
@@ -203,8 +203,8 @@ export const TimelineItem = ({
       return null;
     }
     const actorName =
-      notification.actor.name || notificationActorHandle || notification.actor.handle || "?????놁쓬";
-    return `${actorName} ?섏씠 ${notification.label}`;
+      notification.actor.name || notificationActorHandle || notification.actor.handle || "알 수 없는 사용자";
+    return `${actorName} 님이 ${notification.label}`;
   }, [notification, notificationActorHandle]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
@@ -682,13 +682,13 @@ export const TimelineItem = ({
       ) : null}
       {boostedLabel ? (
         <div className="boosted-by">
-          <img src={boostIconUrl} alt="" aria-hidden="true" />
+          <BoostIcon aria-hidden="true" focusable="false" />
           <span>{boostedLabel}</span>
         </div>
       ) : null}
       {mentionNames ? (
         <div className="reply-info">
-          <img src={replyIconUrl} alt="" aria-hidden="true" />
+          <ReplyIcon aria-hidden="true" focusable="false" />
           <span>{mentionNames}에게 보낸 답글</span>
         </div>
       ) : null}
@@ -909,7 +909,7 @@ export const TimelineItem = ({
           </div>
           {actionsEnabled && canDelete ? (
             <button type="button" className="delete-button" onClick={() => setShowDeleteConfirm(true)}>
-              <img src={trashIconUrl} alt="" aria-hidden="true" />
+              <TrashIcon aria-hidden="true" focusable="false" />
             </button>
           ) : null}
         </footer>
@@ -988,14 +988,14 @@ export const TimelineItem = ({
               className="image-modal-close"
               onClick={() => setActiveImageIndex(null)}
             >
-              ?リ린
+              닫기
             </button>
             {attachments.length > 1 ? (
               <button
                 type="button"
                 className="image-modal-nav image-modal-nav-prev"
                 onClick={goToPrevImage}
-                aria-label="?댁쟾 ?대?吏"
+                aria-label="이전 이미지"
               >
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1007,7 +1007,7 @@ export const TimelineItem = ({
                 type="button"
                 className="image-modal-nav image-modal-nav-next"
                 onClick={goToNextImage}
-                aria-label="?ㅼ쓬 ?대?吏"
+                aria-label="다음 이미지"
               >
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -1016,7 +1016,7 @@ export const TimelineItem = ({
             ) : null}
             <img
               src={activeImageUrl}
-              alt="泥⑤? ?대?吏 ?먮낯"
+              alt="선택한 이미지 원본"
               ref={imageRef}
               draggable={false}
               className={isDragging ? "is-dragging" : undefined}

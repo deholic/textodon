@@ -1396,7 +1396,8 @@ button.ghost {
   background: var(--color-delete-button-bg);
 }
 
-.delete-button img {
+.delete-button img,
+.delete-button svg {
   width: 18px;
   height: 18px;
 }
@@ -1992,6 +1993,42 @@ button.ghost {
   color: var(--color-action-bg);
 }
 
+.profile-field-markdown p {
+  margin: 0;
+}
+
+.profile-field-markdown ul,
+.profile-field-markdown ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.profile-field-markdown li {
+  margin: 2px 0;
+}
+
+.profile-field-markdown code {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--color-readme-code-bg);
+}
+
+.profile-field-markdown pre {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-readme-code-border);
+  background: var(--color-readme-code-bg);
+  overflow-x: auto;
+}
+
+.profile-field-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--color-readme-code-border);
+}
+
 .profile-posts {
   padding: 0 16px 20px;
   display: flex;
@@ -2020,7 +2057,8 @@ button.ghost {
   margin-bottom: 8px;
 }
 
-.boosted-by img {
+.boosted-by img,
+.boosted-by svg {
   width: 18px;
   height: 18px;
 }
@@ -2091,7 +2129,8 @@ button.ghost {
   transform: translateX(20px);
 }
 
-.reply-info img {
+.reply-info img,
+.reply-info svg {
   width: 18px;
   height: 18px;
 }

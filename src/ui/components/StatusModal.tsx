@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import type { Account, Status, ThreadContext } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { TimelineItem } from "./TimelineItem";
-import boostIconUrl from "../assets/boost-icon.svg";
+import BoostIcon from "../assets/boost-icon.svg?react";
 
 export const StatusModal = ({
   status,
@@ -146,7 +146,7 @@ export const StatusModal = ({
 
           {boostedBy ? (
             <div className="boosted-by">
-              <img src={boostIconUrl} alt="" aria-hidden="true" />
+              <BoostIcon aria-hidden="true" focusable="false" />
               <span>{boostedBy.name || boostedBy.handle} 님이 부스트함</span>
             </div>
           ) : null}

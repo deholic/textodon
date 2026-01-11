@@ -11,6 +11,7 @@ import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
 import { formatHandle } from "../utils/account";
 import { isPlainUrl, renderTextWithLinks } from "../utils/linkify";
+import { renderMarkdown } from "../utils/markdown";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { TimelineItem } from "./TimelineItem";
 
@@ -29,6 +30,21 @@ const buildFallbackProfile = (status: Status): UserProfile => ({
 });
 
 const hasHtmlTags = (value: string): boolean => /<[^>]+>/.test(value);
+const hasMarkdownSyntax = (value: string): boolean => {
+  if (!value.trim()) {
+    return false;
+  }
+  const patterns = [
+    /^#{1,3}\s/m,
+    /^-\s+/m,
+    /```/,
+    /\*\*[^*]+\*\*/,
+    /`[^`]+`/,
+    /\[[^\]]+\]\([^)]+\)/,
+    /!\[[^\]]*\]\([^)]+\)/
+  ];
+  return patterns.some((pattern) => pattern.test(value));
+};
 
 const buildEmojiMap = (emojis: CustomEmoji[]): Map<string, string> =>
   new Map(emojis.map((emoji) => [emoji.shortcode, emoji.url]));
@@ -407,13 +423,22 @@ export const ProfileModal = ({
       if (hasHtmlTags(value)) {
         return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }} />;
       }
+      if (hasMarkdownSyntax(value)) {
+        const markdownEmojiMap = showCustomEmojis ? emojiMap : undefined;
+        return (
+          <div
+            className="profile-field-markdown"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderMarkdown(value, markdownEmojiMap)) }}
+          />
+        );
+      }
       const nodes = renderTextWithEmojis(value, `profile-field-${index}`, false);
       if (isPlainUrl(value)) {
         return <span className="profile-field-link">{nodes}</span>;
       }
       return <span>{nodes}</span>;
     },
-    [renderTextWithEmojis]
+    [emojiMap, renderTextWithEmojis, showCustomEmojis]
   );
 
   const renderFieldLabel = useCallback(
