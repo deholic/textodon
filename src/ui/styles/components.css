@@ -1396,7 +1396,8 @@ button.ghost {
   background: var(--color-delete-button-bg);
 }
 
-.delete-button img {
+.delete-button img,
+.delete-button svg {
   width: 18px;
   height: 18px;
 }
@@ -2056,7 +2057,8 @@ button.ghost {
   margin-bottom: 8px;
 }
 
-.boosted-by img {
+.boosted-by img,
+.boosted-by svg {
   width: 18px;
   height: 18px;
 }
@@ -2127,7 +2129,8 @@ button.ghost {
   transform: translateX(20px);
 }
 
-.reply-info img {
+.reply-info img,
+.reply-info svg {
   width: 18px;
   height: 18px;
 }
