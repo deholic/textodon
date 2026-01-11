@@ -1,6 +1,8 @@
-﻿:root {
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+:root {
   color-scheme: light dark;
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   background: var(--page-background);
   color: var(--color-text-primary);
   --page-background: radial-gradient(circle at top left, #f0efe9, #f9f7f2 60%, #ffffff);
