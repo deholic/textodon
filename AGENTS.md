@@ -13,6 +13,11 @@
 - 접근성: 버튼/아이콘에 `aria-label`, 텍스트 대체를 제공한다.
 - 배포 용어: Cloudflare Pages 배포는 production, GitHub Pages 배포는 beta로 칭한다.
 
+## 인코딩/텍스트 품질
+- 모든 소스 파일은 UTF-8 (BOM 없음)으로 저장한다.
+- 커밋 전 텍스트 깨짐 검사: `rg -n "�" src`, `rg -n "[\u00C0-\u00FF]" src`
+- UI 문자열에 한글 외의 CJK 문자가 섞여 있으면 원인을 확인하고 교체한다.
+
 ## 작업 플로우
 - 작업 시작 전: `develop` 최신화 → 새 feature 브랜치 생성.
 - 새로운 작업은 항상 `develop` 최신화 후 `feature/{기능-이름}` 브랜치에서 시작한다.
