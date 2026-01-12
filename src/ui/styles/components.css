@@ -137,6 +137,12 @@
   color: var(--color-oss-list);
 }
 
+.info-markdown ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-oss-list);
+}
+
 .app-header p {
   margin: 4px 0 0;
   color: var(--color-app-header-text);
