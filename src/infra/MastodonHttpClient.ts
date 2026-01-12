@@ -48,7 +48,7 @@ const mapCustomEmojis = (data: unknown): CustomEmoji[] => {
 export class MastodonHttpClient implements MastodonApi {
   async verifyAccount(
     account: Account
-  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null }> {
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }> {
     const response = await fetch(`${account.instanceUrl}/api/v1/accounts/verify_credentials`, {
       headers: buildHeaders(account)
     });
@@ -59,7 +59,8 @@ export class MastodonHttpClient implements MastodonApi {
     return {
       accountName: String(data.display_name ?? data.username ?? ""),
       handle: String(data.acct ?? ""),
-      avatarUrl: typeof data.avatar === "string" ? data.avatar : null
+      avatarUrl: typeof data.avatar === "string" ? data.avatar : null,
+      emojis: mapCustomEmojis(data.emojis)
     };
   }
 

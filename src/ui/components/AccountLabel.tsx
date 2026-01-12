@@ -1,4 +1,5 @@
 import React from "react";
+import type { CustomEmoji } from "../../domain/types";
 
 export interface AccountLabelProps {
   /** 아바타 이미지 URL */
@@ -37,11 +38,65 @@ export interface AccountLabelProps {
   ariaLabel?: string;
   /** 커스텀 이름 렌더링 (이모지 등 HTML 포함) */
   customNameNode?: React.ReactNode;
+  /** 커스텀 이모지 목록 */
+  customEmojis?: CustomEmoji[];
   /** 텍스트를 별도 div로 렌더링 (기본값: false, span 사용) */
   textAsDiv?: boolean;
   /** 이름을 굵게 표시할지 여부 (기본값: false) */
   boldName?: boolean;
 }
+
+const buildEmojiMap = (emojis: CustomEmoji[]): Map<string, string> =>
+  new Map(emojis.map((emoji) => [emoji.shortcode, emoji.url]));
+
+const tokenizeWithEmojis = (
+  text: string,
+  emojiMap: Map<string, string>
+): Array<{ type: "text"; value: string } | { type: "emoji"; name: string; url: string }> => {
+  const regex = /:([a-zA-Z0-9_]+):/g;
+  const tokens: Array<{ type: "text"; value: string } | { type: "emoji"; name: string; url: string }> = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    const shortcode = match[1];
+    const url = emojiMap.get(shortcode);
+    if (match.index > lastIndex) {
+      tokens.push({ type: "text", value: text.slice(lastIndex, match.index) });
+    }
+    if (url) {
+      tokens.push({ type: "emoji", name: shortcode, url });
+    } else {
+      tokens.push({ type: "text", value: match[0] });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    tokens.push({ type: "text", value: text.slice(lastIndex) });
+  }
+  return tokens;
+};
+
+const renderNameWithEmojis = (value: string, customEmojis?: CustomEmoji[]): React.ReactNode => {
+  if (!customEmojis || customEmojis.length === 0) {
+    return value;
+  }
+  const emojiMap = buildEmojiMap(customEmojis);
+  const tokens = tokenizeWithEmojis(value, emojiMap);
+  return tokens.map((token, index) => {
+    if (token.type === "emoji") {
+      return (
+        <img
+          key={`emoji-${token.name}-${index}`}
+          src={token.url}
+          alt={`:${token.name}:`}
+          className="custom-emoji"
+          loading="lazy"
+        />
+      );
+    }
+    return <React.Fragment key={`text-${index}`}>{token.value}</React.Fragment>;
+  });
+};
 
 /**
  * 계정 정보를 표시하는 재사용 가능한 컴포넌트
@@ -66,6 +121,7 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
   avatarSize = 32,
   ariaLabel,
   customNameNode,
+  customEmojis,
   textAsDiv = false,
   boldName = false
 }) => {
@@ -110,7 +166,7 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
   }
 
   const TextContainer = textAsDiv ? "div" : "span";
-  const nameContent = customNameNode || effectiveDisplayName;
+  const nameContent = customNameNode ?? renderNameWithEmojis(effectiveDisplayName, customEmojis);
   const textContent = (
     <TextContainer className={textContainerClassName}>
       {boldName ? <strong>{nameContent}</strong> : <span>{nameContent}</span>}

@@ -18,7 +18,7 @@ export const AccountSelector = ({
   variant?: "panel" | "inline";
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDetailsElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useClickOutside(dropdownRef, dropdownOpen, () => setDropdownOpen(false));
 
@@ -47,6 +47,7 @@ export const AccountSelector = ({
                 name={activeAccount.name}
                 handle={activeAccount.handle ? formatHandle(activeAccount.handle, activeAccount.instanceUrl) : undefined}
                 instanceUrl={activeAccount.instanceUrl}
+                customEmojis={activeAccount.emojis}
               />
             ) : (
               <span className="account-selector-placeholder">계정을 선택하세요.</span>
@@ -76,6 +77,7 @@ export const AccountSelector = ({
                           name={account.name}
                           handle={account.handle ? formatHandle(account.handle, account.instanceUrl) : undefined}
                           instanceUrl={account.instanceUrl}
+                          customEmojis={account.emojis}
                         />
                       </button>
                       <button type="button" onClick={() => removeAccount(account.id)} className="ghost">

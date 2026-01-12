@@ -14,6 +14,7 @@ export type Account = {
   handle: string;
   url: string | null;
   avatarUrl: string | null;
+  emojis: CustomEmoji[];
 };
 
 export type MediaAttachment = {
