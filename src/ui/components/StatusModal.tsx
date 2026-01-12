@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import type { Account, Status, ThreadContext } from "../../domain/types";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import type { Account, CustomEmoji, Status, ThreadContext } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { TimelineItem } from "./TimelineItem";
 import BoostIcon from "../assets/boost-icon.svg?react";
@@ -43,6 +43,69 @@ export const StatusModal = ({
 }) => {
   const displayStatus = status.reblog ?? status;
   const boostedBy = status.reblog ? status.boostedBy : null;
+  const renderEmojiText = useCallback(
+    (text: string, customEmojis: CustomEmoji[]): React.ReactNode => {
+      if (!showCustomEmojis || customEmojis.length === 0) {
+        return text;
+      }
+      const emojiMap = new Map(customEmojis.map((emoji) => [emoji.shortcode, emoji.url]));
+      const regex = /:([a-zA-Z0-9_]+):/g;
+      const nodes: React.ReactNode[] = [];
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      let segmentIndex = 0;
+      while ((match = regex.exec(text)) !== null) {
+        const shortcode = match[1];
+        const url = emojiMap.get(shortcode);
+        if (match.index > lastIndex) {
+          nodes.push(
+            <React.Fragment key={`label-text-${segmentIndex}`}>
+              {text.slice(lastIndex, match.index)}
+            </React.Fragment>
+          );
+          segmentIndex += 1;
+        }
+        if (url) {
+          nodes.push(
+            <img
+              key={`label-emoji-${shortcode}-${segmentIndex}`}
+              src={url}
+              alt={`:${shortcode}:`}
+              className="custom-emoji"
+              loading="lazy"
+            />
+          );
+        } else {
+          nodes.push(
+            <React.Fragment key={`label-raw-${segmentIndex}`}>
+              {match[0]}
+            </React.Fragment>
+          );
+        }
+        segmentIndex += 1;
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        nodes.push(
+          <React.Fragment key={`label-text-${segmentIndex}`}>{text.slice(lastIndex)}</React.Fragment>
+        );
+      }
+      return nodes;
+    },
+    [showCustomEmojis]
+  );
+  const boostedLabel = useMemo(() => {
+    if (!boostedBy) {
+      return null;
+    }
+    const label = boostedBy.name || boostedBy.handle;
+    const labelNode = renderEmojiText(label, status.accountEmojis);
+    return (
+      <>
+        {labelNode} 님이 부스트함
+      </>
+    );
+  }, [boostedBy, renderEmojiText, status.accountEmojis]);
   const handleProfileClick = useCallback(
     (target: Status) => {
       if (!onProfileClick) {
@@ -144,10 +207,10 @@ export const StatusModal = ({
             </div>
           )}
 
-          {boostedBy ? (
+          {boostedLabel ? (
             <div className="boosted-by">
               <BoostIcon aria-hidden="true" focusable="false" />
-              <span>{boostedBy.name || boostedBy.handle} 님이 부스트함</span>
+              <span>{boostedLabel}</span>
             </div>
           ) : null}
           
