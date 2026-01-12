@@ -186,9 +186,9 @@ const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
 const TermsContent = () => (
   <>
     <p>
-      Deck은 개인 또는 팀이 운영하는 마스토돈 인스턴스에 접속하는 클라이언트입니다. 본
-      서비스는 사용자의 계정 정보 및 게시물을 저장하지 않으며, 모든 요청은 사용자가 설정한
-      인스턴스로 직접 전송됩니다.
+      Deck은 개인 또는 팀이 운영하는 마스토돈/미스키 인스턴스에 접속하는 오픈소스
+      클라이언트입니다. 본 서비스는 사용자의 계정 정보 및 게시물을 저장하지 않으며, 모든
+      요청은 사용자가 등록한 인스턴스로 직접 전송됩니다.
     </p>
     <p>
       사용자는 각 인스턴스의 정책과 법령을 준수해야 하며, 계정 보안과 토큰 관리 책임은
@@ -201,15 +201,13 @@ const LicenseContent = () => <pre className="license">{licenseText}</pre>;
 
 const OssContent = () => (
   <>
-    <p>Deck은 다음 오픈소스를 사용합니다.</p>
+    <p>Deck에서 사용하는 주요 오픈소스는 다음과 같습니다.</p>
     <ul className="oss-list">
-      <li>react</li>
-      <li>react-dom</li>
-      <li>vite</li>
-      <li>@vitejs/plugin-react</li>
-      <li>typescript</li>
-      <li>@types/react</li>
-      <li>@types/react-dom</li>
+      <li>React</li>
+      <li>Vite</li>
+      <li>DOMPurify</li>
+      <li>emoji-datasource</li>
+      <li>Wrangler</li>
     </ul>
   </>
 );
