@@ -76,6 +76,63 @@ const tokenizeWithEmojis = (
   return tokens;
 };
 
+const replaceCustomEmojisInHtml = (html: string, emojiMap: Map<string, string>): string => {
+  if (emojiMap.size === 0) {
+    return html;
+  }
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let current = walker.nextNode();
+    while (current) {
+      textNodes.push(current as Text);
+      current = walker.nextNode();
+    }
+    const regex = /:([a-zA-Z0-9_]+):/g;
+    textNodes.forEach((node) => {
+      const parent = node.parentElement;
+      if (parent && ["CODE", "PRE"].includes(parent.tagName)) {
+        return;
+      }
+      const value = node.nodeValue ?? "";
+      if (!regex.test(value)) {
+        return;
+      }
+      regex.lastIndex = 0;
+      const fragment = doc.createDocumentFragment();
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(value)) !== null) {
+        const shortcode = match[1];
+        const url = emojiMap.get(shortcode);
+        if (match.index > lastIndex) {
+          fragment.appendChild(doc.createTextNode(value.slice(lastIndex, match.index)));
+        }
+        if (url) {
+          const img = doc.createElement("img");
+          img.setAttribute("src", url);
+          img.setAttribute("alt", `:${shortcode}:`);
+          img.setAttribute("class", "custom-emoji");
+          img.setAttribute("loading", "lazy");
+          fragment.appendChild(img);
+        } else {
+          fragment.appendChild(doc.createTextNode(match[0]));
+        }
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < value.length) {
+        fragment.appendChild(doc.createTextNode(value.slice(lastIndex)));
+      }
+      node.parentNode?.replaceChild(fragment, node);
+    });
+    return doc.body.innerHTML;
+  } catch {
+    return html;
+  }
+};
+
 export const ProfileModal = ({
   status,
   account,
@@ -418,19 +475,25 @@ export const ProfileModal = ({
       return null;
     }
     if (hasHtmlTags(displayProfile.bio)) {
-      return { type: "html" as const, value: sanitizeHtml(displayProfile.bio) };
+      const processed =
+        showCustomEmojis && emojiMap.size > 0
+          ? replaceCustomEmojisInHtml(displayProfile.bio, emojiMap)
+          : displayProfile.bio;
+      return { type: "html" as const, value: sanitizeHtml(processed) };
     }
     return {
       type: "text" as const,
       value: renderTextWithEmojis(displayProfile.bio, "profile-bio", true)
     };
-  }, [displayProfile.bio, renderTextWithEmojis]);
+  }, [displayProfile.bio, emojiMap, renderTextWithEmojis, showCustomEmojis]);
   const activeHandle = account?.handle ? formatHandle(account.handle, account.instanceUrl) : account?.instanceUrl ?? "";
 
   const renderFieldValue = useCallback(
     (value: string, index: number) => {
       if (hasHtmlTags(value)) {
-        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }} />;
+        const processed =
+          showCustomEmojis && emojiMap.size > 0 ? replaceCustomEmojisInHtml(value, emojiMap) : value;
+        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(processed) }} />;
       }
       if (hasMarkdownSyntax(value)) {
         const markdownEmojiMap = showCustomEmojis ? emojiMap : undefined;
@@ -453,11 +516,13 @@ export const ProfileModal = ({
   const renderFieldLabel = useCallback(
     (label: string, index: number) => {
       if (hasHtmlTags(label)) {
-        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(label) }} />;
+        const processed =
+          showCustomEmojis && emojiMap.size > 0 ? replaceCustomEmojisInHtml(label, emojiMap) : label;
+        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(processed) }} />;
       }
       return <span>{renderTextWithEmojis(label, `profile-field-label-${index}`, false)}</span>;
     },
-    [renderTextWithEmojis]
+    [emojiMap, renderTextWithEmojis, showCustomEmojis]
   );
 
   const normalizedAccountHandle = account?.handle ? formatHandle(account.handle, account.instanceUrl) : "";
