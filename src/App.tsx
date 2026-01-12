@@ -17,6 +17,7 @@ import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import licenseText from "../LICENSE?raw";
 
 type Route = "home" | "terms" | "license" | "oss";
+type InfoModalType = "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
 type ProfileTarget = { status: Status; account: Account | null; zIndex: number };
 
@@ -182,9 +183,8 @@ const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
   }
 };
 
-const TermsPage = () => (
-  <section className="panel info-panel">
-    <PageHeader title="이용약관" />
+const TermsContent = () => (
+  <>
     <p>
       Deck은 개인 또는 팀이 운영하는 마스토돈 인스턴스에 접속하는 클라이언트입니다. 본
       서비스는 사용자의 계정 정보 및 게시물을 저장하지 않으며, 모든 요청은 사용자가 설정한
@@ -194,19 +194,13 @@ const TermsPage = () => (
       사용자는 각 인스턴스의 정책과 법령을 준수해야 하며, 계정 보안과 토큰 관리 책임은
       사용자에게 있습니다. 서비스는 제공되는 기능을 개선하거나 변경할 수 있습니다.
     </p>
-  </section>
+  </>
 );
 
-const LicensePage = () => (
-  <section className="panel info-panel">
-    <PageHeader title="라이선스" />
-    <pre className="license">{licenseText}</pre>
-  </section>
-);
+const LicenseContent = () => <pre className="license">{licenseText}</pre>;
 
-const OssPage = () => (
-  <section className="panel info-panel">
-    <PageHeader title="오픈소스 목록" />
+const OssContent = () => (
+  <>
     <p>Deck은 다음 오픈소스를 사용합니다.</p>
     <ul className="oss-list">
       <li>react</li>
@@ -217,6 +211,73 @@ const OssPage = () => (
       <li>@types/react</li>
       <li>@types/react-dom</li>
     </ul>
+  </>
+);
+
+const getInfoModalTitle = (type: InfoModalType) => {
+  switch (type) {
+    case "terms":
+      return "이용약관";
+    case "license":
+      return "라이선스";
+    case "oss":
+      return "오픈소스 목록";
+    default:
+      return "";
+  }
+};
+
+const InfoModalContent = ({ type }: { type: InfoModalType }) => {
+  switch (type) {
+    case "terms":
+      return <TermsContent />;
+    case "license":
+      return <LicenseContent />;
+    case "oss":
+      return <OssContent />;
+    default:
+      return null;
+  }
+};
+
+const InfoModal = ({ type, onClose }: { type: InfoModalType; onClose: () => void }) => {
+  const title = getInfoModalTitle(type);
+  return (
+    <div className="info-modal" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="info-modal-backdrop" onClick={onClose} />
+      <div className="info-modal-content">
+        <div className="info-modal-header">
+          <h3 className="info-modal-title">{title}</h3>
+          <button type="button" className="ghost" onClick={onClose} aria-label={`${title} 닫기`}>
+            닫기
+          </button>
+        </div>
+        <div className="info-modal-body">
+          <InfoModalContent type={type} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TermsPage = () => (
+  <section className="panel info-panel">
+    <PageHeader title="이용약관" />
+    <TermsContent />
+  </section>
+);
+
+const LicensePage = () => (
+  <section className="panel info-panel">
+    <PageHeader title="라이선스" />
+    <LicenseContent />
+  </section>
+);
+
+const OssPage = () => (
+  <section className="panel info-panel">
+    <PageHeader title="오픈소스 목록" />
+    <OssContent />
   </section>
 );
 
@@ -800,6 +861,7 @@ export const App = () => {
     return localStorage.getItem("textodon.reactions") !== "off";
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [infoModal, setInfoModal] = useState<InfoModalType | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileComposeOpen, setMobileComposeOpen] = useState(false);
   const { services, accountsState } = useAppContext();
@@ -1480,9 +1542,33 @@ export const App = () => {
               </div>
               <div className="sidebar-divider" role="presentation" />
               <nav className="sidebar-links">
-                <a href="#/terms">이용약관</a>
-                <a href="#/license">라이선스</a>
-                <a href="#/oss">오픈소스 목록</a>
+                <a
+                  href="#/terms"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setInfoModal("terms");
+                  }}
+                >
+                  이용약관
+                </a>
+                <a
+                  href="#/license"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setInfoModal("license");
+                  }}
+                >
+                  라이선스
+                </a>
+                <a
+                  href="#/oss"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setInfoModal("oss");
+                  }}
+                >
+                  오픈소스 목록
+                </a>
                 <a href="https://github.com/deholic/textodon" target="_blank" rel="noreferrer">
                   소스 코드
                 </a>
@@ -1555,6 +1641,10 @@ onAccountChange={setSectionAccount}
           </section>
         ) : null}
       </main>
+
+      {infoModal ? (
+        <InfoModal type={infoModal} onClose={() => setInfoModal(null)} />
+      ) : null}
 
       {mobileComposeOpen ? (
         <div className="mobile-menu">
