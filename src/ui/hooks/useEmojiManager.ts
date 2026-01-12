@@ -66,11 +66,13 @@ const unicodeFromUnified = (value: string) => {
     .join("");
 };
 
+const normalizeSearchTerm = (value: string) => value.trim().toLowerCase();
+
 const buildStandardEmojiCategories = () => {
   const grouped = new Map<string, EmojiItem[]>();
   const seen = new Set<string>();
 
-  const addEmoji = (unified: string, categoryKey: string) => {
+  const addEmoji = (unified: string, categoryKey: string, shortcode?: string) => {
     const unicode = unicodeFromUnified(unified);
     if (!unicode) {
       return;
@@ -86,6 +88,7 @@ const buildStandardEmojiCategories = () => {
       id,
       label: unicode,
       unicode,
+      shortcode,
       isCustom: false,
       category: label
     });
@@ -101,11 +104,12 @@ const buildStandardEmojiCategories = () => {
       return;
     }
     const categoryKey = emoji.category ?? "기타";
-    addEmoji(emoji.unified, categoryKey);
+    const shortcode = emoji.short_name ? normalizeSearchTerm(emoji.short_name) : undefined;
+    addEmoji(emoji.unified, categoryKey, shortcode);
     if (emoji.skin_variations) {
       Object.values(emoji.skin_variations).forEach((variation) => {
         if (variation?.unified) {
-          addEmoji(variation.unified, categoryKey);
+          addEmoji(variation.unified, categoryKey, shortcode);
         }
       });
     }
@@ -210,12 +214,12 @@ export const useEmojiManager = (
 
   const standardEmojiCategories = STANDARD_EMOJI_CATEGORIES;
 
-  const standardEmojiItems = useMemo(
+  const standardEmojiItems = useMemo<EmojiItem[]>(
     () => standardEmojiCategories.flatMap((category) => category.emojis),
     [standardEmojiCategories]
   );
 
-  const customEmojiItems = useMemo(
+  const customEmojiItems = useMemo<EmojiItem[]>(
     () =>
       activeEmojis.map((emoji) => ({
         id: `custom:${emoji.shortcode}`,
@@ -231,6 +235,21 @@ export const useEmojiManager = (
   const allEmojis = useMemo(
     () => [...standardEmojiItems, ...customEmojiItems],
     [standardEmojiItems, customEmojiItems]
+  );
+
+  const searchEmojis = useCallback(
+    (query: string, limit?: number) => {
+      const normalized = normalizeSearchTerm(query);
+      if (!normalized) {
+        return [];
+      }
+      const results = allEmojis.filter((emoji) => {
+        const shortcode = emoji.shortcode ? normalizeSearchTerm(emoji.shortcode) : "";
+        return shortcode.startsWith(normalized);
+      });
+      return typeof limit === "number" ? results.slice(0, limit) : results;
+    },
+    [allEmojis]
   );
 
   // shortcode → emoji 맵핑 (커스텀 전용)
@@ -395,6 +414,7 @@ export const useEmojiManager = (
     // 함수
     loadEmojis,
     addToRecent,
-    toggleCategory
+    toggleCategory,
+    searchEmojis
   };
 };
