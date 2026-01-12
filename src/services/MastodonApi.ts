@@ -10,7 +10,9 @@ export type CreateStatusInput = {
 };
 
 export interface MastodonApi {
-  verifyAccount(account: Account): Promise<{ accountName: string; handle: string; avatarUrl: string | null }>;
+  verifyAccount(
+    account: Account
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }>;
   fetchHomeTimeline(account: Account, limit: number, maxId?: string): Promise<Status[]>;
   fetchTimeline(account: Account, timeline: TimelineType, limit: number, maxId?: string): Promise<Status[]>;
   fetchCustomEmojis(account: Account): Promise<CustomEmoji[]>;

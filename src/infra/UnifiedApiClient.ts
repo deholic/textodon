@@ -12,7 +12,9 @@ export class UnifiedApiClient implements MastodonApi {
     return account.platform === "misskey" ? this.misskey : this.mastodon;
   }
 
-  verifyAccount(account: Account): Promise<{ accountName: string; handle: string; avatarUrl: string | null }> {
+  verifyAccount(
+    account: Account
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }> {
     return this.getClient(account).verifyAccount(account);
   }
 

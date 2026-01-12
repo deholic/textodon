@@ -974,7 +974,8 @@ export const App = () => {
           displayName: "",
           handle: "",
           url: null,
-          avatarUrl: null
+          avatarUrl: null,
+          emojis: []
         };
         const verified = await services.api.verifyAccount(draft);
         const fullHandle = formatHandle(verified.handle, pending.instanceUrl);
@@ -995,7 +996,8 @@ export const App = () => {
           name: `${displayName} @${fullHandle}`,
           displayName,
           handle: fullHandle,
-          avatarUrl: verified.avatarUrl
+          avatarUrl: verified.avatarUrl,
+          emojis: verified.emojis ?? []
         });
       } catch (err) {
         setActionError(err instanceof Error ? err.message : "OAuth 처리에 실패했습니다.");

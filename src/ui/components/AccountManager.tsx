@@ -74,6 +74,7 @@ export const AccountManager = ({
                 name={account.name}
                 handle={account.handle ? formatHandle(account.handle, account.instanceUrl) : undefined}
                 instanceUrl={account.instanceUrl}
+                customEmojis={account.emojis}
               />
             </button>
             <button type="button" onClick={() => removeAccount(account.id)} className="ghost">

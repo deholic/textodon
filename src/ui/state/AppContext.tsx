@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { Account } from "../../domain/types";
+import type { Account, CustomEmoji } from "../../domain/types";
 import type { AccountStore } from "../../services/AccountStore";
 import type { MastodonApi } from "../../services/MastodonApi";
 import type { OAuthClient } from "../../services/OAuthClient";
@@ -21,6 +21,20 @@ const loadActiveAccountId = (accounts: Account[]): string | null => {
     return accounts[0]?.id ?? null;
   }
   return accounts[0]?.id ?? null;
+};
+
+const areEmojisEqual = (left: CustomEmoji[], right: CustomEmoji[]): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+  return left.every((emoji, index) => {
+    const target = right[index];
+    return (
+      emoji.shortcode === target.shortcode &&
+      emoji.url === target.url &&
+      (emoji.category ?? null) === (target.category ?? null)
+    );
+  });
 };
 
 const persistActiveAccountId = (accountId: string | null) => {
@@ -59,7 +73,7 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
       const platform = account.platform ?? "mastodon";
       if (account.displayName && account.handle) {
         const fullHandle = formatHandle(account.handle, account.instanceUrl);
-        return { ...account, platform, handle: fullHandle };
+        return { ...account, platform, handle: fullHandle, emojis: account.emojis ?? [] };
       }
       const parsed = account.name ? parseAccountLabel(account.name) : null;
       const displayName = parsed?.displayName || account.name || account.instanceUrl;
@@ -70,7 +84,8 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
         displayName,
         handle,
         url: account.url ?? null,
-        avatarUrl: account.avatarUrl ?? null
+        avatarUrl: account.avatarUrl ?? null,
+        emojis: account.emojis ?? []
       };
     });
     services.accountStore.save(normalized);
@@ -116,7 +131,8 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
               name: `${displayName} @${handle}`,
               displayName,
               handle,
-              avatarUrl: verified.avatarUrl
+              avatarUrl: verified.avatarUrl,
+              emojis: verified.emojis ?? []
             };
           } catch {
             return account;
@@ -135,7 +151,8 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
           current.name !== updated.name ||
           current.displayName !== updated.displayName ||
           current.handle !== updated.handle ||
-          current.avatarUrl !== updated.avatarUrl
+          current.avatarUrl !== updated.avatarUrl ||
+          !areEmojisEqual(current.emojis ?? [], updated.emojis ?? [])
         );
       });
       if (!hasChange) {

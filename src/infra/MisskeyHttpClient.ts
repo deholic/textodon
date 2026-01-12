@@ -137,7 +137,7 @@ export class MisskeyHttpClient implements MastodonApi {
 
   async verifyAccount(
     account: Account
-  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null }> {
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }> {
     const response = await fetch(`${normalizeInstanceUrl(account.instanceUrl)}/api/i`, {
       method: "POST",
       headers: {
@@ -152,7 +152,8 @@ export class MisskeyHttpClient implements MastodonApi {
     return {
       accountName: String(data.name ?? data.username ?? ""),
       handle: String(data.username ?? ""),
-      avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : null
+      avatarUrl: typeof data.avatarUrl === "string" ? data.avatarUrl : null,
+      emojis: mapMisskeyEmojis(data)
     };
   }
 
