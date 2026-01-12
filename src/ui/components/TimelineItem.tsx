@@ -367,6 +367,19 @@ export const TimelineItem = ({
     },
     [displayStatus, onStatusClick]
   );
+  const handleStatusKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      if (!onStatusClick) {
+        return;
+      }
+      onStatusClick(displayStatus);
+    },
+    [displayStatus, onStatusClick]
+  );
   const visibilityIcon = useMemo(() => {
     switch (displayStatus.visibility) {
       case "public":
@@ -751,13 +764,29 @@ export const TimelineItem = ({
         </div>
       ) : null}
       {boostedLabel ? (
-        <div className="boosted-by">
+        <div
+          className="boosted-by"
+          onClick={handleStatusClick}
+          onKeyDown={handleStatusKeyDown}
+          role={onStatusClick ? "button" : undefined}
+          tabIndex={onStatusClick ? 0 : undefined}
+          aria-label={onStatusClick ? "부스트한 글 스레드 보기" : undefined}
+          data-interactive={onStatusClick ? "true" : undefined}
+        >
           <BoostIcon aria-hidden="true" focusable="false" />
           <span>{boostedLabel}</span>
         </div>
       ) : null}
       {mentionLabel ? (
-        <div className="reply-info">
+        <div
+          className="reply-info"
+          onClick={handleStatusClick}
+          onKeyDown={handleStatusKeyDown}
+          role={onStatusClick ? "button" : undefined}
+          tabIndex={onStatusClick ? 0 : undefined}
+          aria-label={onStatusClick ? "댓글 스레드 보기" : undefined}
+          data-interactive={onStatusClick ? "true" : undefined}
+        >
           <ReplyIcon aria-hidden="true" focusable="false" />
           <span>{mentionLabel}에게 보낸 답글</span>
         </div>
