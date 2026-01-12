@@ -13,8 +13,12 @@ import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle } from "./ui/utils/account";
 import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
+import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
+import { renderMarkdown } from "./ui/utils/markdown";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import licenseText from "../LICENSE?raw";
+import ossMarkdown from "./ui/content/oss.md?raw";
+import termsMarkdown from "./ui/content/terms.md?raw";
 
 type Route = "home" | "terms" | "license" | "oss";
 type InfoModalType = "terms" | "license" | "oss";
@@ -183,33 +187,17 @@ const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
   }
 };
 
+const termsHtml = sanitizeHtml(renderMarkdown(termsMarkdown));
+const ossHtml = sanitizeHtml(renderMarkdown(ossMarkdown));
+
 const TermsContent = () => (
-  <>
-    <p>
-      Deck은 개인 또는 팀이 운영하는 마스토돈/미스키 인스턴스에 접속하는 오픈소스
-      클라이언트입니다. 본 서비스는 사용자의 계정 정보 및 게시물을 저장하지 않으며, 모든
-      요청은 사용자가 등록한 인스턴스로 직접 전송됩니다.
-    </p>
-    <p>
-      사용자는 각 인스턴스의 정책과 법령을 준수해야 하며, 계정 보안과 토큰 관리 책임은
-      사용자에게 있습니다. 서비스는 제공되는 기능을 개선하거나 변경할 수 있습니다.
-    </p>
-  </>
+  <div className="info-markdown" dangerouslySetInnerHTML={{ __html: termsHtml }} />
 );
 
 const LicenseContent = () => <pre className="license">{licenseText}</pre>;
 
 const OssContent = () => (
-  <>
-    <p>Deck에서 사용하는 주요 오픈소스는 다음과 같습니다.</p>
-    <ul className="oss-list">
-      <li>React</li>
-      <li>Vite</li>
-      <li>DOMPurify</li>
-      <li>emoji-datasource</li>
-      <li>Wrangler</li>
-    </ul>
-  </>
+  <div className="info-markdown" dangerouslySetInnerHTML={{ __html: ossHtml }} />
 );
 
 const getInfoModalTitle = (type: InfoModalType) => {
