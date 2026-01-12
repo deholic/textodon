@@ -68,6 +68,31 @@ const unicodeFromUnified = (value: string) => {
 
 const normalizeSearchTerm = (value: string) => value.trim().toLowerCase();
 
+const scoreFuzzyMatch = (query: string, target: string) => {
+  if (!query) {
+    return -1;
+  }
+  let score = 0;
+  let queryIndex = 0;
+  let consecutive = 0;
+  for (let index = 0; index < target.length; index += 1) {
+    const char = target[index];
+    if (char === query[queryIndex]) {
+      const isStart = index === 0 || target[index - 1] === "_";
+      const bonus = isStart ? 6 : 0;
+      consecutive += 1;
+      score += 4 + bonus + consecutive * 2;
+      queryIndex += 1;
+      if (queryIndex >= query.length) {
+        return score + (target.length - index) * 0.02;
+      }
+    } else {
+      consecutive = 0;
+    }
+  }
+  return -1;
+};
+
 const buildStandardEmojiCategories = () => {
   const grouped = new Map<string, EmojiItem[]>();
   const seen = new Set<string>();
@@ -243,10 +268,15 @@ export const useEmojiManager = (
       if (!normalized) {
         return [];
       }
-      const results = allEmojis.filter((emoji) => {
-        const shortcode = emoji.shortcode ? normalizeSearchTerm(emoji.shortcode) : "";
-        return shortcode.startsWith(normalized);
-      });
+      const results = allEmojis
+        .map((emoji) => {
+          const shortcode = emoji.shortcode ? normalizeSearchTerm(emoji.shortcode) : "";
+          const score = scoreFuzzyMatch(normalized, shortcode);
+          return { emoji, score };
+        })
+        .filter((item) => item.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .map((item) => item.emoji);
       return typeof limit === "number" ? results.slice(0, limit) : results;
     },
     [allEmojis]
