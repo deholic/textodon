@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, ReactionInput } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { useClickOutside } from "../hooks/useClickOutside";
@@ -18,6 +18,7 @@ export const ReactionPicker = ({
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const [recentOpen, setRecentOpen] = useState(true);
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState("");
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -32,8 +33,18 @@ export const ReactionPicker = ({
     expandedCategories,
     loadEmojis,
     addToRecent,
-    toggleCategory
+    toggleCategory,
+    searchEmojis
   } = useEmojiManager(account, api, false);
+
+  const emojiSearchResults = useMemo(() => {
+    if (!emojiSearchQuery.trim()) {
+      return [];
+    }
+    return searchEmojis(emojiSearchQuery);
+  }, [emojiSearchQuery, searchEmojis]);
+
+  const hasEmojiSearch = emojiSearchQuery.trim().length > 0;
 
   // 패널이 열리면 이모지 로드
   useEffect(() => {
@@ -46,10 +57,17 @@ export const ReactionPicker = ({
 
   useEffect(() => {
     if (!open) {
+      setEmojiSearchQuery("");
       return;
     }
     setRecentOpen(true);
   }, [open]);
+
+  useEffect(() => {
+    if (emojiSearchQuery.trim() && account && emojiStatus === "idle") {
+      void loadEmojis();
+    }
+  }, [emojiSearchQuery, account, emojiStatus, loadEmojis]);
 
   useEffect(() => {
     if (!open) {
@@ -151,6 +169,18 @@ export const ReactionPicker = ({
           >
             <div className="compose-emoji-panel reaction-emoji-panel">
               {!account ? <p className="compose-emoji-empty">계정을 선택해주세요.</p> : null}
+              {account ? (
+                <div className="compose-emoji-search">
+                  <input
+                    type="text"
+                    value={emojiSearchQuery}
+                    onChange={(event) => setEmojiSearchQuery(event.target.value)}
+                    placeholder="이모지 검색"
+                    aria-label="이모지 검색"
+                    disabled={emojiStatus === "loading"}
+                  />
+                </div>
+              ) : null}
               {account && emojiStatus === "loading" ? (
                 <p className="compose-emoji-empty">이모지를 불러오는 중...</p>
               ) : null}
@@ -167,6 +197,37 @@ export const ReactionPicker = ({
               ) : null}
               {account && emojiCategories.length > 0 ? (
                 <>
+                  {hasEmojiSearch ? (
+                    <section className="compose-emoji-category">
+                      <div className="compose-emoji-category-toggle is-static">
+                        <span>검색 결과</span>
+                        <span className="compose-emoji-count">{emojiSearchResults.length}</span>
+                      </div>
+                      {emojiSearchResults.length > 0 ? (
+                        <div className="compose-emoji-grid">
+                          {emojiSearchResults.map((emoji) => (
+                            <button
+                              key={`search:${emoji.id}`}
+                              type="button"
+                              className="compose-emoji-button"
+                              onClick={() => handleSelect(emoji)}
+                              aria-label={`이모지 ${emoji.label}`}
+                            >
+                              {emoji.unicode ? (
+                                <span className="compose-emoji-text" aria-hidden="true">
+                                  {emoji.unicode}
+                                </span>
+                              ) : emoji.url ? (
+                                <img src={emoji.url} alt="" loading="lazy" />
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="compose-emoji-empty">검색 결과가 없습니다.</p>
+                      )}
+                    </section>
+                  ) : null}
                   {(() => {
                     const recentCategory = emojiCategories.find((item) => item.id === "recent");
                     if (!recentCategory) return null;

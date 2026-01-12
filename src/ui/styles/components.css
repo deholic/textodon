@@ -508,6 +508,51 @@
   opacity: 0.6;
 }
 
+.compose-emoji-suggestions {
+  border-top: 1px solid var(--color-emoji-panel-border);
+  background: var(--color-emoji-panel-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.compose-emoji-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.compose-emoji-suggestion.is-active {
+  background: var(--color-emoji-toggle-bg);
+  border-color: var(--color-emoji-toggle-border);
+}
+
+.compose-emoji-suggestion-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compose-emoji-suggestion-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.compose-emoji-suggestion-label {
+  font-size: 13px;
+  color: var(--color-emoji-toggle-text);
+}
+
 .account-form input::placeholder,
 .compose-form textarea::placeholder,
 .compose-cw input::placeholder {
@@ -579,6 +624,16 @@
   gap: 10px;
   max-height: 240px;
   overflow: auto;
+}
+
+.compose-emoji-search input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-input-border);
+  background: var(--color-input-bg);
+  color: var(--color-input-text);
+  font-family: inherit;
 }
 
 .compose-busy {
@@ -672,6 +727,10 @@
   align-items: center;
   justify-content: space-between;
   font-size: 13px;
+}
+
+.compose-emoji-category-toggle.is-static {
+  cursor: default;
 }
 
 .compose-emoji-count {
