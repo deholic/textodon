@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { Account, ReactionInput } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { useClickOutside } from "../hooks/useClickOutside";
-import { useEmojiManager } from "../hooks/useEmojiManager";
+import { useEmojiManager, type EmojiItem } from "../hooks/useEmojiManager";
 
 export const ReactionPicker = ({
   account,
@@ -27,6 +27,8 @@ export const ReactionPicker = ({
     emojiStatus,
     emojiError,
     emojiCategories,
+    customEmojiCategories,
+    standardEmojiCategories,
     expandedCategories,
     loadEmojis,
     addToRecent,
@@ -90,14 +92,25 @@ export const ReactionPicker = ({
   }, [open, emojis.length]);
 
   const handleSelect = useCallback(
-    (emoji) => {
-      onSelect({
-        name: `:${emoji.shortcode}:`,
-        url: emoji.url,
-        isCustom: true,
-        host: null
-      });
-      addToRecent(emoji.shortcode);
+    (emoji: EmojiItem) => {
+      if (emoji.isCustom && emoji.shortcode) {
+        onSelect({
+          name: `:${emoji.shortcode}:`,
+          url: emoji.url ?? null,
+          isCustom: true,
+          host: null
+        });
+      } else if (emoji.unicode) {
+        onSelect({
+          name: emoji.unicode,
+          url: null,
+          isCustom: false,
+          host: null
+        });
+      } else {
+        return;
+      }
+      addToRecent(emoji.id);
       setOpen(false);
     },
     [onSelect, addToRecent]
@@ -149,14 +162,54 @@ export const ReactionPicker = ({
                   </button>
                 </div>
               ) : null}
-              {account && emojiStatus === "loaded" && emojiCategories.length === 0 ? (
-                <p className="compose-emoji-empty">사용할 수 있는 커스텀 이모지가 없습니다.</p>
+              {account && emojiCategories.length === 0 ? (
+                <p className="compose-emoji-empty">사용할 수 있는 이모지가 없습니다.</p>
               ) : null}
-              {account && emojiStatus === "loaded"
-                ? emojiCategories.map((category) => {
+              {account && emojiCategories.length > 0 ? (
+                <>
+                  {(() => {
+                    const recentCategory = emojiCategories.find((item) => item.id === "recent");
+                    if (!recentCategory) return null;
+                    const categoryKey = `${account.instanceUrl}::${recentCategory.id}`;
+                    const isCollapsed = !recentOpen;
+                    return (
+                      <section key={categoryKey} className="compose-emoji-category">
+                        <button
+                          type="button"
+                          className="compose-emoji-category-toggle"
+                          onClick={() => handleToggleCategory(recentCategory.id)}
+                          aria-expanded={!isCollapsed}
+                        >
+                          <span>{recentCategory.label}</span>
+                          <span className="compose-emoji-count">{recentCategory.emojis.length}</span>
+                        </button>
+                        {isCollapsed ? null : (
+                          <div className="compose-emoji-grid">
+                            {recentCategory.emojis.map((emoji) => (
+                              <button
+                                key={`${recentCategory.id}:${emoji.id}`}
+                                type="button"
+                                className="compose-emoji-button"
+                                onClick={() => handleSelect(emoji)}
+                                aria-label={`이모지 ${emoji.label}`}
+                              >
+                                {emoji.unicode ? (
+                                  <span className="compose-emoji-text" aria-hidden="true">
+                                    {emoji.unicode}
+                                  </span>
+                                ) : emoji.url ? (
+                                  <img src={emoji.url} alt="" loading="lazy" />
+                                ) : null}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                    );
+                  })()}
+                  {customEmojiCategories.map((category) => {
                     const categoryKey = `${account.instanceUrl}::${category.id}`;
-                    const isCollapsed =
-                      category.id === "recent" ? !recentOpen : !expandedCategories.has(category.id);
+                    const isCollapsed = !expandedCategories.has(category.id);
                     return (
                       <section key={categoryKey} className="compose-emoji-category">
                         <button
@@ -172,21 +225,75 @@ export const ReactionPicker = ({
                           <div className="compose-emoji-grid">
                             {category.emojis.map((emoji) => (
                               <button
-                                key={`${category.id}:${emoji.shortcode}`}
+                                key={`${category.id}:${emoji.id}`}
                                 type="button"
                                 className="compose-emoji-button"
                                 onClick={() => handleSelect(emoji)}
-                                aria-label={`이모지 ${emoji.shortcode}`}
+                                aria-label={`이모지 ${emoji.label}`}
                               >
-                                <img src={emoji.url} alt="" loading="lazy" />
+                                {emoji.unicode ? (
+                                  <span className="compose-emoji-text" aria-hidden="true">
+                                    {emoji.unicode}
+                                  </span>
+                                ) : emoji.url ? (
+                                  <img src={emoji.url} alt="" loading="lazy" />
+                                ) : null}
                               </button>
                             ))}
                           </div>
                         )}
                       </section>
                     );
-                  })
-                : null}
+                  })}
+                  {customEmojiCategories.length > 0 && standardEmojiCategories.length > 0 ? (
+                    <div
+                      className="compose-emoji-divider"
+                      role="separator"
+                      aria-label="표준 이모지 구분선"
+                    >
+                      <span>표준 이모지</span>
+                    </div>
+                  ) : null}
+                  {standardEmojiCategories.map((category) => {
+                    const categoryKey = `${account.instanceUrl}::${category.id}`;
+                    const isCollapsed = !expandedCategories.has(category.id);
+                    return (
+                      <section key={categoryKey} className="compose-emoji-category">
+                        <button
+                          type="button"
+                          className="compose-emoji-category-toggle"
+                          onClick={() => handleToggleCategory(category.id)}
+                          aria-expanded={!isCollapsed}
+                        >
+                          <span>{category.label}</span>
+                          <span className="compose-emoji-count">{category.emojis.length}</span>
+                        </button>
+                        {isCollapsed ? null : (
+                          <div className="compose-emoji-grid">
+                            {category.emojis.map((emoji) => (
+                              <button
+                                key={`${category.id}:${emoji.id}`}
+                                type="button"
+                                className="compose-emoji-button"
+                                onClick={() => handleSelect(emoji)}
+                                aria-label={`이모지 ${emoji.label}`}
+                              >
+                                {emoji.unicode ? (
+                                  <span className="compose-emoji-text" aria-hidden="true">
+                                    {emoji.unicode}
+                                  </span>
+                                ) : emoji.url ? (
+                                  <img src={emoji.url} alt="" loading="lazy" />
+                                ) : null}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                    );
+                  })}
+                </>
+              ) : null}
             </div>
           </div>
         </>
