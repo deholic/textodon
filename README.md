@@ -1,4 +1,4 @@
-﻿# Deck
+# Deck
 
 오픈소스 페디버스 웹 클라이언트입니다. 여러 계정을 등록해 전환하면서 여러 타임라인 섹션을 동시에 확인하고, 스트리밍으로 실시간 반영합니다.
 
@@ -55,6 +55,16 @@ bun run build
 
 - 예시: GitHub Actions를 통해 `develop`은 beta(GitHub Pages), `main`은 production(Cloudflare Pages) 기준으로 자동 배포
 - 빌드 후 `dist` 정적 파일을 원하는 호스팅에 직접 배포할 수도 있습니다.
+
+## 오픈소스
+
+프로젝트에서 사용하는 주요 오픈소스는 다음과 같습니다.
+
+- React: UI 렌더링 라이브러리
+- Vite: 번들링 및 개발 서버
+- DOMPurify: 콘텐츠 렌더링 시 XSS 정화
+- emoji-datasource: 커스텀 이모지 메타데이터
+- Wrangler: Cloudflare 배포 도구
 
 ## 기여 방법
 
