@@ -690,6 +690,7 @@ export const ComposeBox = ({
                             className="compose-emoji-button"
                             onClick={() => handleEmojiSelect(emoji)}
                             aria-label={`이모지 ${emoji.label}`}
+                            title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
                           >
                             {emoji.unicode ? (
                               <span className="compose-emoji-text" aria-hidden="true">
@@ -731,6 +732,7 @@ export const ComposeBox = ({
                               className="compose-emoji-button"
                               onClick={() => handleEmojiSelect(emoji)}
                               aria-label={`이모지 ${emoji.label}`}
+                              title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
                             >
                               {emoji.unicode ? (
                                 <span className="compose-emoji-text" aria-hidden="true">
@@ -769,6 +771,7 @@ export const ComposeBox = ({
                               className="compose-emoji-button"
                               onClick={() => handleEmojiSelect(emoji)}
                               aria-label={`이모지 ${emoji.label}`}
+                              title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
                             >
                               {emoji.unicode ? (
                                 <span className="compose-emoji-text" aria-hidden="true">
@@ -816,6 +819,7 @@ export const ComposeBox = ({
                               className="compose-emoji-button"
                               onClick={() => handleEmojiSelect(emoji)}
                               aria-label={`이모지 ${emoji.label}`}
+                              title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
                             >
                               {emoji.unicode ? (
                                 <span className="compose-emoji-text" aria-hidden="true">
