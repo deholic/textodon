@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import emojiData from "emoji-datasource/emoji.json";
 import type { Account, CustomEmoji } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { getCachedEmojis, setCachedEmojis } from "../utils/emojiCache";
@@ -6,8 +7,139 @@ import { getCachedEmojis, setCachedEmojis } from "../utils/emojiCache";
 const RECENT_EMOJI_KEY_PREFIX = "textodon.compose.recentEmojis.";
 const RECENT_EMOJI_LIMIT = 24;
 
+type EmojiDatasetEntry = {
+  unified: string;
+  name: string;
+  short_name: string;
+  category?: string;
+  has_img_apple?: boolean;
+  skin_variations?: Record<string, { unified: string }>;
+};
+
+export type EmojiItem = {
+  id: string;
+  label: string;
+  isCustom: boolean;
+  category?: string | null;
+  shortcode?: string;
+  url?: string;
+  unicode?: string;
+};
+
+export type EmojiCategory = {
+  id: string;
+  label: string;
+  emojis: EmojiItem[];
+};
+
+const STANDARD_CATEGORY_LABELS: Record<string, string> = {
+  "Smileys & Emotion": "표정",
+  "People & Body": "사람/손",
+  "Animals & Nature": "동물/자연",
+  "Food & Drink": "음식",
+  "Travel & Places": "여행/장소",
+  Activities: "활동",
+  Objects: "사물",
+  Symbols: "기호",
+  Flags: "국기"
+};
+
+const STANDARD_CATEGORY_ORDER = [
+  "Smileys & Emotion",
+  "People & Body",
+  "Animals & Nature",
+  "Food & Drink",
+  "Travel & Places",
+  "Activities",
+  "Objects",
+  "Symbols",
+  "Flags"
+];
+
+const unicodeFromUnified = (value: string) => {
+  if (!value) {
+    return "";
+  }
+  return value
+    .split("-")
+    .map((code) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .join("");
+};
+
+const buildStandardEmojiCategories = () => {
+  const grouped = new Map<string, EmojiItem[]>();
+  const seen = new Set<string>();
+
+  const addEmoji = (unified: string, categoryKey: string) => {
+    const unicode = unicodeFromUnified(unified);
+    if (!unicode) {
+      return;
+    }
+    const id = `unicode:${unicode}`;
+    if (seen.has(id)) {
+      return;
+    }
+    seen.add(id);
+    const label = STANDARD_CATEGORY_LABELS[categoryKey] ?? "기타";
+    const list = grouped.get(label) ?? [];
+    list.push({
+      id,
+      label: unicode,
+      unicode,
+      isCustom: false,
+      category: label
+    });
+    grouped.set(label, list);
+  };
+
+  const emojiDataset = emojiData as EmojiDatasetEntry[];
+  emojiDataset.forEach((emoji) => {
+    if (!emoji.unified) {
+      return;
+    }
+    if (emoji.has_img_apple === false) {
+      return;
+    }
+    const categoryKey = emoji.category ?? "기타";
+    addEmoji(emoji.unified, categoryKey);
+    if (emoji.skin_variations) {
+      Object.values(emoji.skin_variations).forEach((variation) => {
+        if (variation?.unified) {
+          addEmoji(variation.unified, categoryKey);
+        }
+      });
+    }
+  });
+
+  const orderedLabels = STANDARD_CATEGORY_ORDER.map(
+    (category) => STANDARD_CATEGORY_LABELS[category]
+  ).filter(Boolean);
+  const categories: EmojiCategory[] = [];
+  orderedLabels.forEach((label) => {
+    const emojis = grouped.get(label);
+    if (emojis && emojis.length > 0) {
+      categories.push({ id: `standard:${label}`, label, emojis });
+    }
+  });
+  const remaining = Array.from(grouped.entries())
+    .filter(([label]) => !orderedLabels.includes(label))
+    .sort(([a], [b]) => a.localeCompare(b, "ko-KR"))
+    .map(([label, emojis]) => ({ id: `standard:${label}`, label, emojis }));
+
+  return [...categories, ...remaining];
+};
+
+const STANDARD_EMOJI_CATEGORIES = buildStandardEmojiCategories();
+
 const buildRecentEmojiKey = (instanceUrl: string) =>
   `${RECENT_EMOJI_KEY_PREFIX}${encodeURIComponent(instanceUrl)}`;
+
+const normalizeRecentEmojiId = (value: string) => {
+  if (value.startsWith("custom:") || value.startsWith("unicode:")) {
+    return value;
+  }
+  return `custom:${value}`;
+};
 
 const loadRecentEmojis = (instanceUrl: string): string[] => {
   try {
@@ -19,7 +151,9 @@ const loadRecentEmojis = (instanceUrl: string): string[] => {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed.filter((item) => typeof item === "string");
+    return parsed
+      .filter((item) => typeof item === "string")
+      .map((item) => normalizeRecentEmojiId(item as string));
   } catch {
     return [];
   }
@@ -31,12 +165,6 @@ const persistRecentEmojis = (instanceUrl: string, list: string[]) => {
   } catch {
     return;
   }
-};
-
-export type EmojiCategory = {
-  id: string;
-  label: string;
-  emojis: CustomEmoji[];
 };
 
 /**
@@ -77,25 +205,55 @@ export const useEmojiManager = (
   const emojiStatus = instanceUrl ? emojiLoadState[instanceUrl] ?? "idle" : "idle";
   const emojiError = instanceUrl ? emojiErrors[instanceUrl] ?? null : null;
 
-  // 최근 사용한 이모지 shortcode 목록
-  const recentShortcodes = instanceUrl ? recentByInstance[instanceUrl] ?? [] : [];
+  // 최근 사용한 이모지 id 목록
+  const recentIds = instanceUrl ? recentByInstance[instanceUrl] ?? [] : [];
 
-  // shortcode → emoji 맵핑
+  const standardEmojiCategories = STANDARD_EMOJI_CATEGORIES;
+
+  const standardEmojiItems = useMemo(
+    () => standardEmojiCategories.flatMap((category) => category.emojis),
+    [standardEmojiCategories]
+  );
+
+  const customEmojiItems = useMemo(
+    () =>
+      activeEmojis.map((emoji) => ({
+        id: `custom:${emoji.shortcode}`,
+        label: emoji.shortcode,
+        shortcode: emoji.shortcode,
+        url: emoji.url,
+        category: emoji.category?.trim() || "기타",
+        isCustom: true
+      })),
+    [activeEmojis]
+  );
+
+  const allEmojis = useMemo(
+    () => [...standardEmojiItems, ...customEmojiItems],
+    [standardEmojiItems, customEmojiItems]
+  );
+
+  // shortcode → emoji 맵핑 (커스텀 전용)
   const emojiMap = useMemo(
     () => new Map(activeEmojis.map((emoji) => [emoji.shortcode, emoji])),
     [activeEmojis]
   );
 
-  // 최근 사용한 이모지 객체 목록
-  const recentEmojis = useMemo(
-    () => recentShortcodes.map((shortcode) => emojiMap.get(shortcode)).filter(Boolean) as CustomEmoji[],
-    [emojiMap, recentShortcodes]
+  const emojiCatalogMap = useMemo(
+    () => new Map(allEmojis.map((emoji) => [emoji.id, emoji])),
+    [allEmojis]
   );
 
-  // 카테고리별로 그룹화된 이모지
+  // 최근 사용한 이모지 객체 목록
+  const recentEmojis = useMemo(
+    () => recentIds.map((id) => emojiCatalogMap.get(id)).filter(Boolean) as EmojiItem[],
+    [emojiCatalogMap, recentIds]
+  );
+
+  // 카테고리별로 그룹화된 커스텀 이모지
   const categorizedEmojis = useMemo(() => {
-    const grouped = new Map<string, CustomEmoji[]>();
-    activeEmojis.forEach((emoji) => {
+    const grouped = new Map<string, EmojiItem[]>();
+    customEmojiItems.forEach((emoji) => {
       const category = emoji.category?.trim() || "기타";
       const list = grouped.get(category) ?? [];
       list.push(emoji);
@@ -104,16 +262,16 @@ export const useEmojiManager = (
     return Array.from(grouped.entries())
       .sort(([a], [b]) => a.localeCompare(b, "ko-KR"))
       .map(([label, emojis]) => ({ id: `category:${label}`, label, emojis }));
-  }, [activeEmojis]);
+  }, [customEmojiItems]);
 
   // 최근 사용 카테고리를 포함한 전체 카테고리 목록
   const emojiCategories = useMemo(() => {
-    const categories = [...categorizedEmojis];
+    const categories = [...categorizedEmojis, ...standardEmojiCategories];
     if (recentEmojis.length > 0) {
       categories.unshift({ id: "recent", label: "최근 사용", emojis: recentEmojis });
     }
     return categories;
-  }, [categorizedEmojis, recentEmojis]);
+  }, [standardEmojiCategories, categorizedEmojis, recentEmojis]);
 
   // 현재 인스턴스에서 확장된 카테고리 Set
   const expandedCategories = instanceUrl ? expandedByInstance[instanceUrl] ?? new Set() : new Set();
@@ -187,13 +345,14 @@ export const useEmojiManager = (
 
   // 이모지를 최근 사용 목록에 추가
   const addToRecent = useCallback(
-    (shortcode: string) => {
+    (emojiId: string) => {
       if (!instanceUrl) return;
 
+      const normalizedId = normalizeRecentEmojiId(emojiId);
       setRecentByInstance((current) => {
         const existing = current[instanceUrl] ?? [];
-        const filtered = existing.filter((code) => code !== shortcode);
-        const nextList = [shortcode, ...filtered].slice(0, RECENT_EMOJI_LIMIT);
+        const filtered = existing.filter((code) => code !== normalizedId);
+        const nextList = [normalizedId, ...filtered].slice(0, RECENT_EMOJI_LIMIT);
         persistRecentEmojis(instanceUrl, nextList);
         return { ...current, [instanceUrl]: nextList };
       });
@@ -222,11 +381,13 @@ export const useEmojiManager = (
 
   return {
     // 상태
-    emojis: activeEmojis,
+    emojis: allEmojis,
     emojiStatus,
     emojiError,
     recentEmojis,
     categorizedEmojis,
+    standardEmojiCategories,
+    customEmojiCategories: categorizedEmojis,
     emojiCategories,
     expandedCategories,
     emojiMap,
