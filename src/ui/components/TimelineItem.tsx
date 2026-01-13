@@ -892,7 +892,9 @@ export const TimelineItem = ({
               ) : null}
               <div className="link-preview-body">
                 <strong>{previewCard.title}</strong>
-                {previewCard.description ? <span>{previewCard.description}</span> : null}
+                {previewCard.description ? (
+                  <span className="link-preview-description">{previewCard.description}</span>
+                ) : null}
                 <span className="link-preview-url">{previewCard.url}</span>
               </div>
             </a>
