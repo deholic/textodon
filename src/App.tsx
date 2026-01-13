@@ -285,7 +285,7 @@ const TimelineSection = ({
   onProfileClick,
   onError,
   onMoveSection,
-  onSwitchToNotifications,
+  onScrollToSection,
   canMoveLeft,
   canMoveRight,
   canRemoveSection,
@@ -294,7 +294,8 @@ const TimelineSection = ({
   showCustomEmojis,
   showReactions,
   registerTimelineListener,
-  unregisterTimelineListener
+  unregisterTimelineListener,
+  columnRef
 }: {
   section: TimelineSectionConfig;
   account: Account | null;
@@ -312,7 +313,7 @@ const TimelineSection = ({
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
-  onSwitchToNotifications: (sectionId: string) => void;
+  onScrollToSection: (sectionId: string) => void;
   onCloseStatusModal: () => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
@@ -323,6 +324,7 @@ const TimelineSection = ({
   showReactions: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
   unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
+  columnRef?: React.Ref<HTMLDivElement>;
 }) => {
   const notificationsTimeline = useTimeline({
     account,
@@ -386,11 +388,11 @@ const TimelineSection = ({
     lastNotificationToastRef.current = now;
     showToast("새 알림이 도착했습니다.", {
       tone: "info",
-      actionLabel: "알림 덱으로 이동",
-      actionAriaLabel: "알림 타임라인으로 전환",
-      onAction: () => onSwitchToNotifications(section.id)
+      actionLabel: "알림 받은 컬럼으로 이동",
+      actionAriaLabel: "알림이 도착한 컬럼으로 이동",
+      onAction: () => onScrollToSection(section.id)
     });
-  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onSwitchToNotifications, section.id]);
+  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onScrollToSection, section.id]);
   const timeline = useTimeline({
     account,
     api: services.api,
@@ -549,7 +551,7 @@ const TimelineSection = ({
   }, [instanceOriginUrl]);
 
   return (
-    <div className="timeline-column">
+    <div className="timeline-column" ref={columnRef}>
       <div className="timeline-column-header">
         <AccountSelector
           accounts={accountsState.accounts}
@@ -943,6 +945,7 @@ export const App = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
   const timelineBoardRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const dragStateRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
   const [isBoardDragging, setIsBoardDragging] = useState(false);
   const replySummary = replyTarget
@@ -1247,6 +1250,14 @@ export const App = () => {
     setIsBoardDragging(false);
   }, []);
 
+  const scrollToSection = useCallback((sectionId: string) => {
+    const target = sectionRefs.current.get(sectionId);
+    if (!target) {
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  }, []);
+
   useEffect(() => {
     setSections((current) =>
       current.map((section) => {
@@ -1492,23 +1503,6 @@ export const App = () => {
     );
   };
 
-  const switchSectionToNotifications = (sectionId: string) => {
-    setSections((current) =>
-      current.map((section) => {
-        if (section.id !== sectionId) {
-          return section;
-        }
-        const account = section.accountId
-          ? accountsState.accounts.find((item) => item.id === section.accountId) ?? null
-          : null;
-        return {
-          ...section,
-          timelineType: normalizeTimelineType("notifications", account?.platform ?? null, true)
-        };
-      })
-    );
-  };
-
   useEffect(() => {
     try {
       localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(sections));
@@ -1668,7 +1662,7 @@ export const App = () => {
                           accountsState={accountsState}
 onAccountChange={setSectionAccount}
                           onTimelineChange={setSectionTimeline}
-                          onSwitchToNotifications={switchSectionToNotifications}
+                          onScrollToSection={scrollToSection}
                           onAddSectionLeft={(id) => addSectionNear(id, "left")}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
@@ -1677,6 +1671,13 @@ onAccountChange={setSectionAccount}
                            onReact={handleReaction}
                            onProfileClick={handleProfileOpen}
                            columnAccount={sectionAccount}
+                          columnRef={(node) => {
+                            if (node) {
+                              sectionRefs.current.set(section.id, node);
+                            } else {
+                              sectionRefs.current.delete(section.id);
+                            }
+                          }}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}
                           onMoveSection={moveSection}
