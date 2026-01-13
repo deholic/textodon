@@ -285,6 +285,7 @@ const TimelineSection = ({
   onProfileClick,
   onError,
   onMoveSection,
+  onSwitchToNotifications,
   canMoveLeft,
   canMoveRight,
   canRemoveSection,
@@ -311,6 +312,7 @@ const TimelineSection = ({
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
+  onSwitchToNotifications: (sectionId: string) => void;
   onCloseStatusModal: () => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
@@ -386,9 +388,9 @@ const TimelineSection = ({
       tone: "info",
       actionLabel: "알림 덱으로 이동",
       actionAriaLabel: "알림 타임라인으로 전환",
-      onAction: () => onTimelineChange(section.id, "notifications")
+      onAction: () => onSwitchToNotifications(section.id)
     });
-  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onTimelineChange, section.id]);
+  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onSwitchToNotifications, section.id]);
   const timeline = useTimeline({
     account,
     api: services.api,
@@ -1490,6 +1492,23 @@ export const App = () => {
     );
   };
 
+  const switchSectionToNotifications = (sectionId: string) => {
+    setSections((current) =>
+      current.map((section) => {
+        if (section.id !== sectionId) {
+          return section;
+        }
+        const account = section.accountId
+          ? accountsState.accounts.find((item) => item.id === section.accountId) ?? null
+          : null;
+        return {
+          ...section,
+          timelineType: normalizeTimelineType("notifications", account?.platform ?? null, true)
+        };
+      })
+    );
+  };
+
   useEffect(() => {
     try {
       localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(sections));
@@ -1648,8 +1667,9 @@ export const App = () => {
                           services={services}
                           accountsState={accountsState}
 onAccountChange={setSectionAccount}
-                           onTimelineChange={setSectionTimeline}
-                           onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                          onTimelineChange={setSectionTimeline}
+                          onSwitchToNotifications={switchSectionToNotifications}
+                          onAddSectionLeft={(id) => addSectionNear(id, "left")}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
                           onReply={handleReply}
