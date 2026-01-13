@@ -1141,13 +1141,6 @@ button.ghost {
   z-index: 30;
 }
 
-.notification-popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
 .notification-popover-body {
   display: flex;
   flex-direction: column;

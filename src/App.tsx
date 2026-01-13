@@ -611,16 +611,6 @@ const TimelineSection = ({
               <>
                 <div className="overlay-backdrop" aria-hidden="true" />
                 <div ref={notificationMenuRef} className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
-                  <div className="notification-popover-header">
-                    <button
-                      type="button"
-                      className="settings-close"
-                      onClick={() => setNotificationsOpen(false)}
-                      aria-label="알림 닫기"
-                    >
-                      닫기
-                    </button>
-                  </div>
                   <div className="notification-popover-body" ref={notificationScrollRef}>
                     {notificationsError ? <p className="error">{notificationsError}</p> : null}
                     {notificationItems.length === 0 && !notificationsLoading ? (
