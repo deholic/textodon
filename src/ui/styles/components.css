@@ -492,6 +492,22 @@
   animation: toast-slide 180ms ease-out;
 }
 
+.toast-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toast-action {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .toast-success {
   border-color: var(--color-toast-success-border);
   background: var(--color-toast-success-bg);

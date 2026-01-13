@@ -15,6 +15,7 @@ import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
 import { renderMarkdown } from "./ui/utils/markdown";
+import { useToast } from "./ui/state/ToastContext";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import licenseText from "../LICENSE?raw";
 import ossMarkdown from "./ui/content/oss.md?raw";
@@ -341,11 +342,13 @@ const TimelineSection = ({
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const notificationScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastNotificationToastRef = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [timelineMenuOpen, setTimelineMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isAtTop, setIsAtTop] = useState(true);
+  const { showToast } = useToast();
   const timelineOptions = useMemo(() => getTimelineOptions(account?.platform, false), [account?.platform]);
   const timelineButtonLabel = `타임라인 선택: ${getTimelineLabel(timelineType)}`;
   const hasNotificationBadge = notificationCount > 0;
@@ -371,7 +374,21 @@ const TimelineSection = ({
       return;
     }
     setNotificationCount((count) => Math.min(count + 1, 99));
-  }, [notificationsOpen, refreshNotifications]);
+    if (timelineType === "notifications") {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastNotificationToastRef.current < 5000) {
+      return;
+    }
+    lastNotificationToastRef.current = now;
+    showToast("새 알림이 도착했습니다.", {
+      tone: "info",
+      actionLabel: "알림 덱으로 이동",
+      actionAriaLabel: "알림 타임라인으로 전환",
+      onAction: () => onTimelineChange(section.id, "notifications")
+    });
+  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onTimelineChange, section.id]);
   const timeline = useTimeline({
     account,
     api: services.api,

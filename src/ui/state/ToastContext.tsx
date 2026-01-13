@@ -7,11 +7,19 @@ type Toast = {
   id: string;
   message: string;
   tone: ToastTone;
+  action?: {
+    label: string;
+    onClick: () => void;
+    ariaLabel?: string;
+  };
 };
 
 type ToastOptions = {
   tone?: ToastTone;
   durationMs?: number;
+  actionLabel?: string;
+  onAction?: () => void;
+  actionAriaLabel?: string;
 };
 
 type ToastContextValue = {
@@ -38,7 +46,11 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
       const id = crypto.randomUUID();
       const tone = options?.tone ?? "info";
       const durationMs = options?.durationMs ?? 3000;
-      setToasts((prev) => [...prev, { id, message, tone }]);
+      const action =
+        options?.actionLabel && options?.onAction
+          ? { label: options.actionLabel, onClick: options.onAction, ariaLabel: options.actionAriaLabel }
+          : undefined;
+      setToasts((prev) => [...prev, { id, message, tone, action }]);
       if (durationMs > 0) {
         const timer = window.setTimeout(() => removeToast(id), durationMs);
         timersRef.current.set(id, timer);

@@ -5,6 +5,11 @@ type ToastItem = {
   id: string;
   message: string;
   tone: ToastTone;
+  action?: {
+    label: string;
+    onClick: () => void;
+    ariaLabel?: string;
+  };
 };
 
 export const ToastHost = ({
@@ -27,14 +32,29 @@ export const ToastHost = ({
           role={toast.tone === "error" ? "alert" : "status"}
         >
           <span>{toast.message}</span>
-          <button
-            type="button"
-            className="toast-close"
-            onClick={() => onDismiss(toast.id)}
-            aria-label="알림 닫기"
-          >
-            닫기
-          </button>
+          <div className="toast-actions">
+            {toast.action ? (
+              <button
+                type="button"
+                className="toast-action"
+                onClick={() => {
+                  toast.action?.onClick();
+                  onDismiss(toast.id);
+                }}
+                aria-label={toast.action.ariaLabel ?? toast.action.label}
+              >
+                {toast.action.label}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="toast-close"
+              onClick={() => onDismiss(toast.id)}
+              aria-label="토스트 닫기"
+            >
+              닫기
+            </button>
+          </div>
         </div>
       ))}
     </div>
