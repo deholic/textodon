@@ -12,7 +12,6 @@ import {
 } from "../utils/characterCount";
 
 const VISIBILITY_KEY_PREFIX = "textodon.compose.visibility";
-
 const parseVisibility = (value: string | null): Visibility | null => {
   if (value === "public" || value === "unlisted" || value === "private" || value === "direct") {
     return value;
