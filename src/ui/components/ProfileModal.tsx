@@ -476,6 +476,10 @@ export const ProfileModal = ({
     return rawHandle;
   }, [account, displayProfile.url, rawHandle]);
   const handleText = displayHandle ? (displayHandle.startsWith("@") ? displayHandle : `@${displayHandle}`) : "";
+  const profileOriginUrl = useMemo(
+    () => displayProfile.url || status.accountUrl || null,
+    [displayProfile.url, status.accountUrl]
+  );
   const bioContent = useMemo(() => {
     if (!displayProfile.bio) {
       return null;
@@ -545,6 +549,8 @@ export const ProfileModal = ({
   const followState = isFollowing ? "following" : isRequested ? "requested" : "follow";
   const canFollow = Boolean(account && targetAccountId && !isSelf);
   const canInteractFollow = canFollow && !followLoading;
+  const canShowProfileMenu = Boolean(profileOriginUrl) || canFollow;
+  const canOpenProfileMenu = Boolean(profileOriginUrl) || canInteractFollow;
   const followLabel =
     followState === "following"
       ? "팔로잉"
@@ -731,10 +737,18 @@ export const ProfileModal = ({
   }, [isFollowing]);
 
   useEffect(() => {
-    if (!canFollow) {
+    if (!profileOriginUrl && !canFollow) {
       setProfileMenuOpen(false);
     }
-  }, [canFollow]);
+  }, [canFollow, profileOriginUrl]);
+
+  const handleOpenProfileOrigin = useCallback(() => {
+    if (!profileOriginUrl) {
+      return;
+    }
+    window.open(profileOriginUrl, "_blank", "noopener,noreferrer");
+    setProfileMenuOpen(false);
+  }, [profileOriginUrl]);
 
   return (
     <div
@@ -781,9 +795,10 @@ export const ProfileModal = ({
                   {handleText ? <span>{handleText}</span> : null}
                 </div>
               </div>
-              {canFollow ? (
+              {canShowProfileMenu ? (
                 <div className="profile-hero-actions">
-                  <div className="follow-action">
+                  {canFollow ? (
+                    <div className="follow-action">
                     <button
                       type="button"
                       className={`button-with-icon profile-follow-button${
@@ -845,7 +860,8 @@ export const ProfileModal = ({
                         </div>
                       </div>
                     ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                   <div className="profile-action-menu">
                     <button
                       ref={profileMenuButtonRef}
@@ -858,7 +874,7 @@ export const ProfileModal = ({
                         setShowUnfollowConfirm(false);
                         setProfileMenuOpen((current) => !current);
                       }}
-                      disabled={!canInteractFollow}
+                      disabled={!canOpenProfileMenu}
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="5" r="1.7" />
@@ -870,6 +886,9 @@ export const ProfileModal = ({
                       <>
                         <div className="overlay-backdrop profile-menu-backdrop" aria-hidden="true" />
                         <div ref={profileMenuRef} className="section-menu-panel profile-menu-panel" role="menu">
+                          <button type="button" onClick={handleOpenProfileOrigin} disabled={!profileOriginUrl}>
+                            원본 사이트에서 보기
+                          </button>
                           <button type="button" onClick={handleMuteToggle} disabled={!canInteractFollow}>
                             {isMuted ? "뮤트 해제" : "뮤트하기"}
                           </button>
