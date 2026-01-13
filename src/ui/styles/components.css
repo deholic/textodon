@@ -262,6 +262,41 @@
   flex-shrink: 0;
 }
 
+.settings-item-account {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.settings-account-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.settings-account-actions .account-selector-inline {
+  flex: 1;
+  min-width: 150px;
+}
+
+.settings-account-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-account-buttons button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.settings-account-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .account-list {
   list-style: none;
   padding: 0;

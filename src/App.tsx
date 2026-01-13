@@ -11,7 +11,7 @@ import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
 import { createAccountId, formatHandle, normalizeInstanceUrl } from "./ui/utils/account";
-import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
+import { clearPendingOAuth, createOauthState, loadPendingOAuth, loadRegisteredApp, saveRegisteredApp, storePendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
 import { renderMarkdown } from "./ui/utils/markdown";
@@ -560,8 +560,6 @@ const TimelineSection = ({
             onAccountChange(section.id, id);
             accountsState.setActiveAccount(id);
           }}
-          removeAccount={accountsState.removeAccount}
-          oauth={services.oauth}
           variant="inline"
         />
         <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
@@ -884,6 +882,8 @@ export const App = () => {
     return localStorage.getItem("textodon.reactions") !== "off";
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAccountId, setSettingsAccountId] = useState<string | null>(null);
+  const [reauthLoading, setReauthLoading] = useState(false);
   const [infoModal, setInfoModal] = useState<InfoModalType | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileComposeOpen, setMobileComposeOpen] = useState(false);
@@ -1175,6 +1175,43 @@ export const App = () => {
     setMobileComposeOpen(false);
   }, []);
 
+  const handleSettingsReauth = useCallback(async () => {
+    const account = accountsState.accounts.find((a) => a.id === settingsAccountId);
+    if (!account) return;
+    setReauthLoading(true);
+    try {
+      const normalizedUrl = normalizeInstanceUrl(account.instanceUrl);
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.hash = "";
+      const redirectUri = url.toString();
+      const cached = loadRegisteredApp(normalizedUrl);
+      const needsRegister = !cached || cached.redirectUri !== redirectUri || cached.platform === "misskey";
+      const registered = needsRegister ? await services.oauth.registerApp(normalizedUrl, redirectUri) : cached;
+      if (!registered) {
+        throw new Error("앱 등록 정보를 불러오지 못했습니다.");
+      }
+      if (needsRegister && registered.platform === "mastodon") {
+        saveRegisteredApp(registered);
+      }
+      const state = createOauthState();
+      storePendingOAuth({ ...registered, state, accountId: account.id });
+      const authorizeUrl = services.oauth.buildAuthorizeUrl(registered, state);
+      window.location.assign(authorizeUrl);
+    } catch {
+      setReauthLoading(false);
+    }
+  }, [accountsState.accounts, settingsAccountId, services.oauth]);
+
+  const handleSettingsRemove = useCallback(() => {
+    if (!settingsAccountId) return;
+    const confirmed = window.confirm("이 계정을 삭제할까요?");
+    if (confirmed) {
+      accountsState.removeAccount(settingsAccountId);
+      setSettingsAccountId(null);
+    }
+  }, [settingsAccountId, accountsState]);
+
   const handleClearLocalStorage = useCallback(() => {
     const confirmed = window.confirm(
       "로컬 저장소의 모든 데이터를 삭제할까요? 계정과 설정 정보가 모두 초기화됩니다."
@@ -1417,8 +1454,6 @@ export const App = () => {
       accounts={accountsState.accounts}
       activeAccountId={composeAccountId}
       setActiveAccount={setComposeAccountId}
-      removeAccount={accountsState.removeAccount}
-      oauth={services.oauth}
       variant="inline"
     />
   );
@@ -1793,6 +1828,39 @@ onAccountChange={setSectionAccount}
               >
                 닫기
               </button>
+            </div>
+            <div className="settings-item settings-item-account">
+              <div>
+                <strong>계정 관리</strong>
+                <p>계정을 선택하여 재인증하거나 삭제합니다.</p>
+              </div>
+              <div className="settings-account-actions">
+                <AccountSelector
+                  accounts={accountsState.accounts}
+                  activeAccountId={settingsAccountId}
+                  setActiveAccount={setSettingsAccountId}
+                  variant="inline"
+                />
+                <div className="settings-account-buttons">
+                  <button
+                    type="button"
+                    onClick={handleSettingsReauth}
+                    disabled={!settingsAccountId || reauthLoading}
+                    aria-label="계정 재인증"
+                  >
+                    {reauthLoading ? "재인증 중..." : "재인증"}
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-danger-button"
+                    onClick={handleSettingsRemove}
+                    disabled={!settingsAccountId}
+                    aria-label="계정 삭제"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="settings-item">
               <div>
