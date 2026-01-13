@@ -668,6 +668,15 @@
   flex-wrap: wrap;
 }
 
+.compose-visibility-warning {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+  font-size: 12px;
+}
+
 .compose-actions-right {
   display: inline-flex;
   align-items: center;
