@@ -12,6 +12,12 @@ import {
 } from "../utils/characterCount";
 
 const VISIBILITY_KEY_PREFIX = "textodon.compose.visibility";
+const COMPOSE_ROWS_KEY = "textodon.compose.rows";
+const MIN_COMPOSE_ROWS = 4;
+const MAX_COMPOSE_ROWS = 16;
+
+const clampComposeRows = (value: number) =>
+  Math.min(MAX_COMPOSE_ROWS, Math.max(MIN_COMPOSE_ROWS, value));
 
 const parseVisibility = (value: string | null): Visibility | null => {
   if (value === "public" || value === "unlisted" || value === "private" || value === "direct") {
@@ -71,6 +77,13 @@ export const ComposeBox = ({
   const [attachments, setAttachments] = useState<
     { id: string; file: File; previewUrl: string }[]
   >([]);
+  const [composeRows, setComposeRows] = useState<number>(() => {
+    const stored = Number(localStorage.getItem(COMPOSE_ROWS_KEY));
+    if (Number.isFinite(stored)) {
+      return clampComposeRows(stored);
+    }
+    return MIN_COMPOSE_ROWS;
+  });
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -154,6 +167,10 @@ export const ComposeBox = ({
     }
     localStorage.setItem(getVisibilityStorageKey(account.id), visibility);
   }, [account?.id, visibility, visibilityAccountId]);
+
+  useEffect(() => {
+    localStorage.setItem(COMPOSE_ROWS_KEY, String(composeRows));
+  }, [composeRows]);
 
   // 계정 변경 시 인스턴스 정보 로드
   useEffect(() => {
@@ -486,7 +503,7 @@ export const ComposeBox = ({
               updateEmojiQuery(nextValue, event.target.selectionStart ?? nextValue.length);
             }}
             placeholder="지금 무슨 생각을 하고 있나요?"
-            rows={4}
+            rows={composeRows}
             onPaste={handlePaste}
             disabled={isSubmitting}
             onClick={(event) => {
@@ -627,6 +644,26 @@ export const ComposeBox = ({
           </select>
           
           <div className="compose-actions-right">
+            <div className="compose-size-controls" role="group" aria-label="작성란 높이 조절">
+              <button
+                type="button"
+                className="icon-button compose-icon-button compose-size-button"
+                aria-label="작성란 높이 줄이기"
+                onClick={() => setComposeRows((current) => clampComposeRows(current - 1))}
+                disabled={composeRows <= MIN_COMPOSE_ROWS}
+              >
+                -
+              </button>
+              <button
+                type="button"
+                className="icon-button compose-icon-button compose-size-button"
+                aria-label="작성란 높이 늘리기"
+                onClick={() => setComposeRows((current) => clampComposeRows(current + 1))}
+                disabled={composeRows >= MAX_COMPOSE_ROWS}
+              >
+                +
+              </button>
+            </div>
             <button
               type="button"
               className={`icon-button compose-icon-button${emojiPanelOpen ? " is-active" : ""}`}

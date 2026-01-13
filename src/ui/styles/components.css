@@ -683,6 +683,17 @@
   gap: 8px;
 }
 
+.compose-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.compose-size-button {
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .compose-actions select {
   border-radius: 8px;
   border: 1px solid var(--color-input-border);
