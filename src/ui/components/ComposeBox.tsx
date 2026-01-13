@@ -608,6 +608,11 @@ export const ComposeBox = ({
             )}
           </div>
         </div>
+        {visibility === "public" ? (
+          <p className="compose-visibility-warning" role="status">
+            전체 공개로 게시됩니다. 민감한 내용은 주의해주세요.
+          </p>
+        ) : null}
         <div className="compose-actions">
           <select
             value={visibility}
