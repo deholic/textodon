@@ -13,6 +13,7 @@ import { formatHandle } from "../utils/account";
 import { isPlainUrl, renderTextWithLinks } from "../utils/linkify";
 import { renderMarkdown } from "../utils/markdown";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useToast } from "../state/ToastContext";
 import { TimelineItem } from "./TimelineItem";
 
 const PAGE_SIZE = 20;
@@ -167,12 +168,16 @@ export const ProfileModal = ({
   const [followLoading, setFollowLoading] = useState(false);
   const [followError, setFollowError] = useState<string | null>(null);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [items, setItems] = useState<Status[]>([]);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadingMore, setItemsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const { showToast } = useToast();
   const targetAccountId = status.accountId;
   const profileEmojis = useMemo(() => {
     if (!showCustomEmojis) {
@@ -189,6 +194,7 @@ export const ProfileModal = ({
   );
 
   useClickOutside(scrollRef, isTopmost, onClose);
+  useClickOutside(profileMenuRef, profileMenuOpen, () => setProfileMenuOpen(false), [profileMenuButtonRef]);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -534,6 +540,8 @@ export const ProfileModal = ({
   const isSelf = Boolean(isSelfById || isSelfByHandle);
   const isFollowing = relationship?.following ?? false;
   const isRequested = relationship?.requested ?? false;
+  const isMuted = relationship?.muting ?? false;
+  const isBlocked = relationship?.blocking ?? false;
   const followState = isFollowing ? "following" : isRequested ? "requested" : "follow";
   const canFollow = Boolean(account && targetAccountId && !isSelf);
   const canInteractFollow = canFollow && !followLoading;
@@ -554,16 +562,26 @@ export const ProfileModal = ({
           ? "팔로우 요청 보내기"
           : "팔로우하기";
 
-
+  const buildNextRelationship = useCallback(
+    (updates: Partial<AccountRelationship>): AccountRelationship => ({
+      following: updates.following ?? relationship?.following ?? false,
+      requested: updates.requested ?? relationship?.requested ?? false,
+      muting: updates.muting ?? relationship?.muting ?? false,
+      blocking: updates.blocking ?? relationship?.blocking ?? false
+    }),
+    [relationship]
+  );
 
   const updateRelationshipOptimistically = useCallback(
     async (
       next: AccountRelationship,
       action: () => Promise<AccountRelationship>,
-      fallbackMessage: string
+      fallbackMessage: string,
+      successMessage?: string,
+      successTone: "success" | "info" = "success"
     ) => {
       if (!account || !targetAccountId) {
-      setFollowError("계정을 선택해 주세요.");
+        setFollowError("계정을 선택해 주세요.");
         return;
       }
       const previous = relationship;
@@ -574,14 +592,19 @@ export const ProfileModal = ({
         const updated = await action();
         setRelationship(updated);
         setShowUnfollowConfirm(false);
+        if (successMessage) {
+          showToast(successMessage, { tone: successTone });
+        }
       } catch (error) {
+        const message = error instanceof Error ? error.message : fallbackMessage;
         setRelationship(previous);
-        setFollowError(error instanceof Error ? error.message : fallbackMessage);
+        setFollowError(message);
+        showToast(message, { tone: "error" });
       } finally {
         setFollowLoading(false);
       }
     },
-    [account, relationship, targetAccountId]
+    [account, relationship, showToast, targetAccountId]
   );
 
   const handleFollowClick = useCallback(() => {
@@ -598,21 +621,24 @@ export const ProfileModal = ({
     }
     if (followState === "requested") {
       updateRelationshipOptimistically(
-        { following: false, requested: false },
+        buildNextRelationship({ following: false, requested: false }),
         () => api.cancelFollowRequest(account, targetAccountId),
-        "팔로우 요청을 취소하지 못했습니다."
+        "팔로우 요청을 취소하지 못했습니다.",
+        "팔로우 요청을 취소했습니다."
       );
       return;
     }
     const shouldRequest = displayProfile.locked;
     updateRelationshipOptimistically(
-      { following: !shouldRequest, requested: shouldRequest },
+      buildNextRelationship({ following: !shouldRequest, requested: shouldRequest }),
       () => api.followAccount(account, targetAccountId),
-      "팔로우에 실패했습니다."
+      "팔로우에 실패했습니다.",
+      shouldRequest ? "팔로우 요청을 보냈습니다." : "팔로우했습니다."
     );
   }, [
     account,
     api,
+    buildNextRelationship,
     canInteractFollow,
     displayProfile.locked,
     followState,
@@ -629,17 +655,86 @@ export const ProfileModal = ({
       return;
     }
     updateRelationshipOptimistically(
-      { following: false, requested: false },
+      buildNextRelationship({ following: false, requested: false }),
       () => api.unfollowAccount(account, targetAccountId),
-      "언팔로우에 실패했습니다."
+      "언팔로우에 실패했습니다.",
+      "언팔로우했습니다."
     );
-  }, [account, api, canInteractFollow, targetAccountId, updateRelationshipOptimistically]);
+  }, [account, api, buildNextRelationship, canInteractFollow, targetAccountId, updateRelationshipOptimistically]);
+
+  const handleMuteToggle = useCallback(() => {
+    if (!canInteractFollow) {
+      return;
+    }
+    if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+      return;
+    }
+    const next = buildNextRelationship({ muting: !isMuted });
+    updateRelationshipOptimistically(
+      next,
+      () =>
+        isMuted
+          ? api.unmuteAccount(account, targetAccountId)
+          : api.muteAccount(account, targetAccountId),
+      isMuted ? "뮤트 해제에 실패했습니다." : "뮤트에 실패했습니다.",
+      isMuted ? "뮤트를 해제했습니다." : "뮤트했습니다."
+    );
+    setProfileMenuOpen(false);
+  }, [
+    account,
+    api,
+    buildNextRelationship,
+    canInteractFollow,
+    isMuted,
+    targetAccountId,
+    updateRelationshipOptimistically
+  ]);
+
+  const handleBlockToggle = useCallback(() => {
+    if (!canInteractFollow) {
+      return;
+    }
+    if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+      return;
+    }
+    const next = buildNextRelationship({
+      blocking: !isBlocked,
+      following: isBlocked ? undefined : false,
+      requested: isBlocked ? undefined : false
+    });
+    updateRelationshipOptimistically(
+      next,
+      () =>
+        isBlocked
+          ? api.unblockAccount(account, targetAccountId)
+          : api.blockAccount(account, targetAccountId),
+      isBlocked ? "차단 해제에 실패했습니다." : "차단에 실패했습니다.",
+      isBlocked ? "차단을 해제했습니다." : "차단했습니다."
+    );
+    setProfileMenuOpen(false);
+  }, [
+    account,
+    api,
+    buildNextRelationship,
+    canInteractFollow,
+    isBlocked,
+    targetAccountId,
+    updateRelationshipOptimistically
+  ]);
 
   useEffect(() => {
     if (!isFollowing) {
       setShowUnfollowConfirm(false);
     }
   }, [isFollowing]);
+
+  useEffect(() => {
+    if (!canFollow) {
+      setProfileMenuOpen(false);
+    }
+  }, [canFollow]);
 
   return (
     <div
@@ -749,6 +844,45 @@ export const ProfileModal = ({
                           </div>
                         </div>
                       </div>
+                    ) : null}
+                  </div>
+                  <div className="profile-action-menu">
+                    <button
+                      ref={profileMenuButtonRef}
+                      type="button"
+                      className="icon-button"
+                      aria-label="프로필 메뉴 열기"
+                      aria-haspopup="menu"
+                      aria-expanded={profileMenuOpen}
+                      onClick={() => {
+                        setShowUnfollowConfirm(false);
+                        setProfileMenuOpen((current) => !current);
+                      }}
+                      disabled={!canInteractFollow}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.7" />
+                        <circle cx="12" cy="12" r="1.7" />
+                        <circle cx="12" cy="19" r="1.7" />
+                      </svg>
+                    </button>
+                    {profileMenuOpen ? (
+                      <>
+                        <div className="overlay-backdrop profile-menu-backdrop" aria-hidden="true" />
+                        <div ref={profileMenuRef} className="section-menu-panel profile-menu-panel" role="menu">
+                          <button type="button" onClick={handleMuteToggle} disabled={!canInteractFollow}>
+                            {isMuted ? "뮤트 해제" : "뮤트하기"}
+                          </button>
+                          <button
+                            type="button"
+                            className="danger"
+                            onClick={handleBlockToggle}
+                            disabled={!canInteractFollow}
+                          >
+                            {isBlocked ? "차단 해제" : "차단하기"}
+                          </button>
+                        </div>
+                      </>
                     ) : null}
                   </div>
                 </div>

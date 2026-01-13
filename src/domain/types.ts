@@ -126,6 +126,8 @@ export type UserProfile = {
 export type AccountRelationship = {
   following: boolean;
   requested: boolean;
+  muting: boolean;
+  blocking: boolean;
 };
 
 export type ThreadContext = {

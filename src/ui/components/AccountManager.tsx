@@ -20,8 +20,30 @@ export const AccountManager = ({
 }) => {
   const [instanceUrl, setInstanceUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [reauthError, setReauthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reauthLoadingId, setReauthLoadingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+
+  const startOAuthFlow = async (normalizedUrl: string, accountId?: string) => {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    const redirectUri = url.toString();
+    const cached = loadRegisteredApp(normalizedUrl);
+    const needsRegister = !cached || cached.redirectUri !== redirectUri || cached.platform === "misskey";
+    const registered = needsRegister ? await oauth.registerApp(normalizedUrl, redirectUri) : cached;
+    if (!registered) {
+      throw new Error("앱 등록 정보를 불러오지 못했습니다.");
+    }
+    if (needsRegister && registered.platform === "mastodon") {
+      saveRegisteredApp(registered);
+    }
+    const state = createOauthState();
+    storePendingOAuth({ ...registered, state, accountId });
+    const authorizeUrl = oauth.buildAuthorizeUrl(registered, state);
+    window.location.assign(authorizeUrl);
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -35,27 +57,23 @@ export const AccountManager = ({
 
     setLoading(true);
     try {
-      const url = new URL(window.location.href);
-      url.search = "";
-      url.hash = "";
-      const redirectUri = url.toString();
-      const cached = loadRegisteredApp(normalizedUrl);
-      const needsRegister = !cached || cached.redirectUri !== redirectUri || cached.platform === "misskey";
-      const registered = needsRegister ? await oauth.registerApp(normalizedUrl, redirectUri) : cached;
-      if (!registered) {
-        throw new Error("앱 등록 정보를 불러오지 못했습니다.");
-      }
-      if (needsRegister && registered.platform === "mastodon") {
-        saveRegisteredApp(registered);
-      }
-      const state = createOauthState();
-      storePendingOAuth({ ...registered, state });
-      const authorizeUrl = oauth.buildAuthorizeUrl(registered, state);
-      window.location.assign(authorizeUrl);
+      await startOAuthFlow(normalizedUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "OAuth 연결에 실패했습니다.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReauth = async (account: Account) => {
+    setReauthError(null);
+    setReauthLoadingId(account.id);
+    try {
+      const normalizedUrl = normalizeInstanceUrl(account.instanceUrl);
+      await startOAuthFlow(normalizedUrl, account.id);
+    } catch (err) {
+      setReauthError(err instanceof Error ? err.message : "OAuth 재인증에 실패했습니다.");
+      setReauthLoadingId(null);
     }
   };
 
@@ -77,13 +95,25 @@ export const AccountManager = ({
                 customEmojis={account.emojis}
               />
             </button>
-            <button type="button" onClick={() => removeAccount(account.id)} className="ghost">
-              삭제
-            </button>
+            <div className="account-row-actions">
+              <button
+                type="button"
+                onClick={() => handleReauth(account)}
+                className="ghost"
+                aria-label="계정 재인증"
+                disabled={reauthLoadingId === account.id}
+              >
+                재인증
+              </button>
+              <button type="button" onClick={() => removeAccount(account.id)} className="ghost">
+                삭제
+              </button>
+            </div>
           </li>
         ))}
         {accounts.length === 0 ? <li className="empty">등록된 계정이 없습니다.</li> : null}
       </ul>
+      {reauthError ? <p className="error">{reauthError}</p> : null}
 
       <button
         type="button"

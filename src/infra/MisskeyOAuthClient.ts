@@ -13,7 +13,10 @@ const MIAUTH_PERMISSIONS = [
   "write:notes",
   "write:drive",
   "write:reactions",
-  "write:favorites"
+  "write:favorites",
+  "write:following",
+  "write:mutes",
+  "write:blocks"
 ];
 
 const normalizeInstanceUrl = (instanceUrl: string): string => instanceUrl.replace(/\/$/, "");

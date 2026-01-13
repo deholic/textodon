@@ -62,6 +62,7 @@ export type AccountsState = {
   addAccount: (account: Account) => void;
   removeAccount: (accountId: string) => void;
   setActiveAccount: (accountId: string) => void;
+  updateAccount: (accountId: string, account: Account) => void;
 };
 
 const AppContext = createContext<{ services: AppServices; accountsState: AccountsState } | null>(null);
@@ -190,9 +191,17 @@ export const AppProvider = ({ services, children }: { services: AppServices; chi
     setActiveAccountId(accountId);
   }, []);
 
+  const updateAccount = useCallback(
+    (accountId: string, account: Account) => {
+      const next = accounts.map((item) => (item.id === accountId ? account : item));
+      persist(next);
+    },
+    [accounts, persist]
+  );
+
   const accountsState = useMemo(
-    () => ({ accounts, activeAccountId, addAccount, removeAccount, setActiveAccount }),
-    [accounts, activeAccountId, addAccount, removeAccount, setActiveAccount]
+    () => ({ accounts, activeAccountId, addAccount, removeAccount, setActiveAccount, updateAccount }),
+    [accounts, activeAccountId, addAccount, removeAccount, setActiveAccount, updateAccount]
   );
 
   return (

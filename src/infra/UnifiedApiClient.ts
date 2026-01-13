@@ -55,6 +55,22 @@ export class UnifiedApiClient implements MastodonApi {
     return this.getClient(account).cancelFollowRequest(account, accountId);
   }
 
+  muteAccount(account: Account, accountId: string) {
+    return this.getClient(account).muteAccount(account, accountId);
+  }
+
+  unmuteAccount(account: Account, accountId: string) {
+    return this.getClient(account).unmuteAccount(account, accountId);
+  }
+
+  blockAccount(account: Account, accountId: string) {
+    return this.getClient(account).blockAccount(account, accountId);
+  }
+
+  unblockAccount(account: Account, accountId: string) {
+    return this.getClient(account).unblockAccount(account, accountId);
+  }
+
   fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string) {
     return this.getClient(account).fetchAccountStatuses(account, accountId, limit, maxId);
   }

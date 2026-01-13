@@ -2,7 +2,7 @@ import type { RegisteredApp } from "../../services/OAuthClient";
 
 const STORAGE_KEY = "textodon.oauth.pending";
 
-export type OAuthPending = RegisteredApp & { state: string };
+export type OAuthPending = RegisteredApp & { state: string; accountId?: string };
 
 const APPS_STORAGE_KEY = "textodon.oauth.apps";
 

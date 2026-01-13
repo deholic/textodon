@@ -290,6 +290,12 @@
   min-width: 0;
 }
 
+.account-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .account-list li.active .account-row > button:first-child {
   font-weight: 700;
 }
@@ -451,6 +457,76 @@
 
 .account-selector .account-list {
   margin: 0;
+}
+
+.account-selector-error {
+  margin: 8px 12px 12px;
+}
+
+.toast-host {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-toast-info-border);
+  background: var(--color-toast-info-bg);
+  color: var(--color-toast-info-text);
+  box-shadow: var(--shadow-status-modal);
+  font-size: 13px;
+  min-width: min(420px, 88vw);
+  justify-content: space-between;
+  animation: toast-slide 180ms ease-out;
+}
+
+.toast-success {
+  border-color: var(--color-toast-success-border);
+  background: var(--color-toast-success-bg);
+  color: var(--color-toast-success-text);
+}
+
+.toast-info {
+  border-color: var(--color-toast-info-border);
+  background: var(--color-toast-info-bg);
+  color: var(--color-toast-info-text);
+}
+
+.toast-error {
+  border-color: var(--color-toast-error-border);
+  background: var(--color-toast-error-bg);
+  color: var(--color-toast-error-text);
+}
+
+.toast-close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@keyframes toast-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .timeline-readme {
@@ -1976,17 +2052,24 @@ button.ghost {
 
 .profile-hero-actions {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   margin-left: auto;
+  gap: 8px;
 }
 
 .follow-action {
   position: relative;
 }
 
+.profile-action-menu {
+  position: relative;
+}
+
 .profile-follow-button {
   border: 1px solid transparent;
   justify-content: flex-start;
+  height: 40px;
+  padding: 0 14px;
 }
 
 .profile-follow-button.is-following,
@@ -2042,6 +2125,15 @@ button.ghost {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.profile-menu-backdrop {
+  z-index: 56;
+}
+
+.profile-menu-panel {
+  z-index: 60;
+  min-width: 170px;
 }
 
 .follow-confirm-actions button {
