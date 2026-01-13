@@ -1507,6 +1507,13 @@ button.ghost {
   color: var(--color-link-preview-strong);
 }
 
+.link-preview-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .link-preview-url {
   font-size: 12px;
   color: var(--color-link-preview-url);
