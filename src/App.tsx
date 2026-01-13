@@ -10,7 +10,7 @@ import { useTimeline } from "./ui/hooks/useTimeline";
 import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
-import { createAccountId, formatHandle } from "./ui/utils/account";
+import { createAccountId, formatHandle, normalizeInstanceUrl } from "./ui/utils/account";
 import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
@@ -349,6 +349,16 @@ const TimelineSection = ({
   const timelineOptions = useMemo(() => getTimelineOptions(account?.platform, false), [account?.platform]);
   const timelineButtonLabel = `타임라인 선택: ${getTimelineLabel(timelineType)}`;
   const hasNotificationBadge = notificationCount > 0;
+  const instanceOriginUrl = useMemo(() => {
+    if (!account) {
+      return null;
+    }
+    try {
+      return normalizeInstanceUrl(account.instanceUrl);
+    } catch {
+      return null;
+    }
+  }, [account]);
   const notificationBadgeLabel = notificationsOpen
     ? "알림 닫기"
     : hasNotificationBadge
@@ -510,6 +520,14 @@ const TimelineSection = ({
       scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  const handleOpenInstanceOrigin = useCallback(() => {
+    if (!instanceOriginUrl) {
+      return;
+    }
+    window.open(instanceOriginUrl, "_blank", "noopener,noreferrer");
+    setMenuOpen(false);
+  }, [instanceOriginUrl]);
 
   return (
     <div className="timeline-column">
@@ -683,6 +701,13 @@ const TimelineSection = ({
                     disabled={!account || timeline.loading}
                   >
                     새로고침
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenInstanceOrigin}
+                    disabled={!instanceOriginUrl}
+                  >
+                    원본 서버에서 보기
                   </button>
                   <button
                     type="button"
