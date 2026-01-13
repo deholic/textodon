@@ -357,7 +357,9 @@ export const mapMisskeyRelationship = (raw: unknown): AccountRelationship => {
   const value = raw as Record<string, unknown>;
   return {
     following: Boolean(value.isFollowing ?? false),
-    requested: Boolean(value.hasPendingFollowRequestFromYou ?? value.hasPendingFollowRequest ?? false)
+    requested: Boolean(value.hasPendingFollowRequestFromYou ?? value.hasPendingFollowRequest ?? false),
+    muting: Boolean(value.isMuted ?? value.isMuting ?? false),
+    blocking: Boolean(value.isBlocked ?? value.isBlocking ?? false)
   };
 };
 

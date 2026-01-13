@@ -270,6 +270,26 @@ export class MisskeyHttpClient implements MastodonApi {
     return this.fetchAccountRelationship(account, accountId);
   }
 
+  async muteAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    await this.postSimple(account, "/api/mute/create", { userId: accountId });
+    return this.fetchAccountRelationship(account, accountId);
+  }
+
+  async unmuteAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    await this.postSimple(account, "/api/mute/delete", { userId: accountId });
+    return this.fetchAccountRelationship(account, accountId);
+  }
+
+  async blockAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    await this.postSimple(account, "/api/blocking/create", { userId: accountId });
+    return this.fetchAccountRelationship(account, accountId);
+  }
+
+  async unblockAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    await this.postSimple(account, "/api/blocking/delete", { userId: accountId });
+    return this.fetchAccountRelationship(account, accountId);
+  }
+
   async fetchAccountStatuses(
     account: Account,
     accountId: string,

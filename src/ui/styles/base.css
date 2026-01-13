@@ -76,6 +76,15 @@
   --color-section-menu-text: #1f1b16;
   --shadow-section-menu: 0 18px 40px rgba(67, 57, 45, 0.12);
   --color-section-menu-danger: #9a2e1f;
+  --color-toast-success-bg: #e3f5e9;
+  --color-toast-success-border: #6fbf88;
+  --color-toast-success-text: #1d3b27;
+  --color-toast-info-bg: #f4f0e8;
+  --color-toast-info-border: #d8d1c7;
+  --color-toast-info-text: #1f1b16;
+  --color-toast-error-bg: #fde9e6;
+  --color-toast-error-border: #e39a8d;
+  --color-toast-error-text: #4a1e17;
   --color-status-bg: #fffdfa;
   --color-status-border: #eee6db;
   --color-status-header: #6b5c4f;

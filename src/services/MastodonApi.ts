@@ -31,5 +31,9 @@ export interface MastodonApi {
   followAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   unfollowAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   cancelFollowRequest(account: Account, accountId: string): Promise<AccountRelationship>;
+  muteAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  unmuteAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  blockAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  unblockAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string): Promise<Status[]>;
 }

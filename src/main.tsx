@@ -12,6 +12,7 @@ import { UnifiedApiClient } from "./infra/UnifiedApiClient";
 import { UnifiedOAuthClient } from "./infra/UnifiedOAuthClient";
 import { UnifiedStreamingClient } from "./infra/UnifiedStreamingClient";
 import { AppProvider } from "./ui/state/AppContext";
+import { ToastProvider } from "./ui/state/ToastContext";
 import "./ui/styles/main.css";
 
 const mastodonApi = new MastodonHttpClient();
@@ -30,8 +31,10 @@ const services = {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AppProvider services={services}>
-      <App />
-    </AppProvider>
+    <ToastProvider>
+      <AppProvider services={services}>
+        <App />
+      </AppProvider>
+    </ToastProvider>
   </React.StrictMode>
 );

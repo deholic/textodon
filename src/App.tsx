@@ -522,6 +522,7 @@ const TimelineSection = ({
             accountsState.setActiveAccount(id);
           }}
           removeAccount={accountsState.removeAccount}
+          oauth={services.oauth}
           variant="inline"
         />
         <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
@@ -1005,51 +1006,72 @@ export const App = () => {
       }
     }
 
-    const addAccountWithToken = async () => {
-      setOauthLoading(true);
-      setActionError(null);
-      try {
-        const accessToken = await services.oauth.exchangeToken({
-          app: pending,
-          callback: { code, state, session }
-        });
-        const draft: Account = {
-          id: createAccountId(),
-          instanceUrl: pending.instanceUrl,
-          accessToken,
-          platform: pending.platform,
-          name: "",
-          displayName: "",
-          handle: "",
-          url: null,
-          avatarUrl: null,
-          emojis: []
-        };
-        const verified = await services.api.verifyAccount(draft);
-        const fullHandle = formatHandle(verified.handle, pending.instanceUrl);
-        const displayName = verified.accountName || fullHandle;
-        const existing = accountsState.accounts.find(
-          (account) =>
-            account.platform === pending.platform &&
-            account.instanceUrl === pending.instanceUrl &&
-            account.handle === fullHandle
-        );
-        if (existing) {
-          setActionError("이미 등록된 계정입니다.");
-          accountsState.setActiveAccount(existing.id);
-          return;
-        }
-        accountsState.addAccount({
-          ...draft,
-          name: `${displayName} @${fullHandle}`,
-          displayName,
-          handle: fullHandle,
-          avatarUrl: verified.avatarUrl,
-          emojis: verified.emojis ?? []
-        });
-      } catch (err) {
-        setActionError(err instanceof Error ? err.message : "OAuth 처리에 실패했습니다.");
-      } finally {
+      const addAccountWithToken = async () => {
+        setOauthLoading(true);
+        setActionError(null);
+        try {
+          const accessToken = await services.oauth.exchangeToken({
+            app: pending,
+            callback: { code, state, session }
+          });
+          const draft: Account = {
+            id: pending.accountId ?? createAccountId(),
+            instanceUrl: pending.instanceUrl,
+            accessToken,
+            platform: pending.platform,
+            name: "",
+            displayName: "",
+            handle: "",
+            url: null,
+            avatarUrl: null,
+            emojis: []
+          };
+          const verified = await services.api.verifyAccount(draft);
+          const fullHandle = formatHandle(verified.handle, pending.instanceUrl);
+          const displayName = verified.accountName || fullHandle;
+          if (pending.accountId) {
+            const existing = accountsState.accounts.find((account) => account.id === pending.accountId);
+            if (!existing) {
+              setActionError("재인증할 계정을 찾지 못했습니다.");
+              return;
+            }
+            const updated: Account = {
+              ...existing,
+              instanceUrl: pending.instanceUrl,
+              accessToken,
+              platform: pending.platform,
+              name: `${displayName} @${fullHandle}`,
+              displayName,
+              handle: fullHandle,
+              avatarUrl: verified.avatarUrl,
+              emojis: verified.emojis ?? []
+            };
+            accountsState.updateAccount(existing.id, updated);
+            accountsState.setActiveAccount(existing.id);
+            return;
+          }
+          const existing = accountsState.accounts.find(
+            (account) =>
+              account.platform === pending.platform &&
+              account.instanceUrl === pending.instanceUrl &&
+              account.handle === fullHandle
+          );
+          if (existing) {
+            setActionError("이미 등록된 계정입니다.");
+            accountsState.setActiveAccount(existing.id);
+            return;
+          }
+          accountsState.addAccount({
+            ...draft,
+            name: `${displayName} @${fullHandle}`,
+            displayName,
+            handle: fullHandle,
+            avatarUrl: verified.avatarUrl,
+            emojis: verified.emojis ?? []
+          });
+        } catch (err) {
+          setActionError(err instanceof Error ? err.message : "OAuth 처리에 실패했습니다.");
+        } finally {
         clearPendingOAuth();
         setOauthLoading(false);
       }
@@ -1351,6 +1373,7 @@ export const App = () => {
       activeAccountId={composeAccountId}
       setActiveAccount={setComposeAccountId}
       removeAccount={accountsState.removeAccount}
+      oauth={services.oauth}
       variant="inline"
     />
   );
