@@ -11,7 +11,17 @@ import {
   getDefaultCharacterLimit
 } from "../utils/characterCount";
 
-const VISIBILITY_KEY = "textodon.compose.visibility";
+const VISIBILITY_KEY_PREFIX = "textodon.compose.visibility";
+
+const parseVisibility = (value: string | null): Visibility | null => {
+  if (value === "public" || value === "unlisted" || value === "private" || value === "direct") {
+    return value;
+  }
+  return null;
+};
+
+const getVisibilityStorageKey = (accountId: string | null | undefined) =>
+  accountId ? `${VISIBILITY_KEY_PREFIX}.${accountId}` : VISIBILITY_KEY_PREFIX;
 
 const visibilityOptions: { value: Visibility; label: string }[] = [
   { value: "public", label: "전체 공개" },
@@ -56,13 +66,8 @@ export const ComposeBox = ({
   const [cwEnabled, setCwEnabled] = useState(false);
   const [cwText, setCwText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [visibility, setVisibility] = useState<Visibility>(() => {
-    const stored = localStorage.getItem(VISIBILITY_KEY);
-    if (stored === "public" || stored === "unlisted" || stored === "private" || stored === "direct") {
-      return stored;
-    }
-    return "public";
-  });
+  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [visibilityAccountId, setVisibilityAccountId] = useState<string | null>(account?.id ?? null);
   const [attachments, setAttachments] = useState<
     { id: string; file: File; previewUrl: string }[]
   >([]);
@@ -137,8 +142,18 @@ export const ComposeBox = ({
   }, [activeImage]);
 
   useEffect(() => {
-    localStorage.setItem(VISIBILITY_KEY, visibility);
-  }, [visibility]);
+    const accountId = account?.id ?? null;
+    const stored = parseVisibility(localStorage.getItem(getVisibilityStorageKey(accountId)));
+    setVisibility(stored ?? "public");
+    setVisibilityAccountId(accountId);
+  }, [account?.id]);
+
+  useEffect(() => {
+    if (!account || visibilityAccountId !== account.id) {
+      return;
+    }
+    localStorage.setItem(getVisibilityStorageKey(account.id), visibility);
+  }, [account?.id, visibility, visibilityAccountId]);
 
   // 계정 변경 시 인스턴스 정보 로드
   useEffect(() => {
