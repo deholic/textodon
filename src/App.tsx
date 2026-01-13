@@ -15,6 +15,7 @@ import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
 import { renderMarkdown } from "./ui/utils/markdown";
+import { useToast } from "./ui/state/ToastContext";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import licenseText from "../LICENSE?raw";
 import ossMarkdown from "./ui/content/oss.md?raw";
@@ -284,6 +285,7 @@ const TimelineSection = ({
   onProfileClick,
   onError,
   onMoveSection,
+  onScrollToSection,
   canMoveLeft,
   canMoveRight,
   canRemoveSection,
@@ -292,7 +294,8 @@ const TimelineSection = ({
   showCustomEmojis,
   showReactions,
   registerTimelineListener,
-  unregisterTimelineListener
+  unregisterTimelineListener,
+  columnRef
 }: {
   section: TimelineSectionConfig;
   account: Account | null;
@@ -310,6 +313,7 @@ const TimelineSection = ({
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
+  onScrollToSection: (sectionId: string) => void;
   onCloseStatusModal: () => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
@@ -320,6 +324,7 @@ const TimelineSection = ({
   showReactions: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
   unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
+  columnRef?: React.Ref<HTMLDivElement>;
 }) => {
   const notificationsTimeline = useTimeline({
     account,
@@ -341,11 +346,13 @@ const TimelineSection = ({
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const notificationScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastNotificationToastRef = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [timelineMenuOpen, setTimelineMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isAtTop, setIsAtTop] = useState(true);
+  const { showToast } = useToast();
   const timelineOptions = useMemo(() => getTimelineOptions(account?.platform, false), [account?.platform]);
   const timelineButtonLabel = `타임라인 선택: ${getTimelineLabel(timelineType)}`;
   const hasNotificationBadge = notificationCount > 0;
@@ -371,7 +378,21 @@ const TimelineSection = ({
       return;
     }
     setNotificationCount((count) => Math.min(count + 1, 99));
-  }, [notificationsOpen, refreshNotifications]);
+    if (timelineType === "notifications") {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastNotificationToastRef.current < 5000) {
+      return;
+    }
+    lastNotificationToastRef.current = now;
+    showToast("새 알림이 도착했습니다.", {
+      tone: "info",
+      actionLabel: "알림 받은 컬럼으로 이동",
+      actionAriaLabel: "알림이 도착한 컬럼으로 이동",
+      onAction: () => onScrollToSection(section.id)
+    });
+  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onScrollToSection, section.id]);
   const timeline = useTimeline({
     account,
     api: services.api,
@@ -530,7 +551,7 @@ const TimelineSection = ({
   }, [instanceOriginUrl]);
 
   return (
-    <div className="timeline-column">
+    <div className="timeline-column" ref={columnRef}>
       <div className="timeline-column-header">
         <AccountSelector
           accounts={accountsState.accounts}
@@ -924,6 +945,7 @@ export const App = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
   const timelineBoardRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const dragStateRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
   const [isBoardDragging, setIsBoardDragging] = useState(false);
   const replySummary = replyTarget
@@ -1226,6 +1248,14 @@ export const App = () => {
     timelineBoardRef.current.releasePointerCapture(event.pointerId);
     dragStateRef.current = null;
     setIsBoardDragging(false);
+  }, []);
+
+  const scrollToSection = useCallback((sectionId: string) => {
+    const target = sectionRefs.current.get(sectionId);
+    if (!target) {
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
   }, []);
 
   useEffect(() => {
@@ -1631,8 +1661,9 @@ export const App = () => {
                           services={services}
                           accountsState={accountsState}
 onAccountChange={setSectionAccount}
-                           onTimelineChange={setSectionTimeline}
-                           onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                          onTimelineChange={setSectionTimeline}
+                          onScrollToSection={scrollToSection}
+                          onAddSectionLeft={(id) => addSectionNear(id, "left")}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
                           onReply={handleReply}
@@ -1640,6 +1671,13 @@ onAccountChange={setSectionAccount}
                            onReact={handleReaction}
                            onProfileClick={handleProfileOpen}
                            columnAccount={sectionAccount}
+                          columnRef={(node) => {
+                            if (node) {
+                              sectionRefs.current.set(section.id, node);
+                            } else {
+                              sectionRefs.current.delete(section.id);
+                            }
+                          }}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}
                           onMoveSection={moveSection}
