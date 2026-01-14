@@ -12,7 +12,9 @@ export class UnifiedApiClient implements MastodonApi {
     return account.platform === "misskey" ? this.misskey : this.mastodon;
   }
 
-  verifyAccount(account: Account): Promise<{ accountName: string; handle: string; avatarUrl: string | null }> {
+  verifyAccount(
+    account: Account
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }> {
     return this.getClient(account).verifyAccount(account);
   }
 
@@ -51,6 +53,22 @@ export class UnifiedApiClient implements MastodonApi {
 
   cancelFollowRequest(account: Account, accountId: string) {
     return this.getClient(account).cancelFollowRequest(account, accountId);
+  }
+
+  muteAccount(account: Account, accountId: string) {
+    return this.getClient(account).muteAccount(account, accountId);
+  }
+
+  unmuteAccount(account: Account, accountId: string) {
+    return this.getClient(account).unmuteAccount(account, accountId);
+  }
+
+  blockAccount(account: Account, accountId: string) {
+    return this.getClient(account).blockAccount(account, accountId);
+  }
+
+  unblockAccount(account: Account, accountId: string) {
+    return this.getClient(account).unblockAccount(account, accountId);
   }
 
   fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string) {

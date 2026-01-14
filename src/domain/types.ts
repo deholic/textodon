@@ -14,6 +14,7 @@ export type Account = {
   handle: string;
   url: string | null;
   avatarUrl: string | null;
+  emojis: CustomEmoji[];
 };
 
 export type MediaAttachment = {
@@ -119,11 +120,14 @@ export type UserProfile = {
   locked: boolean;
   bio: string;
   fields: ProfileField[];
+  emojis?: CustomEmoji[];
 };
 
 export type AccountRelationship = {
   following: boolean;
   requested: boolean;
+  muting: boolean;
+  blocking: boolean;
 };
 
 export type ThreadContext = {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import type { Account } from "../../domain/types";
 import { formatHandle } from "../utils/account";
 import { useClickOutside } from "../hooks/useClickOutside";
@@ -8,17 +8,15 @@ export const AccountSelector = ({
   accounts,
   activeAccountId,
   setActiveAccount,
-  removeAccount,
   variant = "panel"
 }: {
   accounts: Account[];
   activeAccountId: string | null;
   setActiveAccount: (id: string) => void;
-  removeAccount: (id: string) => void;
   variant?: "panel" | "inline";
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDetailsElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useClickOutside(dropdownRef, dropdownOpen, () => setDropdownOpen(false));
 
@@ -47,6 +45,7 @@ export const AccountSelector = ({
                 name={activeAccount.name}
                 handle={activeAccount.handle ? formatHandle(activeAccount.handle, activeAccount.instanceUrl) : undefined}
                 instanceUrl={activeAccount.instanceUrl}
+                customEmojis={activeAccount.emojis}
               />
             ) : (
               <span className="account-selector-placeholder">계정을 선택하세요.</span>
@@ -62,26 +61,22 @@ export const AccountSelector = ({
                 const isActiveAccount = account.id === activeAccountId;
                 return (
                   <li key={account.id} className={isActiveAccount ? "active" : ""}>
-                    <div className="account-row">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveAccount(account.id);
-                          setDropdownOpen(false);
-                        }}
-                      >
-                        <AccountLabel
-                          avatarUrl={account.avatarUrl}
-                          displayName={account.displayName}
-                          name={account.name}
-                          handle={account.handle ? formatHandle(account.handle, account.instanceUrl) : undefined}
-                          instanceUrl={account.instanceUrl}
-                        />
-                      </button>
-                      <button type="button" onClick={() => removeAccount(account.id)} className="ghost">
-                        삭제
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAccount(account.id);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      <AccountLabel
+                        avatarUrl={account.avatarUrl}
+                        displayName={account.displayName}
+                        name={account.name}
+                        handle={account.handle ? formatHandle(account.handle, account.instanceUrl) : undefined}
+                        instanceUrl={account.instanceUrl}
+                        customEmojis={account.emojis}
+                      />
+                    </button>
                   </li>
                 );
               })}

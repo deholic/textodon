@@ -10,7 +10,9 @@ export type CreateStatusInput = {
 };
 
 export interface MastodonApi {
-  verifyAccount(account: Account): Promise<{ accountName: string; handle: string; avatarUrl: string | null }>;
+  verifyAccount(
+    account: Account
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }>;
   fetchHomeTimeline(account: Account, limit: number, maxId?: string): Promise<Status[]>;
   fetchTimeline(account: Account, timeline: TimelineType, limit: number, maxId?: string): Promise<Status[]>;
   fetchCustomEmojis(account: Account): Promise<CustomEmoji[]>;
@@ -29,5 +31,9 @@ export interface MastodonApi {
   followAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   unfollowAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   cancelFollowRequest(account: Account, accountId: string): Promise<AccountRelationship>;
+  muteAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  unmuteAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  blockAccount(account: Account, accountId: string): Promise<AccountRelationship>;
+  unblockAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string): Promise<Status[]>;
 }

@@ -128,7 +128,8 @@ export const mapAccountProfile = (raw: unknown): UserProfile => {
     headerUrl,
     locked,
     bio,
-    fields: mapProfileFields(value.fields)
+    fields: mapProfileFields(value.fields),
+    emojis: mapCustomEmojis(value.emojis)
   };
 };
 
@@ -136,7 +137,9 @@ export const mapAccountRelationship = (raw: unknown): AccountRelationship => {
   const value = raw as Record<string, unknown>;
   return {
     following: Boolean(value.following ?? false),
-    requested: Boolean(value.requested ?? false)
+    requested: Boolean(value.requested ?? false),
+    muting: Boolean(value.muting ?? false),
+    blocking: Boolean(value.blocking ?? false)
   };
 };
 

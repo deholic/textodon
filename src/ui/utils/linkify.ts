@@ -87,17 +87,25 @@ export const renderTextWithLinks = (
       } else {
         parts.push(matched);
       }
-    } else if (matched.includes("@")) {
-      parts.push(matched);
     } else {
-      const normalizedUrl = normalizeUrl(matched);
-      parts.push(
-        React.createElement(
-          "a",
-          { key: `${keyPrefix}-link-${key}`, href: normalizedUrl, target: "_blank", rel: "noreferrer" },
-          matched
-        )
-      );
+      const looksLikeUrlWithAt =
+        matched.includes("@") &&
+        (matched.startsWith("http://") ||
+          matched.startsWith("https://") ||
+          matched.startsWith("www.") ||
+          matched.includes("/"));
+      if (matched.includes("@") && !looksLikeUrlWithAt) {
+        parts.push(matched);
+      } else {
+        const normalizedUrl = normalizeUrl(matched);
+        parts.push(
+          React.createElement(
+            "a",
+            { key: `${keyPrefix}-link-${key}`, href: normalizedUrl, target: "_blank", rel: "noreferrer" },
+            matched
+          )
+        );
+      }
     }
     key += 1;
     lastIndex = match.index + matched.length;

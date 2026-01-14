@@ -122,15 +122,6 @@ export const TimelineItem = ({
   }, [activeImageIndex, goToPrevImage, goToNextImage]);
 
   const previewCard = displayStatus.card;
-  const mentionNames = useMemo(() => {
-    if (!displayStatus.mentions || displayStatus.mentions.length === 0) {
-      return "";
-    }
-    return displayStatus.mentions
-      .map((mention) => mention.displayName || mention.handle)
-      .filter(Boolean)
-      .join(", ");
-  }, [displayStatus.mentions]);
   const displayHandle = useMemo(() => {
     if (displayStatus.accountHandle.includes("@")) {
       return displayStatus.accountHandle;
@@ -162,19 +153,93 @@ export const TimelineItem = ({
       return boostedBy.handle;
     }
   }, [boostedBy]);
+  const renderEmojiText = useCallback(
+    (text: string, customEmojis: CustomEmoji[]): React.ReactNode => {
+      if (!showCustomEmojis || customEmojis.length === 0) {
+        return text;
+      }
+      const emojiMap = new Map(customEmojis.map((emoji) => [emoji.shortcode, emoji.url]));
+      const regex = /:([a-zA-Z0-9_]+):/g;
+      const nodes: React.ReactNode[] = [];
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      let segmentIndex = 0;
+      while ((match = regex.exec(text)) !== null) {
+        const shortcode = match[1];
+        const url = emojiMap.get(shortcode);
+        if (match.index > lastIndex) {
+          nodes.push(
+            <React.Fragment key={`label-text-${segmentIndex}`}>
+              {text.slice(lastIndex, match.index)}
+            </React.Fragment>
+          );
+          segmentIndex += 1;
+        }
+        if (url) {
+          nodes.push(
+            <img
+              key={`label-emoji-${shortcode}-${segmentIndex}`}
+              src={url}
+              alt={`:${shortcode}:`}
+              className="custom-emoji"
+              loading="lazy"
+            />
+          );
+        } else {
+          nodes.push(
+            <React.Fragment key={`label-raw-${segmentIndex}`}>
+              {match[0]}
+            </React.Fragment>
+          );
+        }
+        segmentIndex += 1;
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < text.length) {
+        nodes.push(
+          <React.Fragment key={`label-text-${segmentIndex}`}>{text.slice(lastIndex)}</React.Fragment>
+        );
+      }
+      return nodes;
+    },
+    [showCustomEmojis]
+  );
+  const mentionLabel = useMemo(() => {
+    if (!displayStatus.mentions || displayStatus.mentions.length === 0) {
+      return null;
+    }
+    const labels = displayStatus.mentions
+      .map((mention) => mention.displayName || mention.handle)
+      .filter(Boolean);
+    if (labels.length === 0) {
+      return null;
+    }
+    const emojiList = [...displayStatus.customEmojis, ...displayStatus.accountEmojis];
+    return labels.map((label, index) => (
+      <React.Fragment key={`mention-label-${index}`}>
+        {index > 0 ? ", " : ""}
+        {renderEmojiText(label, emojiList)}
+      </React.Fragment>
+    ));
+  }, [displayStatus.accountEmojis, displayStatus.customEmojis, displayStatus.mentions, renderEmojiText]);
   const boostedLabel = useMemo(() => {
     if (notification) {
       return null;
     }
     if (boostedBy) {
       const label = boostedBy.name || boostedHandle || boostedBy.handle;
-      return `${label}이 부스트함`;
+      const labelNode = renderEmojiText(label, status.accountEmojis);
+      return (
+        <>
+          {labelNode}이 부스트함
+        </>
+      );
     }
     if (displayStatus.reblogged) {
       return "내가 부스트함";
     }
     return null;
-  }, [boostedBy, boostedHandle, displayStatus.reblogged, activeHandle, notification]);
+  }, [boostedBy, boostedHandle, displayStatus.reblogged, notification, renderEmojiText, status.accountEmojis]);
   const canOpenProfile = Boolean(onProfileClick);
   const profileLabel = `${displayStatus.accountName || displayStatus.accountHandle} 프로필 보기`;
   const notificationActorHandle = useMemo(() => {
@@ -204,8 +269,13 @@ export const TimelineItem = ({
     }
     const actorName =
       notification.actor.name || notificationActorHandle || notification.actor.handle || "알 수 없는 사용자";
-    return `${actorName} 님이 ${notification.label}`;
-  }, [notification, notificationActorHandle]);
+    const actorNode = renderEmojiText(actorName, status.accountEmojis);
+    return (
+      <>
+        {actorNode} 님이 {notification.label}
+      </>
+    );
+  }, [notification, notificationActorHandle, renderEmojiText, status.accountEmojis]);
   const timestamp = useMemo(
     () => new Date(displayStatus.createdAt).toLocaleString(),
     [displayStatus.createdAt]
@@ -291,6 +361,19 @@ export const TimelineItem = ({
         return;
       }
       if (event.target instanceof Element && event.target.closest("a")) {
+        return;
+      }
+      onStatusClick(displayStatus);
+    },
+    [displayStatus, onStatusClick]
+  );
+  const handleStatusKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      if (!onStatusClick) {
         return;
       }
       onStatusClick(displayStatus);
@@ -681,15 +764,31 @@ export const TimelineItem = ({
         </div>
       ) : null}
       {boostedLabel ? (
-        <div className="boosted-by">
+        <div
+          className="boosted-by"
+          onClick={handleStatusClick}
+          onKeyDown={handleStatusKeyDown}
+          role={onStatusClick ? "button" : undefined}
+          tabIndex={onStatusClick ? 0 : undefined}
+          aria-label={onStatusClick ? "부스트한 글 스레드 보기" : undefined}
+          data-interactive={onStatusClick ? "true" : undefined}
+        >
           <BoostIcon aria-hidden="true" focusable="false" />
           <span>{boostedLabel}</span>
         </div>
       ) : null}
-      {mentionNames ? (
-        <div className="reply-info">
+      {mentionLabel ? (
+        <div
+          className="reply-info"
+          onClick={handleStatusClick}
+          onKeyDown={handleStatusKeyDown}
+          role={onStatusClick ? "button" : undefined}
+          tabIndex={onStatusClick ? 0 : undefined}
+          aria-label={onStatusClick ? "댓글 스레드 보기" : undefined}
+          data-interactive={onStatusClick ? "true" : undefined}
+        >
           <ReplyIcon aria-hidden="true" focusable="false" />
-          <span>{mentionNames}에게 보낸 답글</span>
+          <span>{mentionLabel}에게 보낸 답글</span>
         </div>
       ) : null}
       <header className="status-header-main">
@@ -793,7 +892,9 @@ export const TimelineItem = ({
               ) : null}
               <div className="link-preview-body">
                 <strong>{previewCard.title}</strong>
-                {previewCard.description ? <span>{previewCard.description}</span> : null}
+                {previewCard.description ? (
+                  <span className="link-preview-description">{previewCard.description}</span>
+                ) : null}
                 <span className="link-preview-url">{previewCard.url}</span>
               </div>
             </a>

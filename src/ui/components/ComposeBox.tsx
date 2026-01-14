@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Account, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
-import { useEmojiManager } from "../hooks/useEmojiManager";
+import { useEmojiManager, type EmojiItem } from "../hooks/useEmojiManager";
 import { useImageZoom } from "../hooks/useImageZoom";
 import {
   calculateCharacterCount,
@@ -11,7 +11,16 @@ import {
   getDefaultCharacterLimit
 } from "../utils/characterCount";
 
-const VISIBILITY_KEY = "textodon.compose.visibility";
+const VISIBILITY_KEY_PREFIX = "textodon.compose.visibility";
+const parseVisibility = (value: string | null): Visibility | null => {
+  if (value === "public" || value === "unlisted" || value === "private" || value === "direct") {
+    return value;
+  }
+  return null;
+};
+
+const getVisibilityStorageKey = (accountId: string | null | undefined) =>
+  accountId ? `${VISIBILITY_KEY_PREFIX}.${accountId}` : VISIBILITY_KEY_PREFIX;
 
 const visibilityOptions: { value: Visibility; label: string }[] = [
   { value: "public", label: "전체 공개" },
@@ -46,16 +55,18 @@ export const ComposeBox = ({
   api: MastodonApi;
 }) => {
   const [text, setText] = useState("");
+  const [emojiQuery, setEmojiQuery] = useState<{
+    value: string;
+    start: number;
+    end: number;
+  } | null>(null);
+  const [emojiSuggestionIndex, setEmojiSuggestionIndex] = useState(0);
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState("");
   const [cwEnabled, setCwEnabled] = useState(false);
   const [cwText, setCwText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [visibility, setVisibility] = useState<Visibility>(() => {
-    const stored = localStorage.getItem(VISIBILITY_KEY);
-    if (stored === "public" || stored === "unlisted" || stored === "private" || stored === "direct") {
-      return stored;
-    }
-    return "public";
-  });
+  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [visibilityAccountId, setVisibilityAccountId] = useState<string | null>(account?.id ?? null);
   const [attachments, setAttachments] = useState<
     { id: string; file: File; previewUrl: string }[]
   >([]);
@@ -88,16 +99,35 @@ export const ComposeBox = ({
     emojiStatus,
     emojiError,
     emojiCategories,
+    customEmojiCategories,
+    standardEmojiCategories,
     expandedCategories,
     loadEmojis,
     addToRecent,
-    toggleCategory
+    toggleCategory,
+    searchEmojis
   } = useEmojiManager(account, api, false);
 
   const activeImage = useMemo(
     () => attachments.find((item) => item.id === activeImageId) ?? null,
     [attachments, activeImageId]
   );
+
+  const emojiSuggestions = useMemo(() => {
+    if (!emojiQuery) {
+      return [];
+    }
+    return searchEmojis(emojiQuery.value, 5);
+  }, [emojiQuery, searchEmojis]);
+
+  const emojiSearchResults = useMemo(() => {
+    if (!emojiSearchQuery.trim()) {
+      return [];
+    }
+    return searchEmojis(emojiSearchQuery);
+  }, [emojiSearchQuery, searchEmojis]);
+
+  const hasEmojiSearch = emojiSearchQuery.trim().length > 0;
 
   useEffect(() => {
     if (!activeImage) {
@@ -111,8 +141,18 @@ export const ComposeBox = ({
   }, [activeImage]);
 
   useEffect(() => {
-    localStorage.setItem(VISIBILITY_KEY, visibility);
-  }, [visibility]);
+    const accountId = account?.id ?? null;
+    const stored = parseVisibility(localStorage.getItem(getVisibilityStorageKey(accountId)));
+    setVisibility(stored ?? "public");
+    setVisibilityAccountId(accountId);
+  }, [account?.id]);
+
+  useEffect(() => {
+    if (!account || visibilityAccountId !== account.id) {
+      return;
+    }
+    localStorage.setItem(getVisibilityStorageKey(account.id), visibility);
+  }, [account?.id, visibility, visibilityAccountId]);
 
   // 계정 변경 시 인스턴스 정보 로드
   useEffect(() => {
@@ -208,10 +248,27 @@ export const ComposeBox = ({
 
   useEffect(() => {
     if (!emojiPanelOpen) {
+      setEmojiSearchQuery("");
       return;
     }
     setRecentOpen(true);
   }, [emojiPanelOpen]);
+
+  useEffect(() => {
+    setEmojiSuggestionIndex(0);
+  }, [emojiQuery?.value, emojiSuggestions.length]);
+
+  useEffect(() => {
+    if (emojiQuery?.value && account && emojiStatus === "idle") {
+      void loadEmojis();
+    }
+  }, [emojiQuery?.value, account, emojiStatus, loadEmojis]);
+
+  useEffect(() => {
+    if (emojiSearchQuery.trim() && account && emojiStatus === "idle") {
+      void loadEmojis();
+    }
+  }, [emojiSearchQuery, account, emojiStatus, loadEmojis]);
 
   const addAttachments = useCallback((files: File[]) => {
     if (files.length === 0) {
@@ -268,8 +325,45 @@ export const ComposeBox = ({
     });
   };
 
-  const insertEmoji = (shortcode: string) => {
-    const value = `${ZERO_WIDTH_SPACE}:${shortcode}:${ZERO_WIDTH_SPACE}`;
+  const findEmojiQuery = useCallback(
+    (value: string, cursor: number) => {
+      if (cursor <= 0) {
+        return null;
+      }
+      const beforeCursor = value.slice(0, cursor);
+      const colonIndex = beforeCursor.lastIndexOf(":");
+      if (colonIndex < 0) {
+        return null;
+      }
+      const query = beforeCursor.slice(colonIndex + 1);
+      if (!query || /\s/.test(query)) {
+        return null;
+      }
+      const prevChar = colonIndex > 0 ? beforeCursor[colonIndex - 1] : "";
+      if (prevChar && !/\s/.test(prevChar) && prevChar !== ZERO_WIDTH_SPACE) {
+        return null;
+      }
+      return {
+        value: query,
+        start: colonIndex,
+        end: cursor
+      };
+    },
+    []
+  );
+
+  const updateEmojiQuery = useCallback(
+    (value: string, cursor: number) => {
+      const nextQuery = findEmojiQuery(value, cursor);
+      setEmojiQuery(nextQuery);
+      if (!nextQuery) {
+        setEmojiSuggestionIndex(0);
+      }
+    },
+    [findEmojiQuery]
+  );
+
+  const insertEmojiValue = (value: string) => {
     const textarea = textareaRef.current;
     if (!textarea) {
       setText((current) => `${current}${value}`);
@@ -286,9 +380,48 @@ export const ComposeBox = ({
     });
   };
 
-  const handleEmojiSelect = (emoji) => {
-    insertEmoji(emoji.shortcode);
-    addToRecent(emoji.shortcode);
+  const buildEmojiInsertValue = (emoji: EmojiItem) => {
+    if (emoji.isCustom && emoji.shortcode) {
+      return `${ZERO_WIDTH_SPACE}:${emoji.shortcode}:${ZERO_WIDTH_SPACE}`;
+    }
+    if (emoji.unicode) {
+      return `${ZERO_WIDTH_SPACE}${emoji.unicode}${ZERO_WIDTH_SPACE}`;
+    }
+    return "";
+  };
+
+  const handleEmojiSuggestionSelect = (emoji: EmojiItem) => {
+    if (!emojiQuery) {
+      return;
+    }
+    const value = buildEmojiInsertValue(emoji);
+    if (!value) {
+      return;
+    }
+    const nextText = `${text.slice(0, emojiQuery.start)}${value}${text.slice(emojiQuery.end)}`;
+    setText(nextText);
+    addToRecent(emoji.id);
+    setEmojiQuery(null);
+    setEmojiSuggestionIndex(0);
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) {
+        return;
+      }
+      const nextCursor = emojiQuery.start + value.length;
+      textarea.focus();
+      textarea.setSelectionRange(nextCursor, nextCursor);
+      updateEmojiQuery(nextText, nextCursor);
+    });
+  };
+
+  const handleEmojiSelect = (emoji: EmojiItem) => {
+    const value = buildEmojiInsertValue(emoji);
+    if (!value) {
+      return;
+    }
+    insertEmojiValue(value);
+    addToRecent(emoji.id);
   };
 
   const handleToggleCategory = (categoryId: string) => {
@@ -346,18 +479,89 @@ export const ComposeBox = ({
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setText(nextValue);
+              updateEmojiQuery(nextValue, event.target.selectionStart ?? nextValue.length);
+            }}
             placeholder="지금 무슨 생각을 하고 있나요?"
             rows={4}
             onPaste={handlePaste}
             disabled={isSubmitting}
+            onClick={(event) => {
+              const cursor = event.currentTarget.selectionStart ?? text.length;
+              updateEmojiQuery(event.currentTarget.value, cursor);
+            }}
+            onKeyUp={(event) => {
+              const cursor = event.currentTarget.selectionStart ?? text.length;
+              updateEmojiQuery(event.currentTarget.value, cursor);
+            }}
             onKeyDown={(event) => {
+              if (!event.metaKey && !event.ctrlKey && emojiSuggestions.length > 0) {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  setEmojiSuggestionIndex((current) =>
+                    current + 1 >= emojiSuggestions.length ? 0 : current + 1
+                  );
+                  return;
+                }
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  setEmojiSuggestionIndex((current) =>
+                    current - 1 < 0 ? emojiSuggestions.length - 1 : current - 1
+                  );
+                  return;
+                }
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  const selected = emojiSuggestions[emojiSuggestionIndex];
+                  if (selected) {
+                    handleEmojiSuggestionSelect(selected);
+                  }
+                  return;
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setEmojiQuery(null);
+                  setEmojiSuggestionIndex(0);
+                  return;
+                }
+              }
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
                 void submitPost();
               }
             }}
           />
+          {emojiSuggestions.length > 0 ? (
+            <div className="compose-emoji-suggestions" role="listbox" aria-label="이모지 추천">
+              {emojiSuggestions.map((emoji, index) => {
+                const isActive = index === emojiSuggestionIndex;
+                const label = emoji.shortcode ? `:${emoji.shortcode}:` : emoji.label;
+                return (
+                  <button
+                    key={`suggestion:${emoji.id}`}
+                    type="button"
+                    className={`compose-emoji-suggestion${isActive ? " is-active" : ""}`}
+                    role="option"
+                    aria-selected={isActive}
+                    aria-label={`이모지 ${label}`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => handleEmojiSuggestionSelect(emoji)}
+                  >
+                    <span className="compose-emoji-suggestion-icon" aria-hidden="true">
+                      {emoji.unicode ? (
+                        <span className="compose-emoji-text">{emoji.unicode}</span>
+                      ) : emoji.url ? (
+                        <img src={emoji.url} alt="" loading="lazy" />
+                      ) : null}
+                    </span>
+                    <span className="compose-emoji-suggestion-label">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           <div className="compose-attachments">
             {/* 첨부된 이미지들과 이미지 추가 버튼 */}
             <div className="compose-attachments-scroll">
@@ -403,6 +607,11 @@ export const ComposeBox = ({
             )}
           </div>
         </div>
+        {visibility === "public" ? (
+          <p className="compose-visibility-warning" role="status">
+            전체 공개로 게시됩니다. 민감한 내용은 주의해주세요.
+          </p>
+        ) : null}
         <div className="compose-actions">
           <select
             value={visibility}
@@ -420,7 +629,7 @@ export const ComposeBox = ({
             <button
               type="button"
               className={`icon-button compose-icon-button${emojiPanelOpen ? " is-active" : ""}`}
-              aria-label="커스텀 이모지 팔렛트 열기"
+              aria-label="이모지 팔렛트 열기"
               onClick={() => setEmojiPanelOpen((open) => !open)}
               disabled={!account || isSubmitting}
             >
@@ -455,8 +664,20 @@ export const ComposeBox = ({
           </div>
         </div>
         {emojiPanelOpen ? (
-          <div className="compose-emoji-panel" role="region" aria-label="커스텀 이모지 팔렛트">
+          <div className="compose-emoji-panel" role="region" aria-label="이모지 팔렛트">
             {!account ? <p className="compose-emoji-empty">계정을 선택해주세요.</p> : null}
+            {account ? (
+              <div className="compose-emoji-search">
+                <input
+                  type="text"
+                  value={emojiSearchQuery}
+                  onChange={(event) => setEmojiSearchQuery(event.target.value)}
+                  placeholder="이모지 검색"
+                  aria-label="이모지 검색"
+                  disabled={emojiStatus === "loading"}
+                />
+              </div>
+            ) : null}
             {account && emojiStatus === "loading" ? (
               <p className="compose-emoji-empty">이모지를 불러오는 중...</p>
             ) : null}
@@ -468,14 +689,87 @@ export const ComposeBox = ({
                 </button>
               </div>
             ) : null}
-            {account && emojiStatus === "loaded" && emojiCategories.length === 0 ? (
-              <p className="compose-emoji-empty">사용할 수 있는 커스텀 이모지가 없습니다.</p>
+             {account && emojiCategories.length === 0 ? (
+              <p className="compose-emoji-empty">사용할 수 있는 이모지가 없습니다.</p>
             ) : null}
-            {account && emojiStatus === "loaded"
-              ? emojiCategories.map((category) => {
+            {account && emojiCategories.length > 0 ? (
+              <>
+                {hasEmojiSearch ? (
+                  <section className="compose-emoji-category">
+                    <div className="compose-emoji-category-toggle is-static">
+                      <span>검색 결과</span>
+                      <span className="compose-emoji-count">{emojiSearchResults.length}</span>
+                    </div>
+                    {emojiSearchResults.length > 0 ? (
+                      <div className="compose-emoji-grid">
+                        {emojiSearchResults.map((emoji) => (
+                          <button
+                            key={`search:${emoji.id}`}
+                            type="button"
+                            className="compose-emoji-button"
+                            onClick={() => handleEmojiSelect(emoji)}
+                            aria-label={`이모지 ${emoji.label}`}
+                            title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
+                          >
+                            {emoji.unicode ? (
+                              <span className="compose-emoji-text" aria-hidden="true">
+                                {emoji.unicode}
+                              </span>
+                            ) : emoji.url ? (
+                              <img src={emoji.url} alt="" loading="lazy" />
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="compose-emoji-empty">검색 결과가 없습니다.</p>
+                    )}
+                  </section>
+                ) : null}
+                {(() => {
+                  const recentCategory = emojiCategories.find((item) => item.id === "recent");
+                  if (!recentCategory) return null;
+                  const categoryKey = `${account.instanceUrl}::${recentCategory.id}`;
+                  const isCollapsed = !recentOpen;
+                  return (
+                    <section key={categoryKey} className="compose-emoji-category">
+                      <button
+                        type="button"
+                        className="compose-emoji-category-toggle"
+                        onClick={() => handleToggleCategory(recentCategory.id)}
+                        aria-expanded={!isCollapsed}
+                      >
+                        <span>{recentCategory.label}</span>
+                        <span className="compose-emoji-count">{recentCategory.emojis.length}</span>
+                      </button>
+                      {isCollapsed ? null : (
+                        <div className="compose-emoji-grid">
+                          {recentCategory.emojis.map((emoji) => (
+                            <button
+                              key={`${recentCategory.id}:${emoji.id}`}
+                              type="button"
+                              className="compose-emoji-button"
+                              onClick={() => handleEmojiSelect(emoji)}
+                              aria-label={`이모지 ${emoji.label}`}
+                              title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
+                            >
+                              {emoji.unicode ? (
+                                <span className="compose-emoji-text" aria-hidden="true">
+                                  {emoji.unicode}
+                                </span>
+                              ) : emoji.url ? (
+                                <img src={emoji.url} alt="" loading="lazy" />
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })()}
+                {customEmojiCategories.map((category) => {
                   const categoryKey = `${account.instanceUrl}::${category.id}`;
-                  const isCollapsed =
-                    category.id === "recent" ? !recentOpen : !expandedCategories.has(category.id);
+                  const isCollapsed = !expandedCategories.has(category.id);
                   return (
                     <section key={categoryKey} className="compose-emoji-category">
                       <button
@@ -491,21 +785,78 @@ export const ComposeBox = ({
                         <div className="compose-emoji-grid">
                           {category.emojis.map((emoji) => (
                             <button
-                              key={`${category.id}:${emoji.shortcode}`}
+                              key={`${category.id}:${emoji.id}`}
                               type="button"
                               className="compose-emoji-button"
                               onClick={() => handleEmojiSelect(emoji)}
-                              aria-label={`이모지 ${emoji.shortcode}`}
+                              aria-label={`이모지 ${emoji.label}`}
+                              title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
                             >
-                              <img src={emoji.url} alt="" loading="lazy" />
+                              {emoji.unicode ? (
+                                <span className="compose-emoji-text" aria-hidden="true">
+                                  {emoji.unicode}
+                                </span>
+                              ) : emoji.url ? (
+                                <img src={emoji.url} alt="" loading="lazy" />
+                              ) : null}
                             </button>
                           ))}
                         </div>
                       )}
                     </section>
                   );
-                })
-              : null}
+                })}
+                {customEmojiCategories.length > 0 && standardEmojiCategories.length > 0 ? (
+                  <div
+                    className="compose-emoji-divider"
+                    role="separator"
+                    aria-label="표준 이모지 구분선"
+                  >
+                    <span>표준 이모지</span>
+                  </div>
+                ) : null}
+                {standardEmojiCategories.map((category) => {
+                  const categoryKey = `${account.instanceUrl}::${category.id}`;
+                  const isCollapsed = !expandedCategories.has(category.id);
+                  return (
+                    <section key={categoryKey} className="compose-emoji-category">
+                      <button
+                        type="button"
+                        className="compose-emoji-category-toggle"
+                        onClick={() => handleToggleCategory(category.id)}
+                        aria-expanded={!isCollapsed}
+                      >
+                        <span>{category.label}</span>
+                        <span className="compose-emoji-count">{category.emojis.length}</span>
+                      </button>
+                      {isCollapsed ? null : (
+                        <div className="compose-emoji-grid">
+                          {category.emojis.map((emoji) => (
+                            <button
+                              key={`${category.id}:${emoji.id}`}
+                              type="button"
+                              className="compose-emoji-button"
+                              onClick={() => handleEmojiSelect(emoji)}
+                              aria-label={`이모지 ${emoji.label}`}
+                              title={emoji.shortcode ? `:${emoji.shortcode}:` : undefined}
+                            >
+                              {emoji.unicode ? (
+                                <span className="compose-emoji-text" aria-hidden="true">
+                                  {emoji.unicode}
+                                </span>
+                              ) : emoji.url ? (
+                                <img src={emoji.url} alt="" loading="lazy" />
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </>
+            ) : null}
+
           </div>
         ) : null}
       </form>

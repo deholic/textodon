@@ -13,6 +13,7 @@ import { formatHandle } from "../utils/account";
 import { isPlainUrl, renderTextWithLinks } from "../utils/linkify";
 import { renderMarkdown } from "../utils/markdown";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useToast } from "../state/ToastContext";
 import { TimelineItem } from "./TimelineItem";
 
 const PAGE_SIZE = 20;
@@ -76,6 +77,63 @@ const tokenizeWithEmojis = (
   return tokens;
 };
 
+const replaceCustomEmojisInHtml = (html: string, emojiMap: Map<string, string>): string => {
+  if (emojiMap.size === 0) {
+    return html;
+  }
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let current = walker.nextNode();
+    while (current) {
+      textNodes.push(current as Text);
+      current = walker.nextNode();
+    }
+    const regex = /:([a-zA-Z0-9_]+):/g;
+    textNodes.forEach((node) => {
+      const parent = node.parentElement;
+      if (parent && ["CODE", "PRE"].includes(parent.tagName)) {
+        return;
+      }
+      const value = node.nodeValue ?? "";
+      if (!regex.test(value)) {
+        return;
+      }
+      regex.lastIndex = 0;
+      const fragment = doc.createDocumentFragment();
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(value)) !== null) {
+        const shortcode = match[1];
+        const url = emojiMap.get(shortcode);
+        if (match.index > lastIndex) {
+          fragment.appendChild(doc.createTextNode(value.slice(lastIndex, match.index)));
+        }
+        if (url) {
+          const img = doc.createElement("img");
+          img.setAttribute("src", url);
+          img.setAttribute("alt", `:${shortcode}:`);
+          img.setAttribute("class", "custom-emoji");
+          img.setAttribute("loading", "lazy");
+          fragment.appendChild(img);
+        } else {
+          fragment.appendChild(doc.createTextNode(match[0]));
+        }
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < value.length) {
+        fragment.appendChild(doc.createTextNode(value.slice(lastIndex)));
+      }
+      node.parentNode?.replaceChild(fragment, node);
+    });
+    return doc.body.innerHTML;
+  } catch {
+    return html;
+  }
+};
+
 export const ProfileModal = ({
   status,
   account,
@@ -110,19 +168,33 @@ export const ProfileModal = ({
   const [followLoading, setFollowLoading] = useState(false);
   const [followError, setFollowError] = useState<string | null>(null);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [items, setItems] = useState<Status[]>([]);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadingMore, setItemsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const { showToast } = useToast();
   const targetAccountId = status.accountId;
+  const profileEmojis = useMemo(() => {
+    if (!showCustomEmojis) {
+      return [];
+    }
+    if (profile?.emojis && profile.emojis.length > 0) {
+      return profile.emojis;
+    }
+    return status.accountEmojis;
+  }, [profile?.emojis, showCustomEmojis, status.accountEmojis]);
   const emojiMap = useMemo(
-    () => (showCustomEmojis ? buildEmojiMap(status.accountEmojis) : new Map()),
-    [showCustomEmojis, status.accountEmojis]
+    () => (profileEmojis.length > 0 ? buildEmojiMap(profileEmojis) : new Map()),
+    [profileEmojis]
   );
 
   useClickOutside(scrollRef, isTopmost, onClose);
+  useClickOutside(profileMenuRef, profileMenuOpen, () => setProfileMenuOpen(false), [profileMenuButtonRef]);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -404,24 +476,34 @@ export const ProfileModal = ({
     return rawHandle;
   }, [account, displayProfile.url, rawHandle]);
   const handleText = displayHandle ? (displayHandle.startsWith("@") ? displayHandle : `@${displayHandle}`) : "";
+  const profileOriginUrl = useMemo(
+    () => displayProfile.url || status.accountUrl || null,
+    [displayProfile.url, status.accountUrl]
+  );
   const bioContent = useMemo(() => {
     if (!displayProfile.bio) {
       return null;
     }
     if (hasHtmlTags(displayProfile.bio)) {
-      return { type: "html" as const, value: sanitizeHtml(displayProfile.bio) };
+      const processed =
+        showCustomEmojis && emojiMap.size > 0
+          ? replaceCustomEmojisInHtml(displayProfile.bio, emojiMap)
+          : displayProfile.bio;
+      return { type: "html" as const, value: sanitizeHtml(processed) };
     }
     return {
       type: "text" as const,
       value: renderTextWithEmojis(displayProfile.bio, "profile-bio", true)
     };
-  }, [displayProfile.bio, renderTextWithEmojis]);
+  }, [displayProfile.bio, emojiMap, renderTextWithEmojis, showCustomEmojis]);
   const activeHandle = account?.handle ? formatHandle(account.handle, account.instanceUrl) : account?.instanceUrl ?? "";
 
   const renderFieldValue = useCallback(
     (value: string, index: number) => {
       if (hasHtmlTags(value)) {
-        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }} />;
+        const processed =
+          showCustomEmojis && emojiMap.size > 0 ? replaceCustomEmojisInHtml(value, emojiMap) : value;
+        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(processed) }} />;
       }
       if (hasMarkdownSyntax(value)) {
         const markdownEmojiMap = showCustomEmojis ? emojiMap : undefined;
@@ -444,11 +526,13 @@ export const ProfileModal = ({
   const renderFieldLabel = useCallback(
     (label: string, index: number) => {
       if (hasHtmlTags(label)) {
-        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(label) }} />;
+        const processed =
+          showCustomEmojis && emojiMap.size > 0 ? replaceCustomEmojisInHtml(label, emojiMap) : label;
+        return <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(processed) }} />;
       }
       return <span>{renderTextWithEmojis(label, `profile-field-label-${index}`, false)}</span>;
     },
-    [renderTextWithEmojis]
+    [emojiMap, renderTextWithEmojis, showCustomEmojis]
   );
 
   const normalizedAccountHandle = account?.handle ? formatHandle(account.handle, account.instanceUrl) : "";
@@ -460,9 +544,13 @@ export const ProfileModal = ({
   const isSelf = Boolean(isSelfById || isSelfByHandle);
   const isFollowing = relationship?.following ?? false;
   const isRequested = relationship?.requested ?? false;
+  const isMuted = relationship?.muting ?? false;
+  const isBlocked = relationship?.blocking ?? false;
   const followState = isFollowing ? "following" : isRequested ? "requested" : "follow";
   const canFollow = Boolean(account && targetAccountId && !isSelf);
   const canInteractFollow = canFollow && !followLoading;
+  const canShowProfileMenu = Boolean(profileOriginUrl) || canFollow;
+  const canOpenProfileMenu = Boolean(profileOriginUrl) || canInteractFollow;
   const followLabel =
     followState === "following"
       ? "팔로잉"
@@ -480,16 +568,26 @@ export const ProfileModal = ({
           ? "팔로우 요청 보내기"
           : "팔로우하기";
 
-
+  const buildNextRelationship = useCallback(
+    (updates: Partial<AccountRelationship>): AccountRelationship => ({
+      following: updates.following ?? relationship?.following ?? false,
+      requested: updates.requested ?? relationship?.requested ?? false,
+      muting: updates.muting ?? relationship?.muting ?? false,
+      blocking: updates.blocking ?? relationship?.blocking ?? false
+    }),
+    [relationship]
+  );
 
   const updateRelationshipOptimistically = useCallback(
     async (
       next: AccountRelationship,
       action: () => Promise<AccountRelationship>,
-      fallbackMessage: string
+      fallbackMessage: string,
+      successMessage?: string,
+      successTone: "success" | "info" = "success"
     ) => {
       if (!account || !targetAccountId) {
-      setFollowError("계정을 선택해 주세요.");
+        setFollowError("계정을 선택해 주세요.");
         return;
       }
       const previous = relationship;
@@ -500,14 +598,19 @@ export const ProfileModal = ({
         const updated = await action();
         setRelationship(updated);
         setShowUnfollowConfirm(false);
+        if (successMessage) {
+          showToast(successMessage, { tone: successTone });
+        }
       } catch (error) {
+        const message = error instanceof Error ? error.message : fallbackMessage;
         setRelationship(previous);
-        setFollowError(error instanceof Error ? error.message : fallbackMessage);
+        setFollowError(message);
+        showToast(message, { tone: "error" });
       } finally {
         setFollowLoading(false);
       }
     },
-    [account, relationship, targetAccountId]
+    [account, relationship, showToast, targetAccountId]
   );
 
   const handleFollowClick = useCallback(() => {
@@ -524,21 +627,24 @@ export const ProfileModal = ({
     }
     if (followState === "requested") {
       updateRelationshipOptimistically(
-        { following: false, requested: false },
+        buildNextRelationship({ following: false, requested: false }),
         () => api.cancelFollowRequest(account, targetAccountId),
-        "팔로우 요청을 취소하지 못했습니다."
+        "팔로우 요청을 취소하지 못했습니다.",
+        "팔로우 요청을 취소했습니다."
       );
       return;
     }
     const shouldRequest = displayProfile.locked;
     updateRelationshipOptimistically(
-      { following: !shouldRequest, requested: shouldRequest },
+      buildNextRelationship({ following: !shouldRequest, requested: shouldRequest }),
       () => api.followAccount(account, targetAccountId),
-      "팔로우에 실패했습니다."
+      "팔로우에 실패했습니다.",
+      shouldRequest ? "팔로우 요청을 보냈습니다." : "팔로우했습니다."
     );
   }, [
     account,
     api,
+    buildNextRelationship,
     canInteractFollow,
     displayProfile.locked,
     followState,
@@ -555,17 +661,94 @@ export const ProfileModal = ({
       return;
     }
     updateRelationshipOptimistically(
-      { following: false, requested: false },
+      buildNextRelationship({ following: false, requested: false }),
       () => api.unfollowAccount(account, targetAccountId),
-      "언팔로우에 실패했습니다."
+      "언팔로우에 실패했습니다.",
+      "언팔로우했습니다."
     );
-  }, [account, api, canInteractFollow, targetAccountId, updateRelationshipOptimistically]);
+  }, [account, api, buildNextRelationship, canInteractFollow, targetAccountId, updateRelationshipOptimistically]);
+
+  const handleMuteToggle = useCallback(() => {
+    if (!canInteractFollow) {
+      return;
+    }
+    if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+      return;
+    }
+    const next = buildNextRelationship({ muting: !isMuted });
+    updateRelationshipOptimistically(
+      next,
+      () =>
+        isMuted
+          ? api.unmuteAccount(account, targetAccountId)
+          : api.muteAccount(account, targetAccountId),
+      isMuted ? "뮤트 해제에 실패했습니다." : "뮤트에 실패했습니다.",
+      isMuted ? "뮤트를 해제했습니다." : "뮤트했습니다."
+    );
+    setProfileMenuOpen(false);
+  }, [
+    account,
+    api,
+    buildNextRelationship,
+    canInteractFollow,
+    isMuted,
+    targetAccountId,
+    updateRelationshipOptimistically
+  ]);
+
+  const handleBlockToggle = useCallback(() => {
+    if (!canInteractFollow) {
+      return;
+    }
+    if (!account || !targetAccountId) {
+      setFollowError("계정을 선택해 주세요.");
+      return;
+    }
+    const next = buildNextRelationship({
+      blocking: !isBlocked,
+      following: isBlocked ? undefined : false,
+      requested: isBlocked ? undefined : false
+    });
+    updateRelationshipOptimistically(
+      next,
+      () =>
+        isBlocked
+          ? api.unblockAccount(account, targetAccountId)
+          : api.blockAccount(account, targetAccountId),
+      isBlocked ? "차단 해제에 실패했습니다." : "차단에 실패했습니다.",
+      isBlocked ? "차단을 해제했습니다." : "차단했습니다."
+    );
+    setProfileMenuOpen(false);
+  }, [
+    account,
+    api,
+    buildNextRelationship,
+    canInteractFollow,
+    isBlocked,
+    targetAccountId,
+    updateRelationshipOptimistically
+  ]);
 
   useEffect(() => {
     if (!isFollowing) {
       setShowUnfollowConfirm(false);
     }
   }, [isFollowing]);
+
+  useEffect(() => {
+    if (!profileOriginUrl && !canFollow) {
+      setProfileMenuOpen(false);
+    }
+  }, [canFollow, profileOriginUrl]);
+
+  const handleOpenProfileOrigin = useCallback(() => {
+    if (!profileOriginUrl) {
+      return;
+    }
+    window.open(profileOriginUrl, "_blank", "noopener,noreferrer");
+    setProfileMenuOpen(false);
+  }, [profileOriginUrl]);
 
   return (
     <div
@@ -612,9 +795,10 @@ export const ProfileModal = ({
                   {handleText ? <span>{handleText}</span> : null}
                 </div>
               </div>
-              {canFollow ? (
+              {canShowProfileMenu ? (
                 <div className="profile-hero-actions">
-                  <div className="follow-action">
+                  {canFollow ? (
+                    <div className="follow-action">
                     <button
                       type="button"
                       className={`button-with-icon profile-follow-button${
@@ -675,6 +859,49 @@ export const ProfileModal = ({
                           </div>
                         </div>
                       </div>
+                    ) : null}
+                    </div>
+                  ) : null}
+                  <div className="profile-action-menu">
+                    <button
+                      ref={profileMenuButtonRef}
+                      type="button"
+                      className="icon-button"
+                      aria-label="프로필 메뉴 열기"
+                      aria-haspopup="menu"
+                      aria-expanded={profileMenuOpen}
+                      onClick={() => {
+                        setShowUnfollowConfirm(false);
+                        setProfileMenuOpen((current) => !current);
+                      }}
+                      disabled={!canOpenProfileMenu}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.7" />
+                        <circle cx="12" cy="12" r="1.7" />
+                        <circle cx="12" cy="19" r="1.7" />
+                      </svg>
+                    </button>
+                    {profileMenuOpen ? (
+                      <>
+                        <div className="overlay-backdrop profile-menu-backdrop" aria-hidden="true" />
+                        <div ref={profileMenuRef} className="section-menu-panel profile-menu-panel" role="menu">
+                          <button type="button" onClick={handleOpenProfileOrigin} disabled={!profileOriginUrl}>
+                            원본 사이트에서 보기
+                          </button>
+                          <button type="button" onClick={handleMuteToggle} disabled={!canInteractFollow}>
+                            {isMuted ? "뮤트 해제" : "뮤트하기"}
+                          </button>
+                          <button
+                            type="button"
+                            className="danger"
+                            onClick={handleBlockToggle}
+                            disabled={!canInteractFollow}
+                          >
+                            {isBlocked ? "차단 해제" : "차단하기"}
+                          </button>
+                        </div>
+                      </>
                     ) : null}
                   </div>
                 </div>

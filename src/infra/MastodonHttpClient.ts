@@ -48,7 +48,7 @@ const mapCustomEmojis = (data: unknown): CustomEmoji[] => {
 export class MastodonHttpClient implements MastodonApi {
   async verifyAccount(
     account: Account
-  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null }> {
+  ): Promise<{ accountName: string; handle: string; avatarUrl: string | null; emojis: CustomEmoji[] }> {
     const response = await fetch(`${account.instanceUrl}/api/v1/accounts/verify_credentials`, {
       headers: buildHeaders(account)
     });
@@ -59,7 +59,8 @@ export class MastodonHttpClient implements MastodonApi {
     return {
       accountName: String(data.display_name ?? data.username ?? ""),
       handle: String(data.acct ?? ""),
-      avatarUrl: typeof data.avatar === "string" ? data.avatar : null
+      avatarUrl: typeof data.avatar === "string" ? data.avatar : null,
+      emojis: mapCustomEmojis(data.emojis)
     };
   }
 
@@ -232,6 +233,54 @@ export class MastodonHttpClient implements MastodonApi {
 
   async cancelFollowRequest(account: Account, accountId: string): Promise<AccountRelationship> {
     return this.unfollowAccount(account, accountId);
+  }
+
+  async muteAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/mute`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("뮤트에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async unmuteAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/unmute`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("뮤트 해제에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async blockAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/block`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("차단에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
+  }
+
+  async unblockAccount(account: Account, accountId: string): Promise<AccountRelationship> {
+    const response = await fetch(`${account.instanceUrl}/api/v1/accounts/${accountId}/unblock`, {
+      method: "POST",
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("차단 해제에 실패했습니다.");
+    }
+    const data = (await response.json()) as unknown;
+    return mapAccountRelationship(data);
   }
 
   async fetchAccountStatuses(

@@ -10,13 +10,19 @@ import { useTimeline } from "./ui/hooks/useTimeline";
 import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
-import { createAccountId, formatHandle } from "./ui/utils/account";
-import { clearPendingOAuth, loadPendingOAuth } from "./ui/utils/oauth";
+import { createAccountId, formatHandle, normalizeInstanceUrl } from "./ui/utils/account";
+import { clearPendingOAuth, createOauthState, loadPendingOAuth, loadRegisteredApp, saveRegisteredApp, storePendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
+import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
+import { renderMarkdown } from "./ui/utils/markdown";
+import { useToast } from "./ui/state/ToastContext";
 import logoUrl from "./ui/assets/textodon-icon-blue.png";
 import licenseText from "../LICENSE?raw";
+import ossMarkdown from "./ui/content/oss.md?raw";
+import termsMarkdown from "./ui/content/terms.md?raw";
 
 type Route = "home" | "terms" | "license" | "oss";
+type InfoModalType = "terms" | "license" | "oss";
 type TimelineSectionConfig = { id: string; accountId: string | null; timelineType: TimelineType };
 type ProfileTarget = { status: Status; account: Account | null; zIndex: number };
 
@@ -182,41 +188,83 @@ const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
   }
 };
 
+const termsHtml = sanitizeHtml(renderMarkdown(termsMarkdown));
+const ossHtml = sanitizeHtml(renderMarkdown(ossMarkdown));
+
+const TermsContent = () => (
+  <div className="info-markdown" dangerouslySetInnerHTML={{ __html: termsHtml }} />
+);
+
+const LicenseContent = () => <pre className="license">{licenseText}</pre>;
+
+const OssContent = () => (
+  <div className="info-markdown" dangerouslySetInnerHTML={{ __html: ossHtml }} />
+);
+
+const getInfoModalTitle = (type: InfoModalType) => {
+  switch (type) {
+    case "terms":
+      return "이용약관";
+    case "license":
+      return "라이선스";
+    case "oss":
+      return "오픈소스 목록";
+    default:
+      return "";
+  }
+};
+
+const InfoModalContent = ({ type }: { type: InfoModalType }) => {
+  switch (type) {
+    case "terms":
+      return <TermsContent />;
+    case "license":
+      return <LicenseContent />;
+    case "oss":
+      return <OssContent />;
+    default:
+      return null;
+  }
+};
+
+const InfoModal = ({ type, onClose }: { type: InfoModalType; onClose: () => void }) => {
+  const title = getInfoModalTitle(type);
+  return (
+    <div className="info-modal" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="info-modal-backdrop" onClick={onClose} />
+      <div className="info-modal-content">
+        <div className="info-modal-header">
+          <h3 className="info-modal-title">{title}</h3>
+          <button type="button" className="ghost" onClick={onClose} aria-label={`${title} 닫기`}>
+            닫기
+          </button>
+        </div>
+        <div className="info-modal-body">
+          <InfoModalContent type={type} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TermsPage = () => (
   <section className="panel info-panel">
     <PageHeader title="이용약관" />
-    <p>
-      Deck은 개인 또는 팀이 운영하는 마스토돈 인스턴스에 접속하는 클라이언트입니다. 본
-      서비스는 사용자의 계정 정보 및 게시물을 저장하지 않으며, 모든 요청은 사용자가 설정한
-      인스턴스로 직접 전송됩니다.
-    </p>
-    <p>
-      사용자는 각 인스턴스의 정책과 법령을 준수해야 하며, 계정 보안과 토큰 관리 책임은
-      사용자에게 있습니다. 서비스는 제공되는 기능을 개선하거나 변경할 수 있습니다.
-    </p>
+    <TermsContent />
   </section>
 );
 
 const LicensePage = () => (
   <section className="panel info-panel">
     <PageHeader title="라이선스" />
-    <pre className="license">{licenseText}</pre>
+    <LicenseContent />
   </section>
 );
 
 const OssPage = () => (
   <section className="panel info-panel">
     <PageHeader title="오픈소스 목록" />
-    <p>Deck은 다음 오픈소스를 사용합니다.</p>
-    <ul className="oss-list">
-      <li>react</li>
-      <li>react-dom</li>
-      <li>vite</li>
-      <li>@vitejs/plugin-react</li>
-      <li>typescript</li>
-      <li>@types/react</li>
-      <li>@types/react-dom</li>
-    </ul>
+    <OssContent />
   </section>
 );
 
@@ -237,6 +285,7 @@ const TimelineSection = ({
   onProfileClick,
   onError,
   onMoveSection,
+  onScrollToSection,
   canMoveLeft,
   canMoveRight,
   canRemoveSection,
@@ -245,7 +294,8 @@ const TimelineSection = ({
   showCustomEmojis,
   showReactions,
   registerTimelineListener,
-  unregisterTimelineListener
+  unregisterTimelineListener,
+  columnRef
 }: {
   section: TimelineSectionConfig;
   account: Account | null;
@@ -263,6 +313,7 @@ const TimelineSection = ({
   onError: (message: string | null) => void;
   columnAccount: Account | null;
   onMoveSection: (sectionId: string, direction: "left" | "right") => void;
+  onScrollToSection: (sectionId: string) => void;
   onCloseStatusModal: () => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
@@ -273,6 +324,7 @@ const TimelineSection = ({
   showReactions: boolean;
   registerTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
   unregisterTimelineListener: (accountId: string, listener: (status: Status) => void) => void;
+  columnRef?: React.Ref<HTMLDivElement>;
 }) => {
   const notificationsTimeline = useTimeline({
     account,
@@ -294,14 +346,26 @@ const TimelineSection = ({
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const notificationScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastNotificationToastRef = useRef(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [timelineMenuOpen, setTimelineMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isAtTop, setIsAtTop] = useState(true);
+  const { showToast } = useToast();
   const timelineOptions = useMemo(() => getTimelineOptions(account?.platform, false), [account?.platform]);
   const timelineButtonLabel = `타임라인 선택: ${getTimelineLabel(timelineType)}`;
   const hasNotificationBadge = notificationCount > 0;
+  const instanceOriginUrl = useMemo(() => {
+    if (!account) {
+      return null;
+    }
+    try {
+      return normalizeInstanceUrl(account.instanceUrl);
+    } catch {
+      return null;
+    }
+  }, [account]);
   const notificationBadgeLabel = notificationsOpen
     ? "알림 닫기"
     : hasNotificationBadge
@@ -314,7 +378,21 @@ const TimelineSection = ({
       return;
     }
     setNotificationCount((count) => Math.min(count + 1, 99));
-  }, [notificationsOpen, refreshNotifications]);
+    if (timelineType === "notifications") {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastNotificationToastRef.current < 5000) {
+      return;
+    }
+    lastNotificationToastRef.current = now;
+    showToast("새 알림이 도착했습니다.", {
+      tone: "info",
+      actionLabel: "알림 받은 컬럼으로 이동",
+      actionAriaLabel: "알림이 도착한 컬럼으로 이동",
+      onAction: () => onScrollToSection(section.id)
+    });
+  }, [notificationsOpen, refreshNotifications, timelineType, showToast, onScrollToSection, section.id]);
   const timeline = useTimeline({
     account,
     api: services.api,
@@ -464,8 +542,16 @@ const TimelineSection = ({
     }
   };
 
+  const handleOpenInstanceOrigin = useCallback(() => {
+    if (!instanceOriginUrl) {
+      return;
+    }
+    window.open(instanceOriginUrl, "_blank", "noopener,noreferrer");
+    setMenuOpen(false);
+  }, [instanceOriginUrl]);
+
   return (
-    <div className="timeline-column">
+    <div className="timeline-column" ref={columnRef}>
       <div className="timeline-column-header">
         <AccountSelector
           accounts={accountsState.accounts}
@@ -474,7 +560,6 @@ const TimelineSection = ({
             onAccountChange(section.id, id);
             accountsState.setActiveAccount(id);
           }}
-          removeAccount={accountsState.removeAccount}
           variant="inline"
         />
         <div className="timeline-column-actions" role="group" aria-label="타임라인 작업">
@@ -563,16 +648,6 @@ const TimelineSection = ({
               <>
                 <div className="overlay-backdrop" aria-hidden="true" />
                 <div ref={notificationMenuRef} className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
-                  <div className="notification-popover-header">
-                    <button
-                      type="button"
-                      className="settings-close"
-                      onClick={() => setNotificationsOpen(false)}
-                      aria-label="알림 닫기"
-                    >
-                      닫기
-                    </button>
-                  </div>
                   <div className="notification-popover-body" ref={notificationScrollRef}>
                     {notificationsError ? <p className="error">{notificationsError}</p> : null}
                     {notificationItems.length === 0 && !notificationsLoading ? (
@@ -645,6 +720,13 @@ const TimelineSection = ({
                     disabled={!account || timeline.loading}
                   >
                     새로고침
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenInstanceOrigin}
+                    disabled={!instanceOriginUrl}
+                  >
+                    원본 서버에서 보기
                   </button>
                   <button
                     type="button"
@@ -800,6 +882,9 @@ export const App = () => {
     return localStorage.getItem("textodon.reactions") !== "off";
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAccountId, setSettingsAccountId] = useState<string | null>(null);
+  const [reauthLoading, setReauthLoading] = useState(false);
+  const [infoModal, setInfoModal] = useState<InfoModalType | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileComposeOpen, setMobileComposeOpen] = useState(false);
   const { services, accountsState } = useAppContext();
@@ -860,6 +945,7 @@ export const App = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mentionSeed, setMentionSeed] = useState<string | null>(null);
   const timelineBoardRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const dragStateRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
   const [isBoardDragging, setIsBoardDragging] = useState(false);
   const replySummary = replyTarget
@@ -957,49 +1043,72 @@ export const App = () => {
       }
     }
 
-    const addAccountWithToken = async () => {
-      setOauthLoading(true);
-      setActionError(null);
-      try {
-        const accessToken = await services.oauth.exchangeToken({
-          app: pending,
-          callback: { code, state, session }
-        });
-        const draft: Account = {
-          id: createAccountId(),
-          instanceUrl: pending.instanceUrl,
-          accessToken,
-          platform: pending.platform,
-          name: "",
-          displayName: "",
-          handle: "",
-          url: null,
-          avatarUrl: null
-        };
-        const verified = await services.api.verifyAccount(draft);
-        const fullHandle = formatHandle(verified.handle, pending.instanceUrl);
-        const displayName = verified.accountName || fullHandle;
-        const existing = accountsState.accounts.find(
-          (account) =>
-            account.platform === pending.platform &&
-            account.instanceUrl === pending.instanceUrl &&
-            account.handle === fullHandle
-        );
-        if (existing) {
-          setActionError("이미 등록된 계정입니다.");
-          accountsState.setActiveAccount(existing.id);
-          return;
-        }
-        accountsState.addAccount({
-          ...draft,
-          name: `${displayName} @${fullHandle}`,
-          displayName,
-          handle: fullHandle,
-          avatarUrl: verified.avatarUrl
-        });
-      } catch (err) {
-        setActionError(err instanceof Error ? err.message : "OAuth 처리에 실패했습니다.");
-      } finally {
+      const addAccountWithToken = async () => {
+        setOauthLoading(true);
+        setActionError(null);
+        try {
+          const accessToken = await services.oauth.exchangeToken({
+            app: pending,
+            callback: { code, state, session }
+          });
+          const draft: Account = {
+            id: pending.accountId ?? createAccountId(),
+            instanceUrl: pending.instanceUrl,
+            accessToken,
+            platform: pending.platform,
+            name: "",
+            displayName: "",
+            handle: "",
+            url: null,
+            avatarUrl: null,
+            emojis: []
+          };
+          const verified = await services.api.verifyAccount(draft);
+          const fullHandle = formatHandle(verified.handle, pending.instanceUrl);
+          const displayName = verified.accountName || fullHandle;
+          if (pending.accountId) {
+            const existing = accountsState.accounts.find((account) => account.id === pending.accountId);
+            if (!existing) {
+              setActionError("재인증할 계정을 찾지 못했습니다.");
+              return;
+            }
+            const updated: Account = {
+              ...existing,
+              instanceUrl: pending.instanceUrl,
+              accessToken,
+              platform: pending.platform,
+              name: `${displayName} @${fullHandle}`,
+              displayName,
+              handle: fullHandle,
+              avatarUrl: verified.avatarUrl,
+              emojis: verified.emojis ?? []
+            };
+            accountsState.updateAccount(existing.id, updated);
+            accountsState.setActiveAccount(existing.id);
+            return;
+          }
+          const existing = accountsState.accounts.find(
+            (account) =>
+              account.platform === pending.platform &&
+              account.instanceUrl === pending.instanceUrl &&
+              account.handle === fullHandle
+          );
+          if (existing) {
+            setActionError("이미 등록된 계정입니다.");
+            accountsState.setActiveAccount(existing.id);
+            return;
+          }
+          accountsState.addAccount({
+            ...draft,
+            name: `${displayName} @${fullHandle}`,
+            displayName,
+            handle: fullHandle,
+            avatarUrl: verified.avatarUrl,
+            emojis: verified.emojis ?? []
+          });
+        } catch (err) {
+          setActionError(err instanceof Error ? err.message : "OAuth 처리에 실패했습니다.");
+        } finally {
         clearPendingOAuth();
         setOauthLoading(false);
       }
@@ -1065,6 +1174,43 @@ export const App = () => {
     setMobileMenuOpen(false);
     setMobileComposeOpen(false);
   }, []);
+
+  const handleSettingsReauth = useCallback(async () => {
+    const account = accountsState.accounts.find((a) => a.id === settingsAccountId);
+    if (!account) return;
+    setReauthLoading(true);
+    try {
+      const normalizedUrl = normalizeInstanceUrl(account.instanceUrl);
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.hash = "";
+      const redirectUri = url.toString();
+      const cached = loadRegisteredApp(normalizedUrl);
+      const needsRegister = !cached || cached.redirectUri !== redirectUri || cached.platform === "misskey";
+      const registered = needsRegister ? await services.oauth.registerApp(normalizedUrl, redirectUri) : cached;
+      if (!registered) {
+        throw new Error("앱 등록 정보를 불러오지 못했습니다.");
+      }
+      if (needsRegister && registered.platform === "mastodon") {
+        saveRegisteredApp(registered);
+      }
+      const state = createOauthState();
+      storePendingOAuth({ ...registered, state, accountId: account.id });
+      const authorizeUrl = services.oauth.buildAuthorizeUrl(registered, state);
+      window.location.assign(authorizeUrl);
+    } catch {
+      setReauthLoading(false);
+    }
+  }, [accountsState.accounts, settingsAccountId, services.oauth]);
+
+  const handleSettingsRemove = useCallback(() => {
+    if (!settingsAccountId) return;
+    const confirmed = window.confirm("이 계정을 삭제할까요?");
+    if (confirmed) {
+      accountsState.removeAccount(settingsAccountId);
+      setSettingsAccountId(null);
+    }
+  }, [settingsAccountId, accountsState]);
 
   const handleClearLocalStorage = useCallback(() => {
     const confirmed = window.confirm(
@@ -1139,6 +1285,14 @@ export const App = () => {
     timelineBoardRef.current.releasePointerCapture(event.pointerId);
     dragStateRef.current = null;
     setIsBoardDragging(false);
+  }, []);
+
+  const scrollToSection = useCallback((sectionId: string) => {
+    const target = sectionRefs.current.get(sectionId);
+    if (!target) {
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
   }, []);
 
   useEffect(() => {
@@ -1300,7 +1454,6 @@ export const App = () => {
       accounts={accountsState.accounts}
       activeAccountId={composeAccountId}
       setActiveAccount={setComposeAccountId}
-      removeAccount={accountsState.removeAccount}
       variant="inline"
     />
   );
@@ -1478,9 +1631,33 @@ export const App = () => {
               </div>
               <div className="sidebar-divider" role="presentation" />
               <nav className="sidebar-links">
-                <a href="#/terms">이용약관</a>
-                <a href="#/license">라이선스</a>
-                <a href="#/oss">오픈소스 목록</a>
+                <a
+                  href="#/terms"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setInfoModal("terms");
+                  }}
+                >
+                  이용약관
+                </a>
+                <a
+                  href="#/license"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setInfoModal("license");
+                  }}
+                >
+                  라이선스
+                </a>
+                <a
+                  href="#/oss"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setInfoModal("oss");
+                  }}
+                >
+                  오픈소스 목록
+                </a>
                 <a href="https://github.com/deholic/textodon" target="_blank" rel="noreferrer">
                   소스 코드
                 </a>
@@ -1519,8 +1696,9 @@ export const App = () => {
                           services={services}
                           accountsState={accountsState}
 onAccountChange={setSectionAccount}
-                           onTimelineChange={setSectionTimeline}
-                           onAddSectionLeft={(id) => addSectionNear(id, "left")}
+                          onTimelineChange={setSectionTimeline}
+                          onScrollToSection={scrollToSection}
+                          onAddSectionLeft={(id) => addSectionNear(id, "left")}
                            onAddSectionRight={(id) => addSectionNear(id, "right")}
                            onRemoveSection={removeSection}
                           onReply={handleReply}
@@ -1528,6 +1706,13 @@ onAccountChange={setSectionAccount}
                            onReact={handleReaction}
                            onProfileClick={handleProfileOpen}
                            columnAccount={sectionAccount}
+                          columnRef={(node) => {
+                            if (node) {
+                              sectionRefs.current.set(section.id, node);
+                            } else {
+                              sectionRefs.current.delete(section.id);
+                            }
+                          }}
                            onCloseStatusModal={handleCloseStatusModal}
                            onError={(message) => setActionError(message || null)}
                           onMoveSection={moveSection}
@@ -1553,6 +1738,10 @@ onAccountChange={setSectionAccount}
           </section>
         ) : null}
       </main>
+
+      {infoModal ? (
+        <InfoModal type={infoModal} onClose={() => setInfoModal(null)} />
+      ) : null}
 
       {mobileComposeOpen ? (
         <div className="mobile-menu">
@@ -1639,6 +1828,39 @@ onAccountChange={setSectionAccount}
               >
                 닫기
               </button>
+            </div>
+            <div className="settings-item settings-item-account">
+              <div>
+                <strong>계정 관리</strong>
+                <p>계정을 선택하여 재인증하거나 삭제합니다.</p>
+              </div>
+              <div className="settings-account-actions">
+                <AccountSelector
+                  accounts={accountsState.accounts}
+                  activeAccountId={settingsAccountId}
+                  setActiveAccount={setSettingsAccountId}
+                  variant="inline"
+                />
+                <div className="settings-account-buttons">
+                  <button
+                    type="button"
+                    onClick={handleSettingsReauth}
+                    disabled={!settingsAccountId || reauthLoading}
+                    aria-label="계정 재인증"
+                  >
+                    {reauthLoading ? "재인증 중..." : "재인증"}
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-danger-button"
+                    onClick={handleSettingsRemove}
+                    disabled={!settingsAccountId}
+                    aria-label="계정 삭제"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="settings-item">
               <div>
