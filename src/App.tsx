@@ -836,10 +836,14 @@ const TimelineSection = ({
   );
 };
 
-type ThemeMode = "default" | "christmas" | "sky-pink" | "monochrome";
+type ThemeMode = "default" | "christmas" | "sky-pink" | "monochrome" | "matcha-core";
 
 const isThemeMode = (value: string): value is ThemeMode =>
-  value === "default" || value === "christmas" || value === "sky-pink" || value === "monochrome";
+  value === "default" ||
+  value === "christmas" ||
+  value === "sky-pink" ||
+  value === "monochrome" ||
+  value === "matcha-core";
 
 const getStoredTheme = (): ThemeMode => {
   const storedTheme = localStorage.getItem("textodon.theme");
@@ -1881,6 +1885,7 @@ onAccountChange={setSectionAccount}
                 <option value="christmas">크리스마스</option>
                 <option value="sky-pink">하늘핑크</option>
                 <option value="monochrome">모노톤</option>
+                <option value="matcha-core">말차코어</option>
               </select>
             </div>
             <div className="settings-item">
