@@ -65,8 +65,14 @@ export const ComposeBox = ({
   const [cwEnabled, setCwEnabled] = useState(false);
   const [cwText, setCwText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [visibility, setVisibility] = useState<Visibility>("public");
-  const [visibilityAccountId, setVisibilityAccountId] = useState<string | null>(account?.id ?? null);
+  const [visibilityState, setVisibilityState] = useState(() => {
+    const accountId = account?.id ?? null;
+    const stored = parseVisibility(localStorage.getItem(getVisibilityStorageKey(accountId)));
+    return {
+      visibility: stored ?? "public" as Visibility,
+      accountId
+    };
+  });
   const [attachments, setAttachments] = useState<
     { id: string; file: File; previewUrl: string }[]
   >([]);
@@ -141,18 +147,21 @@ export const ComposeBox = ({
   }, [activeImage]);
 
   useEffect(() => {
-    const accountId = account?.id ?? null;
-    const stored = parseVisibility(localStorage.getItem(getVisibilityStorageKey(accountId)));
-    setVisibility(stored ?? "public");
-    setVisibilityAccountId(accountId);
-  }, [account?.id]);
+    if (account?.id !== visibilityState.accountId) {
+      const accountId = account?.id ?? null;
+      const stored = parseVisibility(localStorage.getItem(getVisibilityStorageKey(accountId)));
+      setVisibilityState({
+        visibility: stored ?? "public",
+        accountId
+      });
+    }
+  }, [account?.id, visibilityState.accountId]);
 
   useEffect(() => {
-    if (!account || visibilityAccountId !== account.id) {
-      return;
+    if (account?.id && visibilityState.accountId === account.id) {
+      localStorage.setItem(getVisibilityStorageKey(account.id), visibilityState.visibility);
     }
-    localStorage.setItem(getVisibilityStorageKey(account.id), visibility);
-  }, [account?.id, visibility, visibilityAccountId]);
+  }, [account?.id, visibilityState]);
 
   // 계정 변경 시 인스턴스 정보 로드
   useEffect(() => {
@@ -208,7 +217,7 @@ export const ComposeBox = ({
     try {
       const ok = await onSubmit({
         text: text.trim(),
-        visibility,
+        visibility: visibilityState.visibility,
         inReplyToId: replyingTo?.id,
         files: attachments.map((item) => item.file),
         spoilerText: cwEnabled ? cwText.trim() : ""
@@ -607,15 +616,15 @@ export const ComposeBox = ({
             )}
           </div>
         </div>
-        {visibility === "public" ? (
+        {visibilityState.visibility === "public" ? (
           <p className="compose-visibility-warning" role="status">
             전체 공개로 게시됩니다. 민감한 내용은 주의해주세요.
           </p>
         ) : null}
         <div className="compose-actions">
           <select
-            value={visibility}
-            onChange={(event) => setVisibility(event.target.value as Visibility)}
+            value={visibilityState.visibility}
+            onChange={(event) => setVisibilityState(prev => ({ ...prev, visibility: event.target.value as Visibility }))}
             disabled={isSubmitting}
           >
             {visibilityOptions.map((option) => (
