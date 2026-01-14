@@ -3,6 +3,7 @@ import type { Account, CustomEmoji, Status, ThreadContext } from "../../domain/t
 import type { MastodonApi } from "../../services/MastodonApi";
 import { TimelineItem } from "./TimelineItem";
 import BoostIcon from "../assets/boost-icon.svg?react";
+import { useToast } from "../state/ToastContext";
 
 export const StatusModal = ({
   status,
@@ -120,6 +121,7 @@ export const StatusModal = ({
   const [threadContext, setThreadContext] = useState<ThreadContext | null>(null);
   const [isLoadingThread, setIsLoadingThread] = useState(false);
   const [threadError, setThreadError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // 스레드 컨텍스트 가져오기
   useEffect(() => {
@@ -144,6 +146,14 @@ export const StatusModal = ({
 
     fetchThreadContext();
   }, [account, api, displayStatus.id]);
+
+  useEffect(() => {
+    if (!threadError) {
+      return;
+    }
+    showToast(threadError, { tone: "error" });
+    setThreadError(null);
+  }, [showToast, threadError]);
 
   return (
     <div
@@ -268,11 +278,6 @@ export const StatusModal = ({
           
           {/* 로딩 상태는 헤더에서 처리 */}
           
-          {threadError && (
-            <div className="thread-error">
-              <span>{threadError}</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import type { Account, ReactionInput } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useEmojiManager, type EmojiItem } from "../hooks/useEmojiManager";
+import { useToast } from "../state/ToastContext";
 
 export const ReactionPicker = ({
   account,
@@ -21,6 +22,8 @@ export const ReactionPicker = ({
   const [emojiSearchQuery, setEmojiSearchQuery] = useState("");
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const { showToast } = useToast();
+  const lastEmojiErrorRef = useRef<string | null>(null);
 
   // useEmojiManager 훅 사용
   const {
@@ -36,6 +39,19 @@ export const ReactionPicker = ({
     toggleCategory,
     searchEmojis
   } = useEmojiManager(account, api, false);
+
+  useEffect(() => {
+    if (emojiStatus !== "error") {
+      lastEmojiErrorRef.current = null;
+      return;
+    }
+    const message = emojiError ?? "이모지를 불러오지 못했습니다.";
+    if (message === lastEmojiErrorRef.current) {
+      return;
+    }
+    lastEmojiErrorRef.current = message;
+    showToast(message, { tone: "error" });
+  }, [emojiError, emojiStatus, showToast]);
 
   const emojiSearchResults = useMemo(() => {
     if (!emojiSearchQuery.trim()) {
