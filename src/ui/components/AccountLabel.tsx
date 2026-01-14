@@ -127,6 +127,9 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
 }) => {
   const effectiveDisplayName = displayName || name || instanceUrl || "알 수 없음";
   const isInteractive = !!(onClick || accountUrl);
+  
+  // 툴팁에 표시할 전체 텍스트 계산
+  const fullText = handle ? `${effectiveDisplayName} (@${handle})` : effectiveDisplayName;
 
   const avatarElement = !hideAvatar ? (
     <span
@@ -158,6 +161,7 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
         role={isInteractive ? "button" : undefined}
         tabIndex={isInteractive ? 0 : undefined}
         aria-label={ariaLabel}
+        title={ariaLabel || fullText}
         data-interactive={isInteractive ? "true" : undefined}
       >
         {avatarElement}
@@ -182,6 +186,7 @@ export const AccountLabel: React.FC<AccountLabelProps> = ({
       role={isInteractive ? "button" : undefined}
       tabIndex={isInteractive ? 0 : undefined}
       aria-label={ariaLabel}
+      title={ariaLabel || fullText}
       data-interactive={isInteractive ? "true" : undefined}
     >
       {avatarElement}
