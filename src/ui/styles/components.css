@@ -744,15 +744,32 @@
 }
 
 .compose-icon-button {
-  background: var(--color-secondary-button-bg);
-  color: var(--color-secondary-button-text);
-  border: 1px solid var(--color-secondary-button-border);
+  background: var(--color-action-bg);
+  color: var(--color-action-text);
+  border: 1px solid var(--color-action-bg);
   width: 34px;
   height: 34px;
 }
 
+.compose-icon-button:not(.compose-submit-button) {
+  width: 34px;
+}
+
 .compose-icon-button:disabled {
   opacity: 0.5;
+}
+
+.compose-submit-button {
+  width: auto !important;
+  min-width: 34px;
+  padding: 8px 12px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compose-submit-button svg {
+  flex-shrink: 0;
 }
 
 .compose-emoji-panel {
