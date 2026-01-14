@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { OAuthClient } from "../../services/OAuthClient";
 import { normalizeInstanceUrl } from "../utils/account";
 import { createOauthState, loadRegisteredApp, saveRegisteredApp, storePendingOAuth } from "../utils/oauth";
+import { useToast } from "../state/ToastContext";
 
 export const AccountAdd = ({
   oauth
@@ -9,16 +10,15 @@ export const AccountAdd = ({
   oauth: OAuthClient;
 }) => {
   const [instanceUrl, setInstanceUrl] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const { showToast } = useToast();
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
 
     const normalizedUrl = normalizeInstanceUrl(instanceUrl);
     if (!normalizedUrl) {
-      setError("서버 주소를 입력해주세요.");
+      showToast("서버 주소를 입력해주세요.", { tone: "error" });
       return;
     }
 
@@ -42,7 +42,7 @@ export const AccountAdd = ({
       const authorizeUrl = oauth.buildAuthorizeUrl(registered, state);
       window.location.assign(authorizeUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "OAuth 연결에 실패했습니다.");
+      showToast(err instanceof Error ? err.message : "OAuth 연결에 실패했습니다.", { tone: "error" });
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,6 @@ export const AccountAdd = ({
                 onChange={(event) => setInstanceUrl(event.target.value)}
               />
             </label>
-            {error ? <p className="error">{error}</p> : null}
             <button type="submit" disabled={loading}>
               {loading ? "연결 중..." : "OAuth로 연결"}
             </button>
