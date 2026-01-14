@@ -295,6 +295,30 @@ export const ProfileModal = ({
     };
   }, [account, api, targetAccountId]);
 
+  useEffect(() => {
+    if (!profileError) {
+      return;
+    }
+    showToast(profileError, { tone: "error" });
+    setProfileError(null);
+  }, [profileError, showToast]);
+
+  useEffect(() => {
+    if (!followError) {
+      return;
+    }
+    showToast(followError, { tone: "error" });
+    setFollowError(null);
+  }, [followError, showToast]);
+
+  useEffect(() => {
+    if (!itemsError) {
+      return;
+    }
+    showToast(itemsError, { tone: "error" });
+    setItemsError(null);
+  }, [itemsError, showToast]);
+
   const updateItem = useCallback((next: Status) => {
     setItems((current) => current.map((item) => (item.id === next.id ? next : item)));
   }, []);
@@ -605,7 +629,6 @@ export const ProfileModal = ({
         const message = error instanceof Error ? error.message : fallbackMessage;
         setRelationship(previous);
         setFollowError(message);
-        showToast(message, { tone: "error" });
       } finally {
         setFollowLoading(false);
       }
@@ -908,9 +931,7 @@ export const ProfileModal = ({
               ) : null}
             </div>
           </div>
-          {followError ? <p className="error">{followError}</p> : null}
           {profileLoading ? <p className="empty">프로필을 불러오는 중...</p> : null}
-          {profileError ? <p className="error">{profileError}</p> : null}
           {bioContent
             ? bioContent.type === "html"
               ? <div className="profile-bio" dangerouslySetInnerHTML={{ __html: bioContent.value }} />
@@ -929,7 +950,6 @@ export const ProfileModal = ({
         </section>
         <section className="profile-posts">
           <h4>작성한 글</h4>
-          {itemsError ? <p className="error">{itemsError}</p> : null}
           {itemsLoading && items.length === 0 ? <p className="empty">게시글을 불러오는 중...</p> : null}
           {!itemsLoading && items.length === 0 ? <p className="empty">표시할 글이 없습니다.</p> : null}
           {items.length > 0 ? (

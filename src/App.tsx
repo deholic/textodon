@@ -404,6 +404,13 @@ const TimelineSection = ({
   const emptyMessage = timelineType === "notifications" ? "표시할 알림이 없습니다." : "표시할 글이 없습니다.";
 
   useEffect(() => {
+    if (!timeline.error) {
+      return;
+    }
+    showToast(timeline.error, { tone: "error" });
+  }, [showToast, timeline.error]);
+
+  useEffect(() => {
     const el = scrollRef.current;
     if (!el) {
       return;
@@ -474,6 +481,13 @@ const TimelineSection = ({
     setNotificationCount(0);
     refreshNotifications();
   }, [notificationsOpen, refreshNotifications]);
+
+  useEffect(() => {
+    if (!notificationsError) {
+      return;
+    }
+    showToast(notificationsError, { tone: "error" });
+  }, [notificationsError, showToast]);
 
   const handleToggleFavourite = async (status: Status) => {
     if (!account) {
@@ -649,7 +663,6 @@ const TimelineSection = ({
                 <div className="overlay-backdrop" aria-hidden="true" />
                 <div ref={notificationMenuRef} className="notification-popover panel" role="dialog" aria-modal="true" aria-label="알림">
                   <div className="notification-popover-body" ref={notificationScrollRef}>
-                    {notificationsError ? <p className="error">{notificationsError}</p> : null}
                     {notificationItems.length === 0 && !notificationsLoading ? (
                       <p className="empty">표시할 알림이 없습니다.</p>
                     ) : null}
@@ -785,7 +798,6 @@ const TimelineSection = ({
       </div>
       <div className="timeline-column-body" ref={scrollRef}>
         {!account ? <p className="empty">계정을 선택하면 타임라인을 불러옵니다.</p> : null}
-        {account && timeline.error ? <p className="error">{timeline.error}</p> : null}
         {account && timeline.items.length === 0 && !timeline.loading ? (
           <p className="empty">{emptyMessage}</p>
         ) : null}
@@ -836,10 +848,14 @@ const TimelineSection = ({
   );
 };
 
-type ThemeMode = "default" | "christmas" | "sky-pink" | "monochrome";
+type ThemeMode = "default" | "christmas" | "sky-pink" | "monochrome" | "matcha-core";
 
 const isThemeMode = (value: string): value is ThemeMode =>
-  value === "default" || value === "christmas" || value === "sky-pink" || value === "monochrome";
+  value === "default" ||
+  value === "christmas" ||
+  value === "sky-pink" ||
+  value === "monochrome" ||
+  value === "matcha-core";
 
 const getStoredTheme = (): ThemeMode => {
   const storedTheme = localStorage.getItem("textodon.theme");
@@ -888,6 +904,7 @@ export const App = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileComposeOpen, setMobileComposeOpen] = useState(false);
   const { services, accountsState } = useAppContext();
+  const { showToast } = useToast();
   const [sections, setSections] = useState<TimelineSectionConfig[]>(() => {
     try {
       const raw = localStorage.getItem(SECTION_STORAGE_KEY);
@@ -955,6 +972,14 @@ export const App = () => {
   const timelineListeners = useRef<Map<string, Set<(status: Status) => void>>>(new Map());
   const previousAccountIds = useRef<Set<string>>(new Set());
   const hasAccounts = accountsState.accounts.length > 0;
+
+  useEffect(() => {
+    if (!actionError) {
+      return;
+    }
+    showToast(actionError, { tone: "error" });
+    setActionError(null);
+  }, [actionError, showToast]);
 
   const registerTimelineListener = useCallback((accountId: string, listener: (status: Status) => void) => {
     const next = new Map(timelineListeners.current);
@@ -1669,7 +1694,6 @@ export const App = () => {
         {hasAccounts ? (
           <section className="main-column">
             {oauthLoading ? <p className="empty">OAuth 인증 중...</p> : null}
-            {actionError ? <p className="error">{actionError}</p> : null}
             {route === "home" ? (
               <section className="panel">
                 {sections.length > 0 ? (
@@ -1881,6 +1905,7 @@ onAccountChange={setSectionAccount}
                 <option value="christmas">크리스마스</option>
                 <option value="sky-pink">하늘핑크</option>
                 <option value="monochrome">모노톤</option>
+                <option value="matcha-core">말차코어</option>
               </select>
             </div>
             <div className="settings-item">

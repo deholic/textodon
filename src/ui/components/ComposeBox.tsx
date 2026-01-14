@@ -3,6 +3,7 @@ import type { Account, Visibility } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { useEmojiManager, type EmojiItem } from "../hooks/useEmojiManager";
 import { useImageZoom } from "../hooks/useImageZoom";
+import { useToast } from "../state/ToastContext";
 import {
   calculateCharacterCount,
   getCharacterLimit,
@@ -94,6 +95,8 @@ export const ComposeBox = ({
   } = useImageZoom(imageContainerRef, imageRef);
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(true);
+  const { showToast } = useToast();
+  const lastEmojiErrorRef = useRef<string | null>(null);
 
   // 문자 수 관련 상태
   const [characterLimit, setCharacterLimit] = useState<number | null>(null);
@@ -113,6 +116,19 @@ export const ComposeBox = ({
     toggleCategory,
     searchEmojis
   } = useEmojiManager(account, api, false);
+
+  useEffect(() => {
+    if (emojiStatus !== "error") {
+      lastEmojiErrorRef.current = null;
+      return;
+    }
+    const message = emojiError ?? "이모지를 불러오지 못했습니다.";
+    if (message === lastEmojiErrorRef.current) {
+      return;
+    }
+    lastEmojiErrorRef.current = message;
+    showToast(message, { tone: "error" });
+  }, [emojiError, emojiStatus, showToast]);
 
   const activeImage = useMemo(
     () => attachments.find((item) => item.id === activeImageId) ?? null,
@@ -209,7 +225,7 @@ export const ComposeBox = ({
 
     // 문자 수 제한 검사
     if (characterLimit && currentCharCount > characterLimit) {
-      alert(`글자 수 제한(${characterLimit.toLocaleString()}자)을 초과했습니다.`);
+      showToast(`글자 수 제한(${characterLimit.toLocaleString()}자)을 초과했습니다.`, { tone: "error" });
       return;
     }
 
