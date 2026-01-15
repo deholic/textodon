@@ -112,11 +112,6 @@ aside {
   font-size: 18px;
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> 108613c (fix: 뽀모도로 집중 중앙 메시지 z-index 조정)
 .panel-content {
   position: relative;
   border-radius: 15px; /* 패널 border-radius와 일치 */
@@ -183,10 +178,6 @@ aside {
   }
 }
 
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
->>>>>>> 108613c (fix: 뽀모도로 집중 중앙 메시지 z-index 조정)
 .main-column {
   display: flex;
   flex-direction: column;
