@@ -15,7 +15,6 @@ export const StatusModal = ({
   onReply,
   onToggleFavourite,
   onToggleReblog,
-  onToggleBookmark,
   onDelete,
   onProfileClick,
   activeHandle,
@@ -34,7 +33,6 @@ export const StatusModal = ({
   onReply: (status: Status) => void;
   onToggleFavourite: (status: Status) => void;
   onToggleReblog: (status: Status) => void;
-  onToggleBookmark: (status: Status) => void;
   onDelete?: (status: Status) => void;
   onProfileClick?: (status: Status, account: Account | null) => void;
   activeHandle: string;
@@ -196,13 +194,12 @@ export const StatusModal = ({
             <div className="thread-context thread-ancestors">
               {threadContext.ancestors.map((ancestorStatus) => (
                 <div key={ancestorStatus.id} className="thread-item thread-ancestor">
-                   <TimelineItem
-                     status={ancestorStatus}
-                     onReply={onReply}
-                     onToggleFavourite={onToggleFavourite}
-                     onToggleReblog={onToggleReblog}
-                     onToggleBookmark={onToggleBookmark}
-                     onDelete={onDelete || (() => {})}
+                  <TimelineItem
+                    status={ancestorStatus}
+                    onReply={onReply}
+                    onToggleFavourite={onToggleFavourite}
+                    onToggleReblog={onToggleReblog}
+                    onDelete={onDelete || (() => {})}
                     onProfileClick={handleProfileClick}
                     activeHandle={activeHandle}
                     activeAccountHandle={activeAccountHandle}
@@ -232,7 +229,6 @@ export const StatusModal = ({
             onReply={onReply}
             onToggleFavourite={onToggleFavourite}
             onToggleReblog={onToggleReblog}
-            onToggleBookmark={onToggleBookmark}
             onDelete={onDelete || (() => {})}
             onProfileClick={handleProfileClick}
             activeHandle={activeHandle}
@@ -262,7 +258,6 @@ export const StatusModal = ({
                     onReply={onReply}
                     onToggleFavourite={onToggleFavourite}
                     onToggleReblog={onToggleReblog}
-                    onToggleBookmark={onToggleBookmark}
                     onDelete={onDelete || (() => {})}
                     onProfileClick={handleProfileClick}
                     activeHandle={activeHandle}

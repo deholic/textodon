@@ -529,34 +529,6 @@ const TimelineSection = ({
     }
   };
 
-  const handleToggleBookmark = async (status: Status) => {
-    if (!account) {
-      onError("계정을 선택해주세요.");
-      return;
-    }
-    onError(null);
-    const isBookmarking = !status.bookmarked;
-    const optimistic = {
-      ...status,
-      bookmarked: isBookmarking
-    };
-    timeline.updateItem(optimistic);
-    try {
-      const updated = status.bookmarked
-        ? await services.api.unbookmark(account, status.id)
-        : await services.api.bookmark(account, status.id);
-      timeline.updateItem(updated);
-      if (isBookmarking) {
-        showToast("북마크했습니다.");
-      } else {
-        showToast("북마크를 취소했습니다.");
-      }
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "북마크 처리에 실패했습니다.");
-      timeline.updateItem(status);
-    }
-  };
-
   const handleReact = useCallback(
     (status: Status, reaction: ReactionInput) => {
       onReact(account, status, reaction);
@@ -706,9 +678,8 @@ const TimelineSection = ({
                              onReply={(item) => onReply(item, account)}
                              onStatusClick={(status) => onStatusClick(status, account)}
                              onToggleFavourite={handleToggleFavourite}
-                             onToggleReblog={handleToggleReblog}
-                             onToggleBookmark={handleToggleBookmark}
-                             onDelete={handleDeleteStatus}
+                            onToggleReblog={handleToggleReblog}
+                            onDelete={handleDeleteStatus}
                             onReact={handleReact}
                             onProfileClick={(item) => onProfileClick(item, account)}
                             activeHandle={
@@ -839,9 +810,8 @@ const TimelineSection = ({
                  onReply={(item) => onReply(item, account)}
                  onStatusClick={(status) => onStatusClick(status, account)}
                  onToggleFavourite={handleToggleFavourite}
-                 onToggleReblog={handleToggleReblog}
-                 onToggleBookmark={handleToggleBookmark}
-                 onDelete={handleDeleteStatus}
+                onToggleReblog={handleToggleReblog}
+                onDelete={handleDeleteStatus}
                 onReact={handleReact}
                 onProfileClick={(item) => onProfileClick(item, account)}
                 activeHandle={
@@ -2095,27 +2065,6 @@ onAccountChange={setSectionAccount}
               setSelectedStatus(updated);
             } catch (err) {
               setActionError(err instanceof Error ? err.message : "부스트 처리에 실패했습니다.");
-            }
-          }}
-          onToggleBookmark={async (status) => {
-            if (!composeAccount) {
-              setActionError("계정을 선택해주세요.");
-              return;
-            }
-            setActionError(null);
-            const isBookmarking = !status.bookmarked;
-            try {
-              const updated = status.bookmarked
-                ? await services.api.unbookmark(composeAccount, status.id)
-                : await services.api.bookmark(composeAccount, status.id);
-              setSelectedStatus(updated);
-              if (isBookmarking) {
-                showToast("북마크했습니다.");
-              } else {
-                showToast("북마크를 취소했습니다.");
-              }
-            } catch (err) {
-              setActionError(err instanceof Error ? err.message : "북마크 처리에 실패했습니다.");
             }
           }}
           onDelete={async (status) => {

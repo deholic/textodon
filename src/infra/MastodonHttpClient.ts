@@ -283,10 +283,6 @@ export class MastodonHttpClient implements MastodonApi {
     return mapAccountRelationship(data);
   }
 
-  async fetchThreadContext(account: Account, statusId: string): Promise<ThreadContext> {
-    return this.fetchContext(account, statusId);
-  }
-
   async fetchAccountStatuses(
     account: Account,
     accountId: string,
@@ -388,14 +384,6 @@ export class MastodonHttpClient implements MastodonApi {
 
   async unfavourite(account: Account, statusId: string): Promise<Status> {
     return this.postAction(account, statusId, "unfavourite");
-  }
-
-  async bookmark(account: Account, statusId: string): Promise<Status> {
-    return this.postAction(account, statusId, "bookmark");
-  }
-
-  async unbookmark(account: Account, statusId: string): Promise<Status> {
-    return this.postAction(account, statusId, "unbookmark");
   }
 
   async createReaction(_account: Account, _statusId: string, _reaction: string): Promise<Status> {
