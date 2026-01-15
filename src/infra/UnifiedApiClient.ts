@@ -95,6 +95,14 @@ export class UnifiedApiClient implements MastodonApi {
     return this.getClient(account).unfavourite(account, statusId);
   }
 
+  bookmark(account: Account, statusId: string) {
+    return this.getClient(account).bookmark(account, statusId);
+  }
+
+  unbookmark(account: Account, statusId: string) {
+    return this.getClient(account).unbookmark(account, statusId);
+  }
+
   createReaction(account: Account, statusId: string, reaction: string) {
     return this.getClient(account).createReaction(account, statusId, reaction);
   }

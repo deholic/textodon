@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Account, CustomEmoji, Mention, ReactionInput, Status } from "../../domain/types";
 import type { MastodonApi } from "../../services/MastodonApi";
 import { sanitizeHtml } from "../utils/htmlSanitizer";
-import { renderTextWithLinks } from "../utils/linkify";
+import { renderTextWithLinks, type MentionLink } from "../utils/linkify";
 import BoostIcon from "../assets/boost-icon.svg?react";
 import ReplyIcon from "../assets/reply-icon.svg?react";
 import TrashIcon from "../assets/trash-icon.svg?react";
@@ -30,6 +30,7 @@ export const TimelineItem = ({
   onToggleFavourite,
   onToggleReblog,
   onDelete,
+  onToggleBookmark,
   onReact,
   onProfileClick,
   onStatusClick,
@@ -49,6 +50,7 @@ export const TimelineItem = ({
   onToggleFavourite: (status: Status) => void;
   onToggleReblog: (status: Status) => void;
   onDelete: (status: Status) => void;
+  onToggleBookmark: (status: Status) => void;
   onReact?: (status: Status, reaction: ReactionInput) => void;
   onProfileClick?: (status: Status) => void;
   onStatusClick?: (status: Status) => void;
@@ -473,6 +475,7 @@ export const TimelineItem = ({
       reactions: [],
       reblogged: false,
       favourited: false,
+      bookmarked: false,
       inReplyToId: null,
       mentions: [],
       mediaAttachments: [],
@@ -486,11 +489,11 @@ export const TimelineItem = ({
     [displayStatus.createdAt, displayStatus.id]
   );
   const handleMentionClick = useCallback(
-    (mention: Mention) => {
+    (mention: MentionLink) => {
       if (!onProfileClick || !mention.id) {
         return;
       }
-      onProfileClick(buildMentionStatus(mention));
+      onProfileClick(buildMentionStatus(mention as Mention));
     },
     [buildMentionStatus, onProfileClick]
   );
@@ -861,6 +864,15 @@ export const TimelineItem = ({
             <>
               <div className="overlay-backdrop" aria-hidden="true" />
               <div ref={menuRef} className="section-menu-panel status-menu-panel" role="menu">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    onToggleBookmark(displayStatus);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {displayStatus.bookmarked ? "북마크 취소" : "북마크"}
+                </button>
                 <button type="button" onClick={handleOpenOrigin} disabled={!originUrl}>
                   원본 서버에서 보기
                 </button>

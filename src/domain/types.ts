@@ -94,6 +94,7 @@ export type Status = {
   reactions: Reaction[];
   reblogged: boolean;
   favourited: boolean;
+  bookmarked: boolean;
   inReplyToId: string | null;
   mentions: Mention[];
   mediaAttachments: MediaAttachment[];
