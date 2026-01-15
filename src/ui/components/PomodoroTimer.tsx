@@ -6,6 +6,8 @@ type PomodoroTimerProps = {
   focusMinutes?: number;
   breakMinutes?: number;
   longBreakMinutes?: number;
+  onSessionTypeChange?: (type: SessionType) => void;
+  onRunningChange?: (isRunning: boolean) => void;
 };
 
 const TOTAL_SESSIONS = 8;
@@ -31,6 +33,8 @@ export const PomodoroTimer = ({
   focusMinutes = 25,
   breakMinutes = 5,
   longBreakMinutes = 30,
+  onSessionTypeChange,
+  onRunningChange,
 }: PomodoroTimerProps) => {
   const focusDuration = focusMinutes * 60;
   const breakDuration = breakMinutes * 60;
@@ -57,6 +61,16 @@ export const PomodoroTimer = ({
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const sessionInfo = useMemo(() => getSessionInfo(session), [session, getSessionInfo]);
+
+  // 세션 타입 변경 시 부모 컴포넌트에 알림
+  useEffect(() => {
+    onSessionTypeChange?.(sessionInfo.type);
+  }, [sessionInfo.type, onSessionTypeChange]);
+
+  // 실행 상태 변경 시 부모 컴포넌트에 알림
+  useEffect(() => {
+    onRunningChange?.(isRunning);
+  }, [isRunning, onRunningChange]);
 
   const playNotificationSound = useCallback(() => {
     try {
