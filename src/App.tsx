@@ -950,7 +950,7 @@ export const App = () => {
     return localStorage.getItem("textodon.reactions") !== "off";
   });
   const [showPomodoro, setShowPomodoro] = useState(() => {
-    return localStorage.getItem("textodon.pomodoro") !== "off";
+    return localStorage.getItem("textodon.pomodoro") === "on";
   });
   const [pomodoroFocus, setPomodoroFocus] = useState(() => {
     const stored = localStorage.getItem("textodon.pomodoro.focus");
