@@ -1,8 +1,9 @@
 import type { AccountPlatform, TimelineType } from "../../domain/types";
 
 export type TimelineOption = {
-  id: TimelineType;
+  id: TimelineType | "divider-before-bookmarks";
   label: string;
+  isDivider?: boolean;
 };
 
 const TIMELINE_LABELS: Record<TimelineType, string> = {
@@ -11,10 +12,11 @@ const TIMELINE_LABELS: Record<TimelineType, string> = {
   federated: "연합",
   social: "소셜",
   global: "글로벌",
-  notifications: "알림"
+  notifications: "알림",
+  bookmarks: "북마크"
 };
 
-const MASTODON_TIMELINES: TimelineType[] = ["home", "local", "federated", "notifications"];
+const MASTODON_TIMELINES: TimelineType[] = ["home", "local", "federated", "notifications", "bookmarks"];
 const MISSKEY_TIMELINES: TimelineType[] = ["home", "local", "social", "global", "notifications"];
 const ALL_TIMELINES: TimelineType[] = [
   "home",
@@ -22,7 +24,8 @@ const ALL_TIMELINES: TimelineType[] = [
   "federated",
   "social",
   "global",
-  "notifications"
+  "notifications",
+  "bookmarks"
 ];
 const TIMELINE_TYPE_SET = new Set<string>(ALL_TIMELINES);
 
@@ -41,10 +44,19 @@ export const getTimelineOptions = (
         ? MISSKEY_TIMELINES
         : ALL_TIMELINES;
   const list = includeNotifications ? baseList : baseList.filter((id) => id !== "notifications");
-  return list.map((id) => ({
+  
+  const options: TimelineOption[] = list.map((id) => ({
     id,
     label: TIMELINE_LABELS[id]
   }));
+  
+  // 북마크 앞에 구분선 추가
+  const bookmarkIndex = options.findIndex(option => option.id === "bookmarks");
+  if (bookmarkIndex > 0) {
+    options.splice(bookmarkIndex, 0, { id: "divider-before-bookmarks", label: "---", isDivider: true });
+  }
+  
+  return options;
 };
 
 export const normalizeTimelineType = (

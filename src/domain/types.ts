@@ -2,7 +2,7 @@ export type Visibility = "public" | "unlisted" | "private" | "direct";
 
 export type AccountPlatform = "mastodon" | "misskey";
 
-export type TimelineType = "home" | "local" | "federated" | "social" | "global" | "notifications";
+export type TimelineType = "home" | "local" | "federated" | "social" | "global" | "notifications" | "bookmarks";
 
 export type Account = {
   id: string;

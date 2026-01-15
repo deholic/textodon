@@ -23,6 +23,7 @@ export interface MastodonApi {
   unfavourite(account: Account, statusId: string): Promise<Status>;
   bookmark(account: Account, statusId: string): Promise<Status>;
   unbookmark(account: Account, statusId: string): Promise<Status>;
+  fetchBookmarks(account: Account, limit?: number, maxId?: string): Promise<Status[]>;
   createReaction(account: Account, statusId: string, reaction: string): Promise<Status>;
   deleteReaction(account: Account, statusId: string): Promise<Status>;
   reblog(account: Account, statusId: string): Promise<Status>;

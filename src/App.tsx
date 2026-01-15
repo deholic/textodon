@@ -132,8 +132,10 @@ const buildOptimisticReactionStatus = (
   };
 };
 
-const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
+const TimelineIcon = ({ timeline }: { timeline: TimelineType | string }) => {
   switch (timeline) {
+    case "divider-before-bookmarks":
+      return null;
     case "home":
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -181,6 +183,12 @@ const TimelineIcon = ({ timeline }: { timeline: TimelineType }) => {
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      );
+     case "bookmarks":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
         </svg>
       );
     default:
@@ -400,8 +408,12 @@ const TimelineSection = ({
     timelineType,
     onNotification: handleNotification
   });
-  const actionsDisabled = timelineType === "notifications";
-  const emptyMessage = timelineType === "notifications" ? "표시할 알림이 없습니다." : "표시할 글이 없습니다.";
+  const actionsDisabled = timelineType === "notifications" || timelineType === "bookmarks";
+  const emptyMessage = timelineType === "notifications" 
+    ? "표시할 알림이 없습니다." 
+    : timelineType === "bookmarks" 
+      ? "북마크한 글이 없습니다."
+      : "표시할 글이 없습니다.";
 
   useEffect(() => {
     if (!timeline.error) {
@@ -637,7 +649,13 @@ const TimelineSection = ({
                   aria-label="타임라인 선택"
                 >
                   {timelineOptions.map((option) => {
-                    const isSelected = timelineType === option.id;
+                    if (option.isDivider) {
+                      return (
+                        <div key={option.id} className="timeline-selector-divider" role="separator" />
+                      );
+                    }
+                    
+                    const isSelected = !option.isDivider && timelineType === option.id;
                     return (
                       <button
                         key={option.id}
@@ -645,11 +663,14 @@ const TimelineSection = ({
                         className={isSelected ? "is-active" : ""}
                         aria-pressed={isSelected}
                         onClick={() => {
-                          onTimelineChange(section.id, option.id);
-                          setTimelineMenuOpen(false);
+                          if (!option.isDivider) {
+                            onTimelineChange(section.id, option.id as TimelineType);
+                            setTimelineMenuOpen(false);
+                          }
                         }}
+                        disabled={option.isDivider}
                       >
-                        <TimelineIcon timeline={option.id} />
+                        {!option.isDivider && <TimelineIcon timeline={option.id as TimelineType} />}
                         <span>{option.label}</span>
                       </button>
                     );

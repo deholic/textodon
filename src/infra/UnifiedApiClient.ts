@@ -75,6 +75,10 @@ export class UnifiedApiClient implements MastodonApi {
     return this.getClient(account).fetchAccountStatuses(account, accountId, limit, maxId);
   }
 
+  fetchBookmarks(account: Account, limit?: number, maxId?: string) {
+    return this.getClient(account).fetchBookmarks(account, limit, maxId);
+  }
+
   uploadMedia(account: Account, file: File) {
     return this.getClient(account).uploadMedia(account, file);
   }
