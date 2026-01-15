@@ -964,6 +964,8 @@ export const App = () => {
     const stored = localStorage.getItem("textodon.pomodoro.longBreak");
     return stored ? Number(stored) : 30;
   });
+  const [pomodoroSessionType, setPomodoroSessionType] = useState<"focus" | "break" | "longBreak">("focus");
+  const [pomodoroIsRunning, setPomodoroIsRunning] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAccountId, setSettingsAccountId] = useState<string | null>(null);
   const [reauthLoading, setReauthLoading] = useState(false);
@@ -1710,6 +1712,8 @@ export const App = () => {
               focusMinutes={pomodoroFocus}
               breakMinutes={pomodoroBreak}
               longBreakMinutes={pomodoroLongBreak}
+              onSessionTypeChange={setPomodoroSessionType}
+              onRunningChange={setPomodoroIsRunning}
             />
           ) : null}
           {route === "home" ? (
@@ -1786,7 +1790,16 @@ export const App = () => {
             {oauthLoading ? <p className="empty">OAuth 인증 중...</p> : null}
             {route === "home" ? (
               <section className="panel">
-                {sections.length > 0 ? (
+                {showPomodoro && pomodoroSessionType === "focus" && pomodoroIsRunning ? (
+                  <div className="pomodoro-focus-message">
+                    <div className="pomodoro-focus-message-content">
+                      <h2>🎯 집중 세션 진행 중</h2>
+                      <p>뽀모도로 타이머가 동작 중입니다.<br />타임라인은 집중이 끝날 때까지 숨겨집니다.</p>
+                    </div>
+                  </div>
+                ) : null}
+                <div className={`panel-content${showPomodoro && pomodoroSessionType === "focus" && pomodoroIsRunning ? " pomodoro-focus-blur" : ""}`}>
+                  {sections.length > 0 ? (
                   <div
                     className={`timeline-board${isBoardDragging ? " is-dragging" : ""}`}
                     ref={timelineBoardRef}
@@ -1844,6 +1857,7 @@ onAccountChange={setSectionAccount}
                     })}
                   </div>
                 ) : null}
+                </div>
               </section>
             ) : null}
             {route === "terms" ? <TermsPage /> : null}
