@@ -668,7 +668,7 @@ export const ComposeBox = ({
             </button>
             <button
               type="submit"
-              className="icon-button compose-icon-button"
+              className="icon-button compose-icon-button compose-submit-button"
               aria-label="게시"
               disabled={isSubmitting}
             >
@@ -676,6 +676,7 @@ export const ComposeBox = ({
                 <path d="M22 2L11 13" />
                 <path d="M22 2l-7 20-4-9-9-4 20-7z" />
               </svg>
+              <span>전송</span>
             </button>
           </div>
         </div>
