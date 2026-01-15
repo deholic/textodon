@@ -147,6 +147,9 @@
     --color-empty-text: #c4b6a6;
     --color-hint-text: #c4b6a6;
     --color-replying-bg: #2a241f;
+    --color-pomodoro-focus: #e05a4a;
+    --color-pomodoro-break: #3da35d;
+    --color-pomodoro-long-break: #5a9cf0;
   }
 
   :root:not([data-color-scheme="light"])[data-theme="christmas"] {
@@ -765,6 +768,9 @@
   --color-empty-text: #c4b6a6;
   --color-hint-text: #c4b6a6;
   --color-replying-bg: #2a241f;
+  --color-pomodoro-focus: #e05a4a;
+  --color-pomodoro-break: #3da35d;
+  --color-pomodoro-long-break: #5a9cf0;
 }
 
 :root[data-color-scheme="dark"][data-theme="christmas"] {

@@ -6,6 +6,7 @@ import { ComposeBox } from "./ui/components/ComposeBox";
 import { ProfileModal } from "./ui/components/ProfileModal";
 import { StatusModal } from "./ui/components/StatusModal";
 import { TimelineItem } from "./ui/components/TimelineItem";
+import { PomodoroTimer } from "./ui/components/PomodoroTimer";
 import { useTimeline } from "./ui/hooks/useTimeline";
 import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
@@ -948,6 +949,21 @@ export const App = () => {
   const [showMisskeyReactions, setShowMisskeyReactions] = useState(() => {
     return localStorage.getItem("textodon.reactions") !== "off";
   });
+  const [showPomodoro, setShowPomodoro] = useState(() => {
+    return localStorage.getItem("textodon.pomodoro") === "on";
+  });
+  const [pomodoroFocus, setPomodoroFocus] = useState(() => {
+    const stored = localStorage.getItem("textodon.pomodoro.focus");
+    return stored ? Number(stored) : 25;
+  });
+  const [pomodoroBreak, setPomodoroBreak] = useState(() => {
+    const stored = localStorage.getItem("textodon.pomodoro.break");
+    return stored ? Number(stored) : 5;
+  });
+  const [pomodoroLongBreak, setPomodoroLongBreak] = useState(() => {
+    const stored = localStorage.getItem("textodon.pomodoro.longBreak");
+    return stored ? Number(stored) : 30;
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAccountId, setSettingsAccountId] = useState<string | null>(null);
   const [reauthLoading, setReauthLoading] = useState(false);
@@ -1245,6 +1261,22 @@ export const App = () => {
   useEffect(() => {
     localStorage.setItem("textodon.reactions", showMisskeyReactions ? "on" : "off");
   }, [showMisskeyReactions]);
+
+  useEffect(() => {
+    localStorage.setItem("textodon.pomodoro", showPomodoro ? "on" : "off");
+  }, [showPomodoro]);
+
+  useEffect(() => {
+    localStorage.setItem("textodon.pomodoro.focus", String(pomodoroFocus));
+  }, [pomodoroFocus]);
+
+  useEffect(() => {
+    localStorage.setItem("textodon.pomodoro.break", String(pomodoroBreak));
+  }, [pomodoroBreak]);
+
+  useEffect(() => {
+    localStorage.setItem("textodon.pomodoro.longBreak", String(pomodoroLongBreak));
+  }, [pomodoroLongBreak]);
 
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
@@ -1673,6 +1705,13 @@ export const App = () => {
               />
             ) : null}
           </div>
+          {route === "home" && showPomodoro ? (
+            <PomodoroTimer
+              focusMinutes={pomodoroFocus}
+              breakMinutes={pomodoroBreak}
+              longBreakMinutes={pomodoroLongBreak}
+            />
+          ) : null}
           {route === "home" ? (
             <section className="panel sidebar-panel">
               <div className="brand">
@@ -2037,6 +2076,60 @@ onAccountChange={setSectionAccount}
                 <option value="large">대</option>
               </select>
             </div>
+            <div className="settings-item">
+              <div>
+                <strong>뽀모도로 타이머</strong>
+                <p>사이드바에 뽀모도로 타이머를 표시합니다.</p>
+              </div>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={showPomodoro}
+                  onChange={(event) => setShowPomodoro(event.target.checked)}
+                />
+                <span className="slider" aria-hidden="true" />
+              </label>
+            </div>
+            {showPomodoro ? (
+              <div className="settings-item settings-item-pomodoro">
+                <div>
+                  <strong>뽀모도로 시간 설정</strong>
+                  <p>집중, 휴식, 긴 휴식 시간을 분 단위로 설정합니다.</p>
+                </div>
+                <div className="pomodoro-time-inputs">
+                  <label>
+                    집중
+                    <input
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={pomodoroFocus}
+                      onChange={(event) => setPomodoroFocus(Number(event.target.value))}
+                    />
+                  </label>
+                  <label>
+                    휴식
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={pomodoroBreak}
+                      onChange={(event) => setPomodoroBreak(Number(event.target.value))}
+                    />
+                  </label>
+                  <label>
+                    긴 휴식
+                    <input
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={pomodoroLongBreak}
+                      onChange={(event) => setPomodoroLongBreak(Number(event.target.value))}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : null}
             <div className="settings-item">
               <div>
                 <strong>로컬 저장소 초기화</strong>
