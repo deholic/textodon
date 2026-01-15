@@ -175,6 +175,9 @@
   --notification-badge-bg: #c04b3c;
   --notification-badge-text: #fff6f0;
   --notification-badge-ring: #fffdfa;
+  --color-pomodoro-focus: #ff6347;
+  --color-pomodoro-break: #22c55e;
+  --color-pomodoro-long-break: #3b82f6;
 }
 
 :root[data-color-scheme="light"] {

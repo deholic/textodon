@@ -297,6 +297,36 @@
   cursor: not-allowed;
 }
 
+.settings-item-pomodoro {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.pomodoro-time-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.pomodoro-time-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.pomodoro-time-inputs input {
+  width: 60px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--color-settings-select-border);
+  border-radius: 6px;
+  background: var(--color-settings-select-bg);
+  color: var(--color-settings-select-text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
 .account-list {
   list-style: none;
   padding: 0;
@@ -2665,5 +2695,90 @@ button.ghost {
 
   .mobile-compose-button {
     display: inline-flex;
+  }
+}
+
+/* Pomodoro Timer */
+.pomodoro-panel {
+  padding: 12px 16px;
+}
+
+.pomodoro-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pomodoro-mode-toggle {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-pomodoro-focus);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pomodoro-mode-toggle.break {
+  background: var(--color-pomodoro-break);
+}
+
+.pomodoro-mode-toggle.long-break {
+  background: var(--color-pomodoro-long-break);
+}
+
+.pomodoro-time {
+  flex: 1;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.pomodoro-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.pomodoro-button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pomodoro-start {
+  background: var(--color-action-bg);
+  color: var(--color-action-text);
+}
+
+.pomodoro-reset {
+  background: var(--color-input-bg);
+  color: var(--color-text-secondary);
+}
+
+.pomodoro-panel.blinking {
+  animation: pomodoro-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pomodoro-glow {
+  0%, 100% {
+    box-shadow: var(--shadow-panel);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px var(--color-pomodoro-focus);
+  }
+}
+
+@media (max-width: 900px) {
+  .pomodoro-panel {
+    display: none;
   }
 }
