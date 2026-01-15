@@ -365,6 +365,27 @@ export const ProfileModal = ({
     [account, api, updateItem]
   );
 
+  const handleToggleBookmark = useCallback(
+    async (target: Status) => {
+      if (!account) {
+        setItemsError("계정을 선택해 주세요.");
+        return;
+      }
+      setItemsError(null);
+      const isBookmarking = !target.bookmarked;
+      try {
+        const updated = target.bookmarked
+          ? await api.unbookmark(account, target.id)
+          : await api.bookmark(account, target.id);
+        updateItem(updated);
+        showToast(isBookmarking ? "북마크했습니다." : "북마크를 취소했습니다.");
+      } catch (error) {
+        setItemsError(error instanceof Error ? error.message : "북마크 처리에 실패했습니다.");
+      }
+    },
+    [account, api, updateItem, showToast]
+  );
+
   const handleDeleteStatus = useCallback(
     async (target: Status) => {
       if (!account) {
@@ -959,9 +980,10 @@ export const ProfileModal = ({
                   key={item.id}
                   status={item}
                   onReply={(target) => onReply(target, account)}
-                  onToggleFavourite={handleToggleFavourite}
-                  onToggleReblog={handleToggleReblog}
-                  onDelete={handleDeleteStatus}
+                   onToggleFavourite={handleToggleFavourite}
+                   onToggleReblog={handleToggleReblog}
+                   onToggleBookmark={handleToggleBookmark}
+                   onDelete={handleDeleteStatus}
                   onReact={handleReact}
                   onStatusClick={onStatusClick}
                   onProfileClick={(target) => onProfileClick(target, account)}
