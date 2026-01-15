@@ -65,7 +65,12 @@ export const useTimeline = (params: {
     setError(null);
     setItems([]);
     try {
-      const timeline = await api.fetchTimeline(account, timelineType, 30);
+      let timeline: Status[];
+      if (timelineType === "bookmarks") {
+        timeline = await api.fetchBookmarks(account, 30);
+      } else {
+        timeline = await api.fetchTimeline(account, timelineType, 30);
+      }
       setItems(timeline);
       setHasMore(timeline.length > 0);
     } catch (err) {
@@ -85,7 +90,12 @@ export const useTimeline = (params: {
     }
     setLoadingMore(true);
     try {
-      const next = await api.fetchTimeline(account, timelineType, 20, lastId);
+      let next: Status[];
+      if (timelineType === "bookmarks") {
+        next = await api.fetchBookmarks(account, 20, lastId);
+      } else {
+        next = await api.fetchTimeline(account, timelineType, 20, lastId);
+      }
       setItems((current) => appendStatuses(current, next));
       if (next.length === 0) {
         setHasMore(false);
@@ -111,7 +121,7 @@ export const useTimeline = (params: {
     disconnectRef.current = null;
     notificationDisconnectRef.current?.();
     notificationDisconnectRef.current = null;
-    if (!account || !enableStreaming) {
+    if (!account || !enableStreaming || timelineType === "bookmarks") {
       return;
     }
 

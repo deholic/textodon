@@ -2,7 +2,7 @@ export type Visibility = "public" | "unlisted" | "private" | "direct";
 
 export type AccountPlatform = "mastodon" | "misskey";
 
-export type TimelineType = "home" | "local" | "federated" | "social" | "global" | "notifications";
+export type TimelineType = "home" | "local" | "federated" | "social" | "global" | "notifications" | "bookmarks";
 
 export type Account = {
   id: string;
@@ -94,6 +94,7 @@ export type Status = {
   reactions: Reaction[];
   reblogged: boolean;
   favourited: boolean;
+  bookmarked: boolean;
   inReplyToId: string | null;
   mentions: Mention[];
   mediaAttachments: MediaAttachment[];

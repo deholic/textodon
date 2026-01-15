@@ -110,6 +110,22 @@ export class MastodonHttpClient implements MastodonApi {
     return data.map(mapStatus);
   }
 
+  async fetchBookmarks(account: Account, limit: number = 20, maxId?: string): Promise<Status[]> {
+    const url = new URL(`${account.instanceUrl}/api/v1/bookmarks`);
+    url.searchParams.set("limit", String(limit));
+    if (maxId) {
+      url.searchParams.set("max_id", maxId);
+    }
+    const response = await fetch(url.toString(), {
+      headers: buildHeaders(account)
+    });
+    if (!response.ok) {
+      throw new Error("북마크를 불러오지 못했습니다.");
+    }
+    const data = (await response.json()) as unknown[];
+    return data.map(mapStatus);
+  }
+
   async fetchCustomEmojis(account: Account): Promise<CustomEmoji[]> {
     const response = await fetch(`${account.instanceUrl}/api/v1/custom_emojis`, {
       headers: buildHeaders(account)
@@ -283,6 +299,10 @@ export class MastodonHttpClient implements MastodonApi {
     return mapAccountRelationship(data);
   }
 
+  async fetchThreadContext(account: Account, statusId: string): Promise<ThreadContext> {
+    return this.fetchContext(account, statusId);
+  }
+
   async fetchAccountStatuses(
     account: Account,
     accountId: string,
@@ -384,6 +404,14 @@ export class MastodonHttpClient implements MastodonApi {
 
   async unfavourite(account: Account, statusId: string): Promise<Status> {
     return this.postAction(account, statusId, "unfavourite");
+  }
+
+  async bookmark(account: Account, statusId: string): Promise<Status> {
+    return this.postAction(account, statusId, "bookmark");
+  }
+
+  async unbookmark(account: Account, statusId: string): Promise<Status> {
+    return this.postAction(account, statusId, "unbookmark");
   }
 
   async createReaction(_account: Account, _statusId: string, _reaction: string): Promise<Status> {

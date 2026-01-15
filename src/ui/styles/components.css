@@ -1130,6 +1130,13 @@ button.ghost {
   gap: 8px;
 }
 
+.timeline-selector-divider {
+  height: 1px;
+  background: var(--color-sidebar-divider);
+  margin: 4px 0;
+  opacity: 0.6;
+}
+
 .timeline-selector-panel svg {
   width: 18px;
   height: 18px;

@@ -1,4 +1,4 @@
-import type { Account, AccountRelationship, Status, TimelineType, Visibility, InstanceInfo, UserProfile } from "../domain/types";
+import type { Account, AccountRelationship, Status, TimelineType, Visibility, InstanceInfo, UserProfile, ThreadContext } from "../domain/types";
 import type { CustomEmoji } from "../domain/types";
 
 export type CreateStatusInput = {
@@ -21,6 +21,9 @@ export interface MastodonApi {
   deleteStatus(account: Account, statusId: string): Promise<void>;
   favourite(account: Account, statusId: string): Promise<Status>;
   unfavourite(account: Account, statusId: string): Promise<Status>;
+  bookmark(account: Account, statusId: string): Promise<Status>;
+  unbookmark(account: Account, statusId: string): Promise<Status>;
+  fetchBookmarks(account: Account, limit?: number, maxId?: string): Promise<Status[]>;
   createReaction(account: Account, statusId: string, reaction: string): Promise<Status>;
   deleteReaction(account: Account, statusId: string): Promise<Status>;
   reblog(account: Account, statusId: string): Promise<Status>;
@@ -36,4 +39,5 @@ export interface MastodonApi {
   blockAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   unblockAccount(account: Account, accountId: string): Promise<AccountRelationship>;
   fetchAccountStatuses(account: Account, accountId: string, limit: number, maxId?: string): Promise<Status[]>;
+  fetchThreadContext(account: Account, statusId: string): Promise<ThreadContext>;
 }
