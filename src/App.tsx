@@ -11,7 +11,7 @@ import { useTimeline } from "./ui/hooks/useTimeline";
 import { useClickOutside } from "./ui/hooks/useClickOutside";
 import { useAppContext } from "./ui/state/AppContext";
 import type { AccountsState, AppServices } from "./ui/state/AppContext";
-import { createAccountId, formatHandle, normalizeInstanceUrl } from "./ui/utils/account";
+import { createAccountId, formatHandle, formatReplyHandle, normalizeInstanceUrl } from "./ui/utils/account";
 import { clearPendingOAuth, createOauthState, loadPendingOAuth, loadRegisteredApp, saveRegisteredApp, storePendingOAuth } from "./ui/utils/oauth";
 import { getTimelineLabel, getTimelineOptions, normalizeTimelineType } from "./ui/utils/timeline";
 import { sanitizeHtml } from "./ui/utils/htmlSanitizer";
@@ -1035,7 +1035,7 @@ export const App = () => {
   const dragStateRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
   const [isBoardDragging, setIsBoardDragging] = useState(false);
   const replySummary = replyTarget
-    ? `@${replyTarget.accountHandle} · ${replyTarget.content.slice(0, 80)}`
+    ? `@${formatReplyHandle(replyTarget.accountHandle, replyTarget.accountUrl, composeAccount?.instanceUrl ?? "")} · ${replyTarget.content.slice(0, 80)}`
     : null;
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const timelineListeners = useRef<Map<string, Set<(status: Status) => void>>>(new Map());
@@ -1493,7 +1493,8 @@ export const App = () => {
     }
     setComposeAccountId(account.id);
     setReplyTarget(status);
-    setMentionSeed(`@${status.accountHandle}`);
+    const formattedHandle = formatReplyHandle(status.accountHandle, status.accountUrl, account.instanceUrl);
+    setMentionSeed(`@${formattedHandle}`);
     setSelectedStatus(null);
   };
 
