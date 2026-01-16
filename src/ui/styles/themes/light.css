@@ -108,7 +108,7 @@
   --color-compose-input-bg: #fff7f2;
   --color-attachments-bg: #f3e4dc;
   --color-attachments-border: #ead7cc;
-  --color-attachment-add-border: #c9b9a6;
+  
   --color-attachment-add-text: #7b3f3f;
 }
 
@@ -223,7 +223,7 @@
   --color-compose-input-bg: #f7fbff;
   --color-attachments-bg: #e9f2fb;
   --color-attachments-border: #d6e5f2;
-  --color-attachment-add-border: #aeb7c6;
+  
   --color-attachment-add-text: #4a6b86;
 }
 
@@ -338,7 +338,7 @@
   --color-compose-input-bg: #ffffff;
   --color-attachments-bg: #f1f1f1;
   --color-attachments-border: #1d1d1d;
-  --color-attachment-add-border: #9e9e9e;
+  
   --color-attachment-add-text: #2a2a2a;
   --color-delete-button-bg: #c62828;
   --color-delete-button-text: #fff5f5;
@@ -457,7 +457,7 @@
   --color-compose-input-bg: #f6fff6;
   --color-attachments-bg: #e9f5ec;
   --color-attachments-border: #cfe6d5;
-  --color-attachment-add-border: #a8cdb4;
+  
   --color-attachment-add-text: #2f6b46;
   --color-delete-button-bg: #b13b3b;
   --color-delete-button-text: #fff4f4;
